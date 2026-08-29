@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "purpose": "Regression cases for research-router evidence handling and verification behavior.",
   "cases": [
     {
@@ -45,6 +45,15 @@
         "Prefer secure-new-before-release-old when the system permits it.",
         "Do not recommend dropping the current valid state based only on aggregate or unverified availability.",
         "Call out any system rule that prevents a safe sequence."
+      ]
+    },
+    {
+      "id": "static-lookup-vs-live-browser",
+      "scenario": "The task is a static public documentation, repository, API, or factual lookup that can be answered directly without rendered state, authentication, interaction, or page-specific JavaScript state.",
+      "expected": [
+        "Prefer native search, fetch, connector, API, or repository tools instead of launching ego-browser.",
+        "Use ego-browser only when rendered state, authentication, interaction, or live-page verification adds material evidence.",
+        "Do not spend browser tokens or create browser state when a direct source is sufficient."
       ]
     }
   ]

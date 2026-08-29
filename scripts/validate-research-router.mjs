@@ -2,8 +2,10 @@ import fs from 'node:fs';
 
 const skillPath = 'skills/research-router/SKILL.md';
 const casesPath = 'skills/research-router/evals/cases.json';
+const concurrencyRefPath = 'skills/research-router/references/ego-concurrency.md';
 const skill = fs.readFileSync(skillPath, 'utf8');
 const data = JSON.parse(fs.readFileSync(casesPath, 'utf8'));
+const concurrencyRef = fs.readFileSync(concurrencyRefPath, 'utf8');
 
 const requiredIds = [
   'account-specific-vs-generic-policy',
@@ -12,6 +14,7 @@ const requiredIds = [
   'variant-year-region-mismatch',
   'safe-replacement-sequence',
   'static-lookup-vs-live-browser',
+  'concurrent-ego-cdp-isolation',
 ];
 
 if (!Array.isArray(data.cases)) throw new Error('cases must be an array');
@@ -39,4 +42,14 @@ for (const pattern of requiredGuardrails) {
   if (!pattern.test(skill)) throw new Error(`research-router guardrail missing: ${pattern}`);
 }
 
-console.log(`research-router gate passed: ${data.cases.length} cases, ${requiredGuardrails.length} guardrails`);
+const requiredConcurrencyGuardrails = [
+  /citrolabs\/ego-lite#213/i,
+  /global.*CDP/i,
+  /serialize/i,
+  /re-verify.*task space/i,
+];
+for (const pattern of requiredConcurrencyGuardrails) {
+  if (!pattern.test(concurrencyRef)) throw new Error(`Ego concurrency guardrail missing: ${pattern}`);
+}
+
+console.log(`research-router gate passed: ${data.cases.length} cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails`);

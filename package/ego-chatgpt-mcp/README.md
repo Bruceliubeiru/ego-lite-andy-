@@ -55,6 +55,21 @@ ChatGPT / Codex
 
 MCP tool annotations help hosts choose confirmation behavior, but they are not treated as the authorization boundary.
 
+## Tool-contract compatibility
+
+OpenAI currently documents that, after an MCP app is approved, ChatGPT can use a **frozen snapshot of the app's tools and inputs**. Later server-side schema changes are not automatically applied; incompatible changes can make tool calls fail until the app is reviewed/refreshed again.
+
+For that reason, the V1 bridge treats tool names, required-vs-optional inputs, and critical input types as a published compatibility contract. `test/tool-contract.test.mjs` fails CI if those parts change silently.
+
+When changing the tool contract:
+
+- prefer backward-compatible additions such as a new optional field;
+- do not rename/remove a published tool or make an optional field required without explicit version/republication review;
+- treat input-type changes as potentially breaking even if local tests pass;
+- keep the bridge version and the ChatGPT app publication state aligned during real deployment.
+
+The contract test is an early warning, not a substitute for an end-to-end ChatGPT developer-mode test.
+
 ## Local development
 
 Prerequisites:

@@ -2,7 +2,7 @@
 name: research-router
 description: Default web research router. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   date: "2026-08-29"
 ---
 
@@ -44,6 +44,30 @@ Use **both** when any of these are true:
 - a first-party rule and the user's actual logged-in state both matter;
 - one source conflicts with another.
 
+## Evidence ranking: authority × specificity × freshness
+
+Do not use a single rigid source ladder when evidence has different scopes. Rank evidence on three dimensions together:
+
+- **Authority** — Is it first-party, regulator, official documentation, or a weaker secondary/community source?
+- **Specificity** — Does it apply to this exact user/account/cohort/plan/region/section/product variant, or only to the general population?
+- **Freshness** — Is it current for the decision date and current state, or cached/outdated?
+
+For a user's **actual current state**, a current authenticated first-party page or current user-supplied screenshot of that page can be more probative than a generic first-party FAQ. For a **general rule**, current first-party policy remains stronger than a one-off UI label unless the UI explicitly states a scoped rule. Explain the scope difference instead of declaring one source universally superior.
+
+When sources disagree, ask which dimension explains it: date, jurisdiction, cohort, plan, product version, account state, reserved inventory, eligibility, or source quality. Do not average conflicting sources.
+
+## Personal eligibility and aggregate data
+
+Never infer a user's personal eligibility from aggregate availability alone.
+
+Examples of aggregate fields that may be misleading include:
+- course-level or event-level `Avail` when some seats are reserved;
+- inventory totals that include regions, cohorts, member tiers, or fare classes the user cannot access;
+- public plan/product availability that depends on account or address eligibility;
+- hotel/restaurant/flight availability that changes by party size, rate class, account, or dates.
+
+Before saying "you can get/use/register/book this", verify the relevant section/account-level restrictions when possible. If authenticated verification is unavailable, say that the aggregate status is confirmed but the user's actual eligibility remains unconfirmed.
+
 ## Verification ladder
 
 For important conclusions, research in this order unless the task calls for something else:
@@ -53,7 +77,16 @@ For important conclusions, research in this order unless the task calls for some
 3. **Independent authoritative source** — reputable reporting, academic source, recognized industry source, or other strong secondary evidence.
 4. **Community evidence** — Reddit/forums/social posts only for sentiment, edge cases, practical experience, or when the user explicitly asks what people are saying. Never let community evidence override an authoritative rule without explaining the conflict.
 
-When sources disagree, do not average them. Identify why they differ: date, jurisdiction, cohort, plan, product version, account state, eligibility, or source quality.
+This ladder is a starting point, not a substitute for the authority × specificity × freshness test above.
+
+## Search-result discipline
+
+Treat search snippets as **navigation hints, not final evidence**, when the underlying source is available.
+
+- Open or fetch the underlying page before relying on a policy, price, eligibility, requirement, or current-status claim.
+- Check the page date, variant, region, cohort, plan, and account scope.
+- If a snippet and the opened page differ, use the opened page and explain the discrepancy if material.
+- If the source cannot be opened, downgrade confidence rather than silently treating the snippet as authoritative.
 
 ## Two-pass research protocol
 
@@ -68,7 +101,7 @@ For consequential research, do not stop after the first plausible answer.
 **Pass 2 — try to break it**
 - search for an exception, conflicting official page, newer update, cohort-specific rule, restriction, hidden fee, or contrary evidence;
 - when relevant, open the actual page in `ego-browser` and inspect the current rendered state;
-- revise the answer if the live page or stronger source disagrees.
+- revise the answer if the live page or stronger/more specific source disagrees.
 
 For final reporting, separate important findings into:
 - **Confirmed** — directly supported by current authoritative evidence;
@@ -86,6 +119,12 @@ Use the user's language for these labels.
 - For numeric claims, verify units, currency, tax inclusion, time period, and denominator.
 - For screenshots or user-supplied live pages, treat the screenshot as strong evidence of the user's actual state and reconcile it against public documentation rather than overriding it with generic web pages.
 - Never fabricate access to a logged-in page. If `ego-browser` is unavailable in the current environment, say that the live-page layer is unavailable and continue with the strongest available public evidence.
+
+## Safe replacement sequence
+
+When the user is replacing a currently valid scarce or valuable state — for example a reservation, course registration, booking, seat, account setting, plan, or other reversible asset — prefer **secure-new-before-release-old** when the system allows it.
+
+Do not recommend releasing the current valid state based only on aggregate availability or an unverified alternative. First establish that the replacement is actually obtainable and valid for the user, then release the old state. If the platform forces a swap or makes that sequence impossible, identify the risk explicitly before action.
 
 ## Ego execution policy
 
@@ -109,6 +148,10 @@ After a workflow succeeds repeatedly on the same site, consider capturing durabl
 - safe read-only steps that save repeated exploration.
 
 Do not store user-specific private data, credentials, temporary IDs, unstable pixel coordinates, or anything that would make a learning unsafe to reuse. Validate site learnings before relying on them.
+
+## Regression cases
+
+Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, and unsafe replacement sequencing.
 
 ## Monitoring and polling
 

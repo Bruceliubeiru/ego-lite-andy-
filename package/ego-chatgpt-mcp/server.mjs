@@ -201,7 +201,7 @@ cliLog(JSON.stringify({
 async function egoExtract({ task, selector, limit }) {
   const max = Math.max(1, Math.min(200, Number(limit || 50)));
   const sel = String(selector).slice(0, 500);
-  const expression = `Array.from(document.querySelectorAll(${JSON.stringify(sel)})).slice(0, ${max}).map((el, i) => ({index:i,tag:el.tagName,text:(el.innerText||el.textContent||'').trim().slice(0,4000),href:el.href||null,value:(el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.tagName==='SELECT')?el.value:null,ariaLabel:el.getAttribute('aria-label'),title:el.getAttribute('title')}))`;
+  const expression = `Array.from(document.querySelectorAll(${JSON.stringify(sel)})).slice(0, ${max}).map((el, i) => ({index:i,tag:el.tagName,text:(el.innerText||el.textContent||'').trim().slice(0,4000),href:el.href||null,ariaLabel:el.getAttribute('aria-label'),title:el.getAttribute('title')}))`;
   return runEgo(`
 const task = await useOrCreateTaskSpace(${json(taskName(task))});
 const page = await pageInfo();

@@ -1,7 +1,7 @@
 {
   "name": "ego-lite",
-  "version": "1.2.5",
-  "description": "Browser automation for AI agents through ego lite.",
+  "version": "1.3.0",
+  "description": "Verified web research routing and browser automation through ego lite.",
   "author": {
     "name": "CitroLabs",
     "email": "contact@citrolabs.ai",
@@ -10,24 +10,25 @@
   "homepage": "https://lite.ego.app/document/",
   "repository": "https://github.com/citrolabs/ego-lite",
   "license": "MIT",
-  "keywords": ["browser-automation", "ai-agents", "ego-browser"],
+  "keywords": ["web-research", "verification", "browser-automation", "ai-agents", "ego-browser"],
   "skills": "./skills/",
   "interface": {
-    "displayName": "ego-browser",
-    "shortDescription": "Automate logged-in web tasks",
-    "longDescription": "Use Codex to navigate websites, fill forms, capture screenshots, extract structured data, and test web apps in isolated ego lite task spaces.",
+    "displayName": "research-router + ego-browser",
+    "shortDescription": "Route research and verify live web pages",
+    "longDescription": "Use Codex to automatically route public web research through the best available search layer and use ego-browser for live, dynamic, authenticated, or interactive verification. Also navigate websites, fill forms, capture screenshots, extract structured data, and test web apps in isolated ego lite task spaces.",
     "developerName": "CitroLabs",
     "category": "Developer Tools",
     "capabilities": [
+      "Verified web research routing",
       "Browser automation",
       "Authenticated sessions",
       "Parallel task spaces",
       "Interactive confirmations"
     ],
     "defaultPrompt": [
-      "Open a website and complete a browser task for me.",
-      "Test this web app and report any usability issues.",
-      "Extract structured data from this page."
+      "Research this thoroughly and verify important claims against the live website when useful.",
+      "Compare the current official policy with what the real page shows and resolve conflicts.",
+      "Open a website and complete a browser task for me."
     ],
     "brandColor": "#1E90FF",
     "composerIcon": "./assets/composer-icon.png",

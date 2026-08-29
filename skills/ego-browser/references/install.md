@@ -6,29 +6,49 @@ The ego-browser skill depends on the ego lite browser: the `ego-browser` command
 
 ego lite website: https://lite.ego.app/
 
+## Security guard for automated installation
+
+Do **not** run the bundled `scripts/install.sh` unattended while upstream security issue `citrolabs/ego-lite#292` remains open. The current upstream installer removes the macOS quarantine attribute before first launch, while the issue documents official DMGs that fail strict code-signature verification. That combination weakens the normal Gatekeeper trust boundary.
+
+Before any automated installation flow is re-enabled, verify that upstream has fixed the distribution and installer behavior. At minimum, confirm all of the following on the exact artifact being installed:
+
+```bash
+hdiutil verify /path/to/egolite.dmg
+hdiutil attach /path/to/egolite.dmg -nobrowse -readonly
+codesign --verify --deep --strict --verbose=4 "/Volumes/ego lite/ego lite.app"
+spctl --assess --type execute --verbose=4 "/Volumes/ego lite/ego lite.app"
+```
+
+If `codesign` or `spctl` fails, stop. Do not strip quarantine to force the app to launch, and do not tell the user that the installation is verified.
+
+For the current unresolved state, prefer a user-driven install from the official ego lite website and let macOS Gatekeeper surface any trust decision normally. Do not bypass a Gatekeeper warning on the user's behalf.
+
+Upstream tracking issue: https://github.com/citrolabs/ego-lite/issues/292
+
 ## Install steps (macOS only)
 
-The install script lives at `scripts/install.sh` in this skill and supports macOS only. It will:
+The repository still contains the upstream `scripts/install.sh`, but treat it as **blocked for unattended use** until the security guard above is satisfied.
 
-- Download the ego lite installer (a DMG) for your CPU architecture (arm64 / x64).
-- Install `ego lite.app` to `/Applications` (falling back to `~/Applications` when needed).
-- Strip the quarantine attribute to keep Gatekeeper from blocking the first launch.
-- After installing, launch the `ego lite` app.
+For a manual install:
 
-Run the script (use the script's actual path under this skill's directory):
+1. Download ego lite from the official website.
+2. Keep the downloaded artifact's quarantine metadata intact.
+3. Verify the DMG and app signature as described above.
+4. If verification succeeds, install `ego lite.app` to `/Applications` (or `~/Applications` if needed).
+5. Launch the app normally and complete onboarding.
+
+Do not run this command automatically while `citrolabs/ego-lite#292` is unresolved:
 
 ```bash
 sh skills/ego-browser/scripts/install.sh
 ```
 
-After installing, the script opens the ego lite app directly. If ego lite is already installed, the script skips the download and opens the app directly.
-
-After the script opens the ego lite app, the user completes the first-run onboarding in the app:
+After a verified installation, the user completes the first-run onboarding in the app:
 
 - Choose to import data from Chrome or another browser as needed.
 - Onboarding registers the `ego-browser` command on the PATH (usually under `~/.local/bin`).
 
-Onboarding is a step the user completes in the GUI. After the script opens ego lite, wait for the user to confirm they've finished onboarding before continuing.
+Onboarding is a step the user completes in the GUI. After the user confirms they've finished onboarding, continue with the checks below.
 
 ## After installing: confirm `ego-browser` is available
 
@@ -53,7 +73,7 @@ console.log('ego-browser ready')
 EOF
 ```
 
-Printing `ego-browser ready` means the environment is ready.
+Printing `ego-browser ready` means the command is callable. It does not, by itself, prove the installed app's distribution integrity; retain the installation verification result separately.
 
 ## After that, return to the original task
 
@@ -61,7 +81,8 @@ Once the environment is ready, return to the user's original task and continue w
 
 ## Troubleshooting
 
-- **Not macOS**: the script supports macOS only (`uname -s` is `Darwin`). On other platforms, have the user download and install from the ego lite website at https://lite.ego.app/.
-- **Download failed**: the script retries 3 times automatically; if it still fails, it's usually a network issue — have the user check their network and retry.
-- **Gatekeeper still blocks it**: the script already tries to strip quarantine; if the first launch is still blocked, have the user allow ego lite manually under System Settings → Privacy & Security.
-- **Command still unavailable after onboarding**: confirm `~/.local/bin` is on the PATH (see above); or have the user reopen ego lite, finish onboarding, and retry.
+- **Not macOS**: the bundled script supports macOS only (`uname -s` is `Darwin`). On other platforms, use the official ego lite distribution instructions and do not assume equivalent verification commands.
+- **Download failed**: retry through the official source and verify the final artifact before installing.
+- **`codesign` or `spctl` fails**: stop the automated flow. Do not remove quarantine or bypass Gatekeeper. Check the upstream security issue for a fixed release.
+- **Gatekeeper blocks first launch**: do not suppress the warning automatically. Treat it as a trust decision that requires a fixed/verified artifact or explicit user handling.
+- **Command still unavailable after onboarding**: confirm `~/.local/bin` is on the PATH; or have the user reopen ego lite, finish onboarding, and retry.

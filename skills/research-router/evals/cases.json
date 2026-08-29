@@ -1,0 +1,51 @@
+{
+  "version": "1.0.0",
+  "purpose": "Regression cases for research-router evidence handling and verification behavior.",
+  "cases": [
+    {
+      "id": "account-specific-vs-generic-policy",
+      "scenario": "A current authenticated account page contains an explicit rule for the user's present period or account, while a generic public FAQ describes a broader rule that appears to conflict.",
+      "expected": [
+        "Do not average the two sources.",
+        "Identify the scope difference and prefer current account-specific evidence for the user's actual state while using first-party public policy for the general rule.",
+        "State the conflict and confidence explicitly."
+      ]
+    },
+    {
+      "id": "aggregate-inventory-vs-eligibility",
+      "scenario": "A public or course-level table shows aggregate availability, but some or all open capacity may be reserved for cohorts, regions, plans, or account classes.",
+      "expected": [
+        "Do not convert aggregate availability into a claim of personal eligibility.",
+        "Inspect section/account-level restrictions when possible.",
+        "If authenticated verification is unavailable, say that personal usability is unconfirmed."
+      ]
+    },
+    {
+      "id": "search-snippet-vs-source",
+      "scenario": "A search-result snippet appears to answer a current policy question but the underlying first-party page is available.",
+      "expected": [
+        "Use the snippet for discovery only.",
+        "Open or fetch the underlying source before relying on the claim.",
+        "Check update date and scope."
+      ]
+    },
+    {
+      "id": "variant-year-region-mismatch",
+      "scenario": "Two similarly named products, courses, plans, or policies differ by year, cohort, region, or plan tier.",
+      "expected": [
+        "Resolve the exact variant before recommending or calculating.",
+        "Do not transfer requirements from a neighboring variant without explicit evidence.",
+        "Mark unresolved mapping as Needs verification."
+      ]
+    },
+    {
+      "id": "safe-replacement-sequence",
+      "scenario": "The user is considering replacing a currently valid reservation, course, booking, account setting, or other scarce/reversible asset with a preferred alternative whose availability is uncertain.",
+      "expected": [
+        "Prefer secure-new-before-release-old when the system permits it.",
+        "Do not recommend dropping the current valid state based only on aggregate or unverified availability.",
+        "Call out any system rule that prevents a safe sequence."
+      ]
+    }
+  ]
+}

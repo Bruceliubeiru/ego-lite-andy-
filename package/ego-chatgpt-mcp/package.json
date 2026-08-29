@@ -10,6 +10,8 @@
   "scripts": {
     "start": "node server.mjs",
     "check": "node --check server.mjs && node --check scripts/preflight.mjs",
+    "test": "node --test test/*.test.mjs",
+    "verify": "npm run check && npm test",
     "preflight": "node scripts/preflight.mjs"
   },
   "dependencies": {

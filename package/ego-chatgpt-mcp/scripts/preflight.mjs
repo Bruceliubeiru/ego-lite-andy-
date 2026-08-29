@@ -1,12 +1,12 @@
 import { spawnSync } from "node:child_process";
 
-function exists(command, args = ["--help"]) {
+function succeeds(command, args = ["--help"]) {
   const result = spawnSync(command, args, {
     stdio: "ignore",
     env: process.env,
     timeout: 5000,
   });
-  return !result.error;
+  return !result.error && result.status === 0 && result.signal === null;
 }
 
 function yesNo(value) {
@@ -15,8 +15,8 @@ function yesNo(value) {
 
 const checks = {
   node22: Number(process.versions.node.split(".")[0]) >= 22,
-  egoBrowser: exists(process.env.EGO_BROWSER_BIN || "ego-browser", ["--help"]),
-  tunnelClient: exists("tunnel-client", ["help", "quickstart"]),
+  egoBrowser: succeeds(process.env.EGO_BROWSER_BIN || "ego-browser", ["--help"]),
+  tunnelClient: succeeds("tunnel-client", ["help", "quickstart"]),
   tunnelId: Boolean(process.env.EGO_TUNNEL_ID),
   controlPlaneKey: Boolean(process.env.CONTROL_PLANE_API_KEY),
 };

@@ -26,6 +26,16 @@ test("direct navigation does not expose localhost/private-network pages by defau
   );
 });
 
+test("hostname policy is resolution-aware rather than a text-only denylist", () => {
+  const block = blockBetween("function ensureHttpUrl", "function boundedText");
+
+  assert.match(
+    block,
+    /(dns|lookup|resolve)/i,
+    "a hostname string check is insufficient: a public-looking hostname can resolve or re-resolve to loopback/private/link-local addresses; validate resolved destinations fail-closed",
+  );
+});
+
 test("href navigation is subject to the same network boundary as direct open", () => {
   const block = blockBetween("async function egoFollowHref", "async function egoExtract");
 
@@ -33,5 +43,18 @@ test("href navigation is subject to the same network boundary as direct open", (
     block,
     /(ensureHttpUrl|private|localhost|loopback)/i,
     "ego_follow_href must not bypass the direct-navigation network boundary",
+  );
+});
+
+test("redirects cannot bypass the private-network boundary", () => {
+  const navigation = [
+    blockBetween("async function egoOpen", "async function egoSnapshot"),
+    blockBetween("async function egoFollowHref", "async function egoExtract"),
+  ].join("\n");
+
+  assert.match(
+    navigation,
+    /(redirect|requestInterception|Fetch\.enable|Network\.requestWillBeSent|willNavigate|navigationPolicy)/i,
+    "checking only the initial URL is insufficient: a public URL can redirect into localhost/private/link-local space before content is read; enforce the boundary on every navigation hop",
   );
 });

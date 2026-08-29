@@ -80,6 +80,7 @@ Official references:
 
 - https://developers.openai.com/api/docs/guides/secure-mcp-tunnels
 - https://developers.openai.com/plugins/build/mcp-server
+- https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta
 
 The external prerequisites are:
 
@@ -87,6 +88,8 @@ The external prerequisites are:
 - a runtime API key authorized to use the tunnel;
 - ChatGPT developer-mode access in the target workspace/account;
 - `tunnel-client` installed on the same machine/trust boundary that can run `ego-browser`.
+
+Current plan note (2026-08-29): OpenAI's Help Center explicitly says Pro users can connect read/fetch MCPs in developer mode, while full MCP with write/modify is Business/Enterprise/Edu. The article does not list Plus as supporting private custom MCP developer-mode connections. This V1 bridge is intentionally read-only and therefore matches the Pro capability, but a Plus account may still need either a supported plan/workspace or the separate publishable-plugin fallback described in `OPENAI_PATH.md`.
 
 The intended local stdio profile looks like this conceptually:
 

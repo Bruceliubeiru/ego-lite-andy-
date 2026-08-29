@@ -30,7 +30,7 @@ const requiredGuardrails = [
   /snippet/i,
   /exact variant/i,
   /secure-new-before-release-old/i,
-  /account-specific/i,
+  /(exact user\/account|account-level|actual current state)/i,
 ];
 for (const pattern of requiredGuardrails) {
   if (!pattern.test(skill)) throw new Error(`research-router guardrail missing: ${pattern}`);

@@ -24,10 +24,10 @@ function registrationBlock(toolName) {
   return serverSource.slice(start, next === -1 ? serverSource.length : next);
 }
 
-function fieldLine(block, field) {
-  const match = block.match(new RegExp(`^\\s*${field}:\\s*(.+)$`, "m"));
+function fieldExpression(block, field) {
+  const match = block.match(new RegExp(`\\b${field}:\\s*([^\\n}]+)`));
   assert.ok(match, `missing input field ${field}`);
-  return match[1];
+  return match[1].trim();
 }
 
 test("published V1 MCP tool names stay stable", () => {
@@ -40,8 +40,8 @@ test("published V1 MCP input contract does not silently break", () => {
     const block = registrationBlock(toolName);
 
     for (const field of expected.fields) {
-      const line = fieldLine(block, field);
-      const isRequired = !line.includes(".optional()") && !line.includes("optional:");
+      const expression = fieldExpression(block, field);
+      const isRequired = !expression.includes(".optional()");
       assert.equal(
         isRequired,
         expected.required.includes(field),
@@ -64,9 +64,9 @@ test("published V1 MCP contract preserves critical field types", () => {
 
   for (const [key, pattern] of Object.entries(expectations)) {
     const [toolName, field] = key.split(".");
-    const line = fieldLine(registrationBlock(toolName), field);
+    const expression = fieldExpression(registrationBlock(toolName), field);
     assert.match(
-      line,
+      expression,
       pattern,
       `${key} type changed; OpenAI may keep a frozen approved tool schema, so breaking changes need explicit version/republication review`,
     );

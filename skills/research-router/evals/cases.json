@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.1.1",
   "purpose": "Regression cases for research-router evidence handling and verification behavior.",
   "cases": [
     {
@@ -54,6 +54,15 @@
         "Prefer native search, fetch, connector, API, or repository tools instead of launching ego-browser.",
         "Use ego-browser only when rendered state, authentication, interaction, or live-page verification adds material evidence.",
         "Do not spend browser tokens or create browser state when a direct source is sufficient."
+      ]
+    },
+    {
+      "id": "concurrent-ego-cdp-isolation",
+      "scenario": "Two or more Ego task spaces are active concurrently and a research workflow would use raw CDP or another operation that switches the globally active CDP target/session.",
+      "expected": [
+        "Do not assume raw CDP state is isolated per task space while upstream issue citrolabs/ego-lite#213 remains unresolved.",
+        "Prefer task-space-scoped high-level Ego helpers that do not require global CDP target switching.",
+        "If raw CDP is unavoidable, serialize that critical section and re-verify the active task space and page before trusting the result."
       ]
     }
   ]

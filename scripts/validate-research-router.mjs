@@ -11,6 +11,7 @@ const requiredIds = [
   'search-snippet-vs-source',
   'variant-year-region-mismatch',
   'safe-replacement-sequence',
+  'static-lookup-vs-live-browser',
 ];
 
 if (!Array.isArray(data.cases)) throw new Error('cases must be an array');
@@ -31,6 +32,8 @@ const requiredGuardrails = [
   /exact variant/i,
   /secure-new-before-release-old/i,
   /(exact user\/account|account-level|actual current state)/i,
+  /Use \*\*native search first\*\*/i,
+  /Use \*\*ego-browser first\*\*/i,
 ];
 for (const pattern of requiredGuardrails) {
   if (!pattern.test(skill)) throw new Error(`research-router guardrail missing: ${pattern}`);

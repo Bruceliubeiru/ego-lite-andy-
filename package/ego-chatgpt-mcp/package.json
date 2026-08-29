@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs"
+    "check": "node --check server.mjs && node --check scripts/preflight.mjs",
+    "preflight": "node scripts/preflight.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.3",

@@ -25,6 +25,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run validate:site-skills
+      - name: Validate research-router regression gate
+        working-directory: .
+        run: node scripts/validate-research-router.mjs
 
   release:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')

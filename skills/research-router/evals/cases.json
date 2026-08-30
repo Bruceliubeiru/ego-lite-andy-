@@ -1,5 +1,5 @@
 {
-  "version": "1.1.1",
+  "version": "1.2.0",
   "purpose": "Regression cases for research-router evidence handling and verification behavior.",
   "cases": [
     {
@@ -40,7 +40,7 @@
     },
     {
       "id": "safe-replacement-sequence",
-      "scenario": "The user is considering replacing a currently valid reservation, course, booking, account setting, or other scarce/reversible asset with a preferred alternative whose availability is uncertain.",
+      "scenario": "The user is considering replacing a currently valid reservation, course registration, booking, account setting, or other scarce/reversible asset with a preferred alternative whose availability is uncertain.",
       "expected": [
         "Prefer secure-new-before-release-old when the system permits it.",
         "Do not recommend dropping the current valid state based only on aggregate or unverified availability.",
@@ -54,6 +54,15 @@
         "Prefer native search, fetch, connector, API, or repository tools instead of launching ego-browser.",
         "Use ego-browser only when rendered state, authentication, interaction, or live-page verification adds material evidence.",
         "Do not spend browser tokens or create browser state when a direct source is sufficient."
+      ]
+    },
+    {
+      "id": "structured-site-tool-vs-generic-dom",
+      "scenario": "A live page exposes a bounded first-party browser-side tool or site-specific structured interface for the needed state, while the same information could also be scraped through generic DOM selectors or a large semantic snapshot.",
+      "expected": [
+        "Prefer the bounded first-party or site-specific structured tool when it returns the needed evidence with equivalent or better freshness and scope.",
+        "Use generic DOM extraction or snapshots as a fallback or cross-check, not automatically as the first choice.",
+        "Do not treat a site tool as authoritative merely because it is structured; still verify exact account, variant, region, date, and scope when material."
       ]
     },
     {

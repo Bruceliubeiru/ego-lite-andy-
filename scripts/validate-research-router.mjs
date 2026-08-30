@@ -14,6 +14,7 @@ const requiredIds = [
   'variant-year-region-mismatch',
   'safe-replacement-sequence',
   'static-lookup-vs-live-browser',
+  'structured-site-tool-vs-generic-dom',
   'concurrent-ego-cdp-isolation',
 ];
 
@@ -28,6 +29,8 @@ for (const c of data.cases) {
   }
 }
 
+// Prefer bounded first-party/site-specific structured interfaces when they
+// provide the needed live evidence without weakening scope verification.
 const requiredGuardrails = [
   /authority.*specificity.*freshness/i,
   /aggregate availability/i,
@@ -37,6 +40,8 @@ const requiredGuardrails = [
   /(exact user\/account|account-level|actual current state)/i,
   /Use \*\*native search first\*\*/i,
   /Use \*\*ego-browser first\*\*/i,
+  /(bounded first-party|site-specific structured tool)/i,
+  /(generic DOM|semantic snapshot)/i,
 ];
 for (const pattern of requiredGuardrails) {
   if (!pattern.test(skill)) throw new Error(`research-router guardrail missing: ${pattern}`);

@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "purpose": "Regression cases for research-router evidence handling and verification behavior.",
   "cases": [
     {
@@ -72,6 +72,15 @@
         "Do not assume raw CDP state is isolated per task space while upstream issue citrolabs/ego-lite#213 remains unresolved.",
         "Prefer task-space-scoped high-level Ego helpers that do not require global CDP target switching.",
         "If raw CDP is unavoidable, serialize that critical section and re-verify the active task space and page before trusting the result."
+      ]
+    },
+    {
+      "id": "browser-action-success-vs-observed-postcondition",
+      "scenario": "A browser helper reports that a click, filter, navigation, expansion, or other read-only interaction succeeded, but the resulting page state may not actually reflect the intended action because of overlays, stale targets, silent event failures, delayed rendering, or account/context mismatch.",
+      "expected": [
+        "Do not treat a helper return value such as ok/success as proof that the intended page state was reached.",
+        "For interactions that materially affect the evidence being read, verify a relevant postcondition such as URL, visible state, selected filter, expanded content, account/context marker, or changed structured output before trusting downstream evidence.",
+        "If the postcondition cannot be observed reliably, downgrade confidence or use an independent read path instead of asserting success."
       ]
     }
   ]

@@ -19,9 +19,22 @@ Official docs:
 - https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt
 - https://help.openai.com/en/articles/20001256-plugins-in-chatgpt-and-codex
 
+## Current MCP tool-contract note
+
+As of 2026-08-31, OpenAI's current Developer Mode FAQ explicitly says connected MCP servers **no longer need tools named `search` and `fetch`**.
+
+For this bridge, that means:
+
+- keep the narrow `ego_*` read-only tool surface instead of adding generic `search` / `fetch` wrappers only for perceived ChatGPT compatibility;
+- do not broaden a tool's authority merely to fit an old naming convention;
+- continue treating Deep Research as read/fetch-only even when the underlying read tools use domain-specific names;
+- if a future OpenAI surface imposes a different contract, verify that requirement against the current first-party documentation and the exact target plan/surface before changing the published MCP schema.
+
+This is a compatibility and least-authority guardrail. It is **not** evidence that arbitrary write-capable tools are available on every plan or surface.
+
 ## Current plan constraint
 
-As of 2026-08-30, OpenAI's Help Center says:
+As of 2026-08-31, OpenAI's Help Center says:
 
 - Full MCP including write/modify actions is rolling out to Business, Enterprise, and Edu.
 - Pro users can connect MCPs with read/fetch permissions in developer mode.

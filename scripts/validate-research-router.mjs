@@ -29,6 +29,8 @@ for (const c of data.cases) {
   }
 }
 
+// Prefer bounded first-party/site-specific structured interfaces when they
+// provide the needed live evidence without weakening scope verification.
 const requiredGuardrails = [
   /authority.*specificity.*freshness/i,
   /aggregate availability/i,

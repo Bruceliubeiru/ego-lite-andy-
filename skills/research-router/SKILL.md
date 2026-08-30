@@ -2,8 +2,8 @@
 name: research-router
 description: Default web research router. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
 metadata:
-  version: "1.1.0"
-  date: "2026-08-29"
+  version: "1.1.1"
+  date: "2026-08-30"
 ---
 
 # research-router
@@ -36,6 +36,8 @@ Use **ego-browser first** when any of these are true:
 - the page is a SPA/JS-heavy app and search snippets are incomplete;
 - the answer depends on current filters, live availability, a table, seat inventory, account status, form state, or a page-specific restriction;
 - search results conflict with what the live site currently shows.
+
+When live verification is needed and the page exposes a **bounded first-party or site-specific structured tool** for the needed state (for example a browser-side site tool such as WebMCP), prefer that structured interface before generic DOM scraping or a full-page semantic snapshot when it provides equivalent or better freshness and scope. This reduces brittle selectors, irrelevant page text, and unnecessary context exposure. Keep DOM/snapshot extraction available as a fallback or contradiction check. Structured does not automatically mean authoritative: still verify the exact account, variant, year, region, cohort, plan, date, and scope when those dimensions matter.
 
 Use **both** when any of these are true:
 - the user asks to "confirm", "double-check", "seriously verify", "cross-check", or make a consequential decision;
@@ -151,7 +153,7 @@ Do not store user-specific private data, credentials, temporary IDs, unstable pi
 
 ## Regression cases
 
-Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, and unsafe replacement sequencing.
+Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, unsafe replacement sequencing, unnecessary live-browser use, generic-DOM-over-structured-site-tool routing, and concurrent CDP isolation assumptions.
 
 ## Monitoring and polling
 

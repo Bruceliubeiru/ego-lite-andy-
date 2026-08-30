@@ -7,10 +7,11 @@ For an account/workspace that has ChatGPT developer mode and Secure MCP Tunnel a
 1. Keep `ego-chatgpt-mcp` local and stdio-only.
 2. Create an OpenAI Platform tunnel and associate it with the target Platform organization / ChatGPT workspace.
 3. Run `tunnel-client` on the same machine or trust boundary as ego lite.
-4. Configure the tunnel profile to launch `server.mjs` as its local stdio MCP command.
-5. Run `tunnel-client doctor` and then `tunnel-client run`.
-6. In ChatGPT developer mode, create an app using **Tunnel** as the connection and select the tunnel.
-7. First test only `ego_status` and harmless read-only page inspection.
+4. Obtain `tunnel-client` from OpenAI Platform tunnel settings or the **latest public `openai/tunnel-client` release**. Keep the runbook pointed at the latest-release location rather than hard-coding a specific release URL; verify the installed client with `tunnel-client help quickstart` / `doctor` before use.
+5. Configure the tunnel profile to launch `server.mjs` as its local stdio MCP command.
+6. Run `tunnel-client doctor` and then `tunnel-client run`.
+7. In ChatGPT developer mode, create an app using **Tunnel** as the connection and select the tunnel.
+8. First test only `ego_status` and harmless read-only page inspection.
 
 Official docs:
 - https://developers.openai.com/api/docs/guides/secure-mcp-tunnels

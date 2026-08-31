@@ -18,6 +18,7 @@ const requiredIds = [
   'concurrent-ego-cdp-isolation',
   'browser-action-success-vs-observed-postcondition',
   'browser-global-state-mutation-vs-read-only-research',
+  'browser-global-read-vs-profile-isolation',
   'same-source-summary-vs-specific-section',
   'ego-ownership-error-vs-observed-ownership',
   'approved-schema-snapshot-vs-live-mcp-schema',

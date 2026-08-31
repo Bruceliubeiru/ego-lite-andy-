@@ -93,9 +93,10 @@ npm start
 
 Official references:
 
+- https://developers.openai.com/api/docs/guides/developer-mode
 - https://developers.openai.com/api/docs/guides/secure-mcp-tunnels
 - https://developers.openai.com/plugins/build/mcp-server
-- https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta
+- https://help.openai.com/en/articles/12584461-developer-mode-and-mcp-apps-in-chatgpt
 
 The external prerequisites are:
 
@@ -104,7 +105,7 @@ The external prerequisites are:
 - ChatGPT developer-mode access in the target workspace/account;
 - `tunnel-client` installed on the same machine/trust boundary that can run `ego-browser`.
 
-Current plan note (2026-08-29): OpenAI's Help Center explicitly says Pro users can connect read/fetch MCPs in developer mode, while full MCP with write/modify is Business/Enterprise/Edu. The article does not list Plus as supporting private custom MCP developer-mode connections. This V1 bridge is intentionally read-only and therefore matches the Pro capability, but a Plus account may still need either a supported plan/workspace or the separate publishable-plugin fallback described in `OPENAI_PATH.md`.
+Current plan note (2026-09-01): OpenAI's current **ChatGPT Developer mode** guide explicitly lists **Pro, Plus, Business, Enterprise, and Education** accounts as eligible on the web and describes Developer Mode as full MCP client support for read and write tools. The older/current Help Center workspace article still frames Apps/full MCP/developer-mode administration around Business and Enterprise/Edu and separately says Pro can connect read/fetch MCPs. Treat this as a first-party scope conflict rather than collapsing one page into the other: Plus is supported by the specific current Developer Mode guide, while actual account-level availability must still be verified in the target UI and Tunnel attachment flow. Do not treat Secure MCP Tunnel permission as proof of ChatGPT entitlement, or vice versa.
 
 The intended local stdio profile looks like this conceptually:
 

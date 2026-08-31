@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
+  "version": "1.7.1",
   "purpose": "Regression cases for research-router evidence handling and verification behavior.",
   "cases": [
     {
@@ -117,7 +117,7 @@
       "expected": [
         "Do not assume the live MCP schema is the schema ChatGPT is currently using after an app has been approved.",
         "For schema-dependent failures or capability checks, compare the approved/published snapshot with the live server definition and classify whether the change is backward compatible before blaming transport, authentication, or the model.",
-        "For incompatible tool-definition changes, require the documented admin/owner refresh and publish sequence before treating the new schema as active; do not silently widen tools or inputs as a workaround."
+        "For incompatible tool-definition changes, use the plan-specific documented recovery path: Business must recreate and republish the app because published apps cannot currently be updated, while Enterprise/Edu admins/owners can Refresh action definitions and then review/publish or control actions as documented; do not silently widen tools or inputs as a workaround."
       ]
     }
   ]

@@ -1,5 +1,5 @@
 {
-  "version": "1.9.1",
+  "version": "1.9.2",
   "purpose": "Regression cases for research-router evidence handling and verification behavior.",
   "cases": [
     {
@@ -132,11 +132,12 @@
     },
     {
       "id": "tunnel-permission-vs-chatgpt-eligibility",
-      "scenario": "An account or organization can create, inspect, or use an OpenAI Secure MCP Tunnel at the Platform layer, but the target ChatGPT account or workspace may not have the plan-specific developer-mode capability required to attach a private custom MCP app.",
+      "scenario": "An account or organization can create, inspect, or use an OpenAI Secure MCP Tunnel at the Platform layer, but the target ChatGPT account or workspace may have a different developer-mode entitlement or rollout state for attaching a private custom MCP app.",
       "expected": [
         "Treat Secure MCP Tunnel permissions and ChatGPT developer-mode eligibility as separate authorization domains; success in one does not prove access in the other.",
         "Before claiming that a private MCP integration is usable in ChatGPT, verify the exact ChatGPT plan/workspace developer-mode entitlement in current first-party documentation or authenticated settings, not merely tunnel creation/use permission.",
-        "For personal accounts, do not infer that associating a tunnel with a personal Platform organization grants ChatGPT Plus the same private custom MCP capability documented for Pro or workspace plans; keep the integration gate closed unless the target ChatGPT surface explicitly supports it."
+        "For Plus, current first-party guidance is internally inconsistent: the dedicated Developer Mode guide explicitly lists Plus as eligible, while the Help Center workspace article frames full MCP around Business/Enterprise/Edu and separately documents Pro read/fetch. Preserve that conflict instead of reverting to the older categorical assumption that Plus is unsupported.",
+        "Treat the Plus documentation gate as open enough to attempt the lowest-risk account validation sequence, but keep account-level Tunnel attachment unproven until the target Plus UI actually exposes Developer Mode, developer-app creation, and the intended Tunnel selection; never compensate for a missing entitlement with a public relay or broader permissions."
       ]
     }
   ]

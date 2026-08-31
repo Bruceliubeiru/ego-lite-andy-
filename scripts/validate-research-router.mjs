@@ -23,6 +23,7 @@ const requiredIds = [
   'ego-ownership-error-vs-observed-ownership',
   'approved-schema-snapshot-vs-live-mcp-schema',
   'tunnel-permission-vs-chatgpt-eligibility',
+  'agent-task-space-lifecycle-vs-resource-leak',
 ];
 
 if (!Array.isArray(data.cases)) throw new Error('cases must be an array');

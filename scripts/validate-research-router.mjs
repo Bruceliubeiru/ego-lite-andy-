@@ -21,6 +21,7 @@ const requiredIds = [
   'same-source-summary-vs-specific-section',
   'ego-ownership-error-vs-observed-ownership',
   'approved-schema-snapshot-vs-live-mcp-schema',
+  'tunnel-permission-vs-chatgpt-eligibility',
 ];
 
 if (!Array.isArray(data.cases)) throw new Error('cases must be an array');

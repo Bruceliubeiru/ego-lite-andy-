@@ -1,5 +1,5 @@
 {
-  "version": "1.7.1",
+  "version": "1.8.0",
   "purpose": "Regression cases for research-router evidence handling and verification behavior.",
   "cases": [
     {
@@ -118,6 +118,15 @@
         "Do not assume the live MCP schema is the schema ChatGPT is currently using after an app has been approved.",
         "For schema-dependent failures or capability checks, compare the approved/published snapshot with the live server definition and classify whether the change is backward compatible before blaming transport, authentication, or the model.",
         "For incompatible tool-definition changes, use the plan-specific documented recovery path: Business must recreate and republish the app because published apps cannot currently be updated, while Enterprise/Edu admins/owners can Refresh action definitions and then review/publish or control actions as documented; do not silently widen tools or inputs as a workaround."
+      ]
+    },
+    {
+      "id": "tunnel-permission-vs-chatgpt-eligibility",
+      "scenario": "An account or organization can create, inspect, or use an OpenAI Secure MCP Tunnel at the Platform layer, but the target ChatGPT account or workspace may not have the plan-specific developer-mode capability required to attach a private custom MCP app.",
+      "expected": [
+        "Treat Secure MCP Tunnel permissions and ChatGPT developer-mode eligibility as separate authorization domains; success in one does not prove access in the other.",
+        "Before claiming that a private MCP integration is usable in ChatGPT, verify the exact ChatGPT plan/workspace developer-mode entitlement in current first-party documentation or authenticated settings, not merely tunnel creation/use permission.",
+        "For personal accounts, do not infer that associating a tunnel with a personal Platform organization grants ChatGPT Plus the same private custom MCP capability documented for Pro or workspace plans; keep the integration gate closed unless the target ChatGPT surface explicitly supports it."
       ]
     }
   ]

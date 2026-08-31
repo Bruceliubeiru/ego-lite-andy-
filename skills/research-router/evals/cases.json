@@ -1,5 +1,5 @@
 {
-  "version": "1.6.1",
+  "version": "1.7.0",
   "purpose": "Regression cases for research-router evidence handling and verification behavior.",
   "cases": [
     {
@@ -109,6 +109,15 @@
         "When a non-mutating ownership inspection is available, distinguish genuine ownership=user from agentDelegatedToUser before deciding whether the workflow should stop or recover.",
         "Treat navigation, modal/dialog handling, or other agent-initiated browser interaction as a possible cause of a false takeover signal, but never as proof that reclaiming is safe.",
         "If ownership cannot be verified safely, fail closed and report that live-page verification was interrupted rather than looping takeOverTaskSpace or pretending the interaction succeeded."
+      ]
+    },
+    {
+      "id": "approved-schema-snapshot-vs-live-mcp-schema",
+      "scenario": "A previously approved ChatGPT MCP app has changed its live tool definitions or inputs after approval, while ChatGPT may still be invoking the frozen tool/input snapshot that was reviewed and published for the workspace.",
+      "expected": [
+        "Do not assume the live MCP schema is the schema ChatGPT is currently using after an app has been approved.",
+        "For schema-dependent failures or capability checks, compare the approved/published snapshot with the live server definition and classify whether the change is backward compatible before blaming transport, authentication, or the model.",
+        "For incompatible tool-definition changes, require the documented admin/owner refresh and publish sequence before treating the new schema as active; do not silently widen tools or inputs as a workaround."
       ]
     }
   ]

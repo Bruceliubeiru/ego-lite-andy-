@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.0.1",
   "purpose": "Regression cases for research-router evidence handling and verification behavior.",
   "cases": [
     {
@@ -118,6 +118,7 @@
         "Do not automatically reclaim control merely because the error may be spurious; a real user takeover must remain a hard stop.",
         "When a non-mutating ownership inspection is available, distinguish genuine ownership=user from agentDelegatedToUser before deciding whether the workflow should stop or recover.",
         "Treat navigation, modal/dialog handling, or other agent-initiated browser interaction as a possible cause of a false takeover signal, but never as proof that reclaiming is safe.",
+        "Treat native alert()/confirm() as a known hard-stop path while upstream behavior flips ownership before pageInfo()/Page.handleJavaScriptDialog can run; do not rely on that documented self-rescue path until upstream proves it reachable.",
         "If ownership cannot be verified safely, fail closed and report that live-page verification was interrupted rather than looping takeOverTaskSpace or pretending the interaction succeeded."
       ]
     },

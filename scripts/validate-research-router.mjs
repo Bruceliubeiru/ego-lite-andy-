@@ -24,6 +24,7 @@ const requiredIds = [
   'approved-schema-snapshot-vs-live-mcp-schema',
   'tunnel-permission-vs-chatgpt-eligibility',
   'agent-task-space-lifecycle-vs-resource-leak',
+  'upstream-main-vs-released-installed-version',
 ];
 
 if (!Array.isArray(data.cases)) throw new Error('cases must be an array');

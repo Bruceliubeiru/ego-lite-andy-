@@ -22,7 +22,7 @@ Official docs:
 
 ## Current MCP tool-contract note
 
-As of 2026-08-31, OpenAI's current Developer Mode guide says connected MCP servers do **not** need tools named `search` and `fetch`.
+OpenAI's current Developer Mode / MCP guidance says connected MCP servers do **not** need tools named `search` and `fetch`.
 
 For this bridge, that means:
 
@@ -33,27 +33,28 @@ For this bridge, that means:
 
 This is a compatibility and least-authority guardrail. It is **not** a reason to add write-capable Ego tools.
 
-## Current plan gate: Plus is now explicitly eligible in the Developer Mode guide
+## Current plan gate: Plus private custom MCP is closed / unproven
 
-As of 2026-08-31, OpenAI's current API Developer Mode guide explicitly lists **Pro, Plus, Business, Enterprise, and Education** accounts as eligible on the web and describes Developer Mode as full MCP client support for read and write tools.
+As of 2026-09-02, OpenAI's current plan-specific Help Center guidance explicitly says **Pro** users can connect MCPs with read/fetch permissions in developer mode, while **Full MCP** is currently limited to Business and Enterprise/Edu. That plan-specific FAQ does not grant Plus an equivalent private custom MCP entitlement.
 
-That materially changes the previous integration gate: Plus should no longer be treated as categorically blocked from private custom MCP developer-mode testing.
-
-There is still a first-party documentation conflict to preserve rather than hide: the Help Center workspace article continues to frame Apps/full MCP/developer mode around Business and Enterprise/Edu workspace administration. Treat that page as workspace-governance guidance, not proof that the personal Plus surface is unavailable, while keeping confidence conditional on the actual account UI exposing Developer Mode and app creation.
+Other first-party Developer Mode material has surfaced broader eligibility language, so do not strengthen this into the claim that Plus is definitively unsupported. The correct fail-closed state is **unproven**: generic Developer Mode eligibility is not sufficient evidence that a Plus account can create a private custom app, expose read/fetch tools, or select a Secure MCP Tunnel.
 
 Secure MCP Tunnel permissions remain separate from ChatGPT Developer Mode eligibility. A working Platform tunnel does not by itself prove that a particular ChatGPT account can attach it.
 
-### Immediate Plus validation sequence
+### Plus validation sequence — only after entitlement evidence exists
 
-For a Plus account, use the lowest-risk proof sequence before widening any capability:
+Do not begin tunnel or runtime E2E merely from generic Plus eligibility. Advance only if either (a) OpenAI publishes unambiguous Plus-specific first-party support, or (b) the target Plus account itself exposes the relevant UI.
 
-1. Confirm Settings → Security and login exposes **Developer mode**.
-2. Confirm the ChatGPT Plugins/apps surface allows creating a developer-mode app.
-3. Confirm **Tunnel** is available as the connection path and the intended tunnel can be selected.
-4. Run `tunnel-client doctor --profile ego-chatgpt --explain` locally.
-5. Test only `ego_status` first.
-6. Then verify one harmless public page through `ego_open`.
-7. Only after the bridge's private-network/redirect boundary is fixed, test authenticated pages.
+When that gate opens, use the lowest-risk proof sequence:
+
+1. Confirm the target account exposes **Developer mode**.
+2. Confirm the ChatGPT Apps surface allows creating a custom developer-mode app.
+3. Confirm the app can expose the intended read/fetch tools and **Tunnel** is available as the connection path.
+4. Confirm the intended tunnel can be selected for that account/workspace.
+5. Run `tunnel-client doctor --profile ego-chatgpt --explain` locally.
+6. Test only `ego_status` first.
+7. Then verify one harmless public page through `ego_open`.
+8. Only after the bridge's private-network/redirect boundary is fixed, test authenticated pages.
 
 If any account-level UI step is absent, record the gate as rollout/account-specific rather than falling back to a public relay or weakening network boundaries.
 

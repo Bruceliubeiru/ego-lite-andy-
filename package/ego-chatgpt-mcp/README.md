@@ -105,7 +105,7 @@ The external prerequisites are:
 - ChatGPT developer-mode access in the target workspace/account;
 - `tunnel-client` installed on the same machine/trust boundary that can run `ego-browser`.
 
-Current plan note (2026-09-01): OpenAI's current **ChatGPT Developer mode** guide explicitly lists **Pro, Plus, Business, Enterprise, and Education** accounts as eligible on the web and describes Developer Mode as full MCP client support for read and write tools. The older/current Help Center workspace article still frames Apps/full MCP/developer-mode administration around Business and Enterprise/Edu and separately says Pro can connect read/fetch MCPs. Treat this as a first-party scope conflict rather than collapsing one page into the other: Plus is supported by the specific current Developer Mode guide, while actual account-level availability must still be verified in the target UI and Tunnel attachment flow. Do not treat Secure MCP Tunnel permission as proof of ChatGPT entitlement, or vice versa.
+Current plan note (2026-09-02): OpenAI's current plan-specific Help Center guidance explicitly says **Pro** users can connect MCPs with read/fetch permissions in developer mode, while **Full MCP** is currently limited to Business and Enterprise/Edu. That FAQ does not grant Plus an equivalent private custom MCP entitlement. Other first-party Developer Mode material has surfaced broader eligibility language, so the correct state for Plus is **closed / unproven**, not definitively unsupported. Do not infer Plus private custom MCP or Secure MCP Tunnel attachment from generic Developer Mode eligibility; require target-account UI proof or unambiguous Plus-specific first-party documentation. Tunnel authorization and ChatGPT plan entitlement remain separate gates.
 
 The intended local stdio profile looks like this conceptually:
 
@@ -124,15 +124,16 @@ tunnel-client run --profile ego-chatgpt
 
 Do not commit the runtime API key, tunnel credentials, browser cookies, or profile secrets to this repository.
 
-After the tunnel is healthy, create a developer-mode app in ChatGPT and choose **Tunnel** as the connection, then select the associated tunnel. The bridge should remain read-only during the first end-to-end test.
+After the entitlement gate is proven and the tunnel is healthy, create a developer-mode app in ChatGPT and choose **Tunnel** as the connection, then select the associated tunnel. The bridge should remain read-only during the first end-to-end test.
 
 ## What still blocks production confidence
 
 Before treating this as a working integration, complete all of the following:
 
+- prove that the target account/workspace exposes Developer Mode, custom app creation, the intended read/fetch tools, and Tunnel selection;
 - run `ego_status` through a real tunnel from ChatGPT/Codex;
 - verify `ego_open` on a harmless public page;
-- verify a logged-in page whose contents are safe to inspect;
+- verify a logged-in page whose contents are safe to inspect only after the private-network/redirect boundary is fail-closed;
 - confirm no cookie/password/token values appear in tool outputs;
 - exercise invalid URLs, oversized pages, timeout behavior, and unavailable Ego runtime;
 - verify the ChatGPT/Platform tunnel permission model for the actual account/workspace;
@@ -151,4 +152,4 @@ Write-capable browser actions remain a separate future change and must not be si
 
 ## Merge gate
 
-Keep this PR in draft until a real-machine end-to-end tunnel test passes. Once that happens, the **read-only bridge itself** can be considered for merge. Permission expansion or browser write tools require a separate reviewed change.
+Keep this PR in draft until the target account entitlement is proven, the private-network/redirect boundary is fail-closed, and a real-machine end-to-end tunnel test passes. Once those conditions hold, the **read-only bridge itself** can be considered for merge. Permission expansion or browser write tools require a separate reviewed change.

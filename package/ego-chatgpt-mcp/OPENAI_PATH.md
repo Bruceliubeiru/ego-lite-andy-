@@ -33,30 +33,34 @@ For this bridge, that means:
 
 This is a compatibility and least-authority guardrail. It is **not** a reason to add write-capable Ego tools.
 
-## Current plan gate: Plus Developer Mode is documented; target-account Tunnel attachment still needs proof
+## Current plan gate: Plus private custom MCP / Tunnel remains unconfirmed
 
-As of 2026-09-03, OpenAI's dedicated Developer Mode guide explicitly lists **Pro, Plus, Business, Enterprise, and Education** accounts as eligible on the web and describes Developer Mode as full MCP client support for all tools, including read and write. That is direct Plus-specific first-party evidence, so the public-documentation gate is no longer closed.
+As of 2026-09-03, OpenAI's first-party guidance is internally inconsistent for ChatGPT Plus. The dedicated Developer Mode guide explicitly lists **Pro, Plus, Business, Enterprise, and Education** accounts as eligible on the web and describes Developer Mode as full MCP client support for read and write tools.
 
-However, the current Help Center workspace article still says Apps, full MCP support, and Developer Mode are available for Business and Enterprise/Edu. Preserve that first-party conflict rather than pretending rollout/account state is universal.
+However, the narrower plan-specific FAQ in the current Help Center article says **Pro users can connect MCPs with read/fetch permissions in developer mode** and that **Full MCP is only available to Business and Enterprise/Edu users currently**. Because the exact capability being gated here is Plus private custom MCP / Secure MCP Tunnel use comparable to Pro, this narrower plan-specific statement is more probative than the generic eligibility line, while the conflicting Developer Mode guide prevents a categorical "Plus unsupported" conclusion.
+
+Therefore treat the public-documentation state as **inconsistent / unconfirmed**, not open. Do not advance the private custom MCP or Tunnel E2E gate from documentation alone.
 
 Secure MCP Tunnel permissions also remain separate from ChatGPT Developer Mode eligibility. A working Platform tunnel does not by itself prove that a particular ChatGPT account can attach it.
 
-### Plus validation sequence — now allowed at the lowest-risk account level
+### Plus validation sequence — only after the entitlement gate is actually proven
 
-The documentation gate is open enough to attempt the following verification on the target Plus account, without widening any bridge permissions:
+The gate becomes open only if either:
 
-1. Confirm the target account exposes **Developer mode**.
-2. Confirm the ChatGPT Apps surface allows creating a custom developer-mode app.
-3. Confirm **Tunnel** is offered as the connection path.
-4. Confirm the intended tunnel can be selected for that account/workspace.
-5. Run `tunnel-client doctor --profile ego-chatgpt --explain` locally.
-6. Test only `ego_status` first.
-7. Then verify one harmless public page through `ego_open`.
-8. Only after the bridge's private-network/redirect boundary is fixed, test authenticated pages.
+1. OpenAI publishes an unambiguous Plus-specific statement that private custom MCP read/fetch and/or Secure MCP Tunnel attachment is supported; or
+2. authenticated target-account evidence shows the target Plus account exposes all required steps: **Developer mode**, custom developer-app creation, intended read/fetch tools, and **Tunnel** selection.
 
-If any account-level UI step is absent, record the gate as rollout/account-specific rather than falling back to a public relay or weakening network boundaries.
+Once one of those conditions is met, validate without widening bridge permissions:
 
-The Developer Mode guide documents write-capable MCP support, but that does **not** change this bridge's V1 authority: keep it read-only. Permission expansion, browser writes, or credential-capable tools require separate review.
+1. Confirm the intended tunnel can be selected for that account/workspace.
+2. Run `tunnel-client doctor --profile ego-chatgpt --explain` locally.
+3. Test only `ego_status` first.
+4. Then verify one harmless public page through `ego_open`.
+5. Only after the bridge's private-network/redirect boundary is fixed, test authenticated pages.
+
+If any account-level UI step is absent, keep the gate closed rather than falling back to a public relay or weakening network boundaries.
+
+The generic Developer Mode guide documents write-capable MCP support, but that does **not** change this bridge's V1 authority: keep it read-only. Permission expansion, browser writes, or credential-capable tools require separate review.
 
 ## Plugin marketplace is not a plan-gate bypass
 

@@ -47,6 +47,16 @@ Compare only dimensions that matter to the user's outcome:
 
 **Safety and regression behavior are veto gates, not tradeable score components.** A candidate that weakens evidence discipline, permission boundaries, authenticated-state safety, or the standing regression cases cannot be promoted even if its answer looks more impressive.
 
+## Adaptive growth boundary
+
+BruceAI may use the generic adaptive-evolution contract in `docs/bruceai-adaptive-evolution.md` to create candidates that better match the user's demonstrated working level — for example stronger challenge, less explanation of mastered basics, different skill composition, or deeper system reasoning.
+
+This adaptation must remain above the stable kernel. Observed user growth must **not** weaken evidence discipline, safety boundaries, permission controls, source/version/account scope checks, or standing regressions.
+
+Treat the capability model as revisable evidence, not truth. A single strong interaction is not enough to permanently raise the assumed level. If the user is advanced in one domain but new to another, calibrate by domain rather than globally.
+
+Do not store user-specific capability state in the public codebase. The repository stores the generic architecture and promotion rules; personal capability state belongs in appropriate private context.
+
 ## Output discipline
 
 Do not dump two full reports by default. Return the best usable answer plus a compact comparison:

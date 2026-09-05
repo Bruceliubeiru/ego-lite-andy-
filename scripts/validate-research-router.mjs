@@ -4,10 +4,12 @@ const skillPath = 'skills/research-router/SKILL.md';
 const casesPath = 'skills/research-router/evals/cases.json';
 const concurrencyRefPath = 'skills/research-router/references/ego-concurrency.md';
 const evidencePackRefPath = 'skills/research-router/references/evidence-pack.md';
+const abEvolutionRefPath = 'skills/research-router/references/ab-evolution.md';
 const skill = fs.readFileSync(skillPath, 'utf8');
 const data = JSON.parse(fs.readFileSync(casesPath, 'utf8'));
 const concurrencyRef = fs.readFileSync(concurrencyRefPath, 'utf8');
 const evidencePackRef = fs.readFileSync(evidencePackRefPath, 'utf8');
+const abEvolutionRef = fs.readFileSync(abEvolutionRefPath, 'utf8');
 
 const requiredIds = [
   'account-specific-vs-generic-policy',
@@ -29,6 +31,8 @@ const requiredIds = [
   'upstream-main-vs-released-installed-version',
   'research-os-vs-unnecessary-research',
   'evidence-pack-vs-downstream-overclaim',
+  'bruceai-ab-vs-user-facing-complexity',
+  'ab-candidate-vs-baseline-promotion',
 ];
 
 if (!Array.isArray(data.cases)) throw new Error('cases must be an array');
@@ -59,6 +63,9 @@ const requiredGuardrails = [
   /Evidence Pack/i,
   /Do \*\*not\*\* force Research OS/i,
   /must not silently upgrade/i,
+  /BruceAI simple evolution interface/i,
+  /BruceAI A\/B/i,
+  /candidate must remain isolated/i,
 ];
 for (const pattern of requiredGuardrails) {
   if (!pattern.test(skill)) throw new Error(`research-router guardrail missing: ${pattern}`);
@@ -88,6 +95,24 @@ for (const pattern of requiredEvidencePackGuardrails) {
   if (!pattern.test(evidencePackRef)) throw new Error(`Evidence Pack guardrail missing: ${pattern}`);
 }
 
+const requiredAbEvolutionGuardrails = [
+  /BruceAI: <task>/i,
+  /BruceAI A\/B: <task>/i,
+  /current validated baseline/i,
+  /one isolated candidate/i,
+  /Correctness and evidence quality/i,
+  /Completeness/i,
+  /Counterexamples and risk detection/i,
+  /Actionability/i,
+  /Cost/i,
+  /Safety and regression behavior are veto gates/i,
+  /A wins \/ B wins — promote \/ Mixed — keep testing/i,
+  /promote B.*material real-task improvement/is,
+];
+for (const pattern of requiredAbEvolutionGuardrails) {
+  if (!pattern.test(abEvolutionRef)) throw new Error(`A/B evolution guardrail missing: ${pattern}`);
+}
+
 console.log(
-  `research-router gate passed: ${data.cases.length} cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails`,
+  `research-router gate passed: ${data.cases.length} cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
 );

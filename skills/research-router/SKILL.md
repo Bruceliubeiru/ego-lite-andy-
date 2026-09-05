@@ -1,8 +1,8 @@
 ---
 name: research-router
-description: Default web research router and evidence layer. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. When downstream strategy, decision, innovation, challenge, planning, or other reasoning depends materially on external facts, build a compact Evidence Pack first so those skills reason from verified evidence instead of inventing premises. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
+description: Default web research router and evidence layer. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. When downstream strategy, decision, innovation, challenge, planning, or other reasoning depends materially on external facts, build a compact Evidence Pack first so those skills reason from verified evidence instead of inventing premises. Support the simple BruceAI A/B evolution mode by comparing the current validated baseline against one isolated candidate and promoting only proven improvements. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   date: "2026-09-05"
 ---
 
@@ -32,6 +32,17 @@ Do **not** force Research OS into tasks that do not need external evidence. Rewr
 The Evidence Pack is normally an internal handoff, not extra user-facing verbosity. Preserve claim status, source scope, conflicts, and unknowns through the handoff. A downstream skill must not silently upgrade `Needs verification` or `High probability` evidence into confirmed fact. If downstream reasoning reveals a missing fact that could materially change the decision, route back through research-router to gather it.
 
 For consequential tasks, challenge the first plausible conclusion before final handoff. Look for a material counterexample, exception, newer source, account-specific restriction, hidden dependency, or alternative explanation. Update the Evidence Pack if the challenge changes the evidence state.
+
+## BruceAI simple evolution interface
+
+Keep experimentation simple for the user. The user should not need to manage Stable/Lab/Shared/Candidate modes or understand internal branch, router, Evidence Pack, or tool topology.
+
+Use only two practical interfaces:
+
+- **`BruceAI: <task>`** — use the current validated baseline and automatically invoke only the internal capabilities that materially improve the task.
+- **`BruceAI A/B: <task>`** — compare the current validated baseline (A) with one isolated candidate path (B) on the same real task, then return the best usable answer plus a compact comparison and evolution verdict.
+
+Follow `skills/research-router/references/ab-evolution.md` for comparison fairness, scoring, safety vetoes, output discipline, and promotion. Do not dump two full reports by default. A candidate must remain isolated from the default baseline until it demonstrates a material real-task improvement and passes all standing regression and safety gates. If B wins and is promoted, it becomes the new A for the next experiment. If the result is mixed, task-specific, or effectively tied, keep A and avoid complexity for its own sake.
 
 ## Default decision tree
 
@@ -165,7 +176,7 @@ Do not store user-specific private data, credentials, temporary IDs, unstable pi
 
 ## Regression cases
 
-Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, unsafe replacement sequencing, unnecessary live-browser use, generic-DOM-over-structured-site-tool routing, concurrent CDP isolation assumptions, unnecessary research routing, and downstream certainty inflation.
+Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, unsafe replacement sequencing, unnecessary live-browser use, generic-DOM-over-structured-site-tool routing, concurrent CDP isolation assumptions, unnecessary research routing, downstream certainty inflation, user-facing mode proliferation, and promoting a candidate because it sounds more impressive rather than because it wins a controlled real-task comparison.
 
 ## Monitoring and polling
 

@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bruceai.local/schemas/knowledge-asset.schema.json",
+  "title": "BruceAI Knowledge Asset",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "asset_type",
+    "status",
+    "visibility",
+    "created_at",
+    "problem",
+    "key_insight",
+    "decision_logic",
+    "applicability",
+    "boundaries"
+  ],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "asset_type": {
+      "type": "string",
+      "enum": ["case", "principle", "playbook", "skill", "eval", "counterexample", "baseline"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["candidate", "reused", "validated", "verified", "deprecated", "superseded"]
+    },
+    "visibility": {
+      "type": "string",
+      "enum": ["private", "shareable_candidate", "shareable_verified"]
+    },
+    "created_at": {"type": "string", "format": "date"},
+    "last_validated_at": {"type": ["string", "null"], "format": "date"},
+    "scope": {"type": "string"},
+    "task_classes": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    },
+    "problem": {"type": "string", "minLength": 1},
+    "wrong_first_approach": {"type": "string"},
+    "key_insight": {"type": "string", "minLength": 1},
+    "decision_logic": {"type": "string", "minLength": 1},
+    "applicability": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "boundaries": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "counterexamples": {"type": "array", "items": {"type": "string"}},
+    "artifact": {"type": "string"},
+    "confidence_notes": {"type": "string"},
+    "reuse_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "task_class", "outcome"],
+        "properties": {
+          "date": {"type": "string", "format": "date"},
+          "task_class": {"type": "string"},
+          "outcome": {"type": "string", "enum": ["win", "mixed", "fail", "unknown"]},
+          "changed_decision": {"type": "boolean"},
+          "effort_effect": {"type": "string"},
+          "new_counterexample": {"type": "string"},
+          "notes": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "supersedes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "superseded_by": {"type": ["string", "null"]},
+    "related_assets": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "shareable_gate": {
+      "type": "object",
+      "properties": {
+        "personal_info_removed": {"type": "boolean"},
+        "company_sensitive_info_removed": {"type": "boolean"},
+        "standalone_context_clear": {"type": "boolean"},
+        "inputs_outputs_clear": {"type": "boolean"},
+        "boundaries_explicit": {"type": "boolean"},
+        "counterexample_present": {"type": "boolean"},
+        "evaluation_path_present": {"type": "boolean"},
+        "uncertainty_preserved": {"type": "boolean"},
+        "no_confidential_source_material": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "promotion_note": {"type": "string"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"visibility": {"const": "shareable_verified"}},
+        "required": ["visibility"]
+      },
+      "then": {
+        "required": ["shareable_gate"],
+        "properties": {
+          "shareable_gate": {
+            "required": [
+              "personal_info_removed",
+              "company_sensitive_info_removed",
+              "standalone_context_clear",
+              "inputs_outputs_clear",
+              "boundaries_explicit",
+              "counterexample_present",
+              "evaluation_path_present",
+              "uncertainty_preserved",
+              "no_confidential_source_material"
+            ],
+            "properties": {
+              "personal_info_removed": {"const": true},
+              "company_sensitive_info_removed": {"const": true},
+              "standalone_context_clear": {"const": true},
+              "inputs_outputs_clear": {"const": true},
+              "boundaries_explicit": {"const": true},
+              "counterexample_present": {"const": true},
+              "evaluation_path_present": {"const": true},
+              "uncertainty_preserved": {"const": true},
+              "no_confidential_source_material": {"const": true}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

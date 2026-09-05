@@ -2,11 +2,13 @@ import fs from 'node:fs';
 
 const skillPath = 'skills/research-router/SKILL.md';
 const casesPath = 'skills/research-router/evals/cases.json';
+const browserAuthCasesPath = 'skills/research-router/evals/browser-auth-gates.json';
 const concurrencyRefPath = 'skills/research-router/references/ego-concurrency.md';
 const evidencePackRefPath = 'skills/research-router/references/evidence-pack.md';
 const abEvolutionRefPath = 'skills/research-router/references/ab-evolution.md';
 const skill = fs.readFileSync(skillPath, 'utf8');
 const data = JSON.parse(fs.readFileSync(casesPath, 'utf8'));
+const browserAuthData = JSON.parse(fs.readFileSync(browserAuthCasesPath, 'utf8'));
 const concurrencyRef = fs.readFileSync(concurrencyRefPath, 'utf8');
 const evidencePackRef = fs.readFileSync(evidencePackRefPath, 'utf8');
 const abEvolutionRef = fs.readFileSync(abEvolutionRefPath, 'utf8');
@@ -36,16 +38,25 @@ const requiredIds = [
   'bruceai-ab-system-vs-business-options',
 ];
 
-if (!Array.isArray(data.cases)) throw new Error('cases must be an array');
-const ids = new Set(data.cases.map((c) => c.id));
-for (const id of requiredIds) {
-  if (!ids.has(id)) throw new Error(`missing regression case: ${id}`);
-}
-for (const c of data.cases) {
-  if (!c.id || !c.scenario || !Array.isArray(c.expected) || c.expected.length < 2) {
-    throw new Error(`invalid regression case: ${c.id ?? '<missing id>'}`);
+const requiredBrowserAuthIds = [
+  'authenticated-page-verification-vs-auth-mechanism-support',
+];
+
+function validateCases(label, caseData, requiredCaseIds) {
+  if (!Array.isArray(caseData.cases)) throw new Error(`${label} cases must be an array`);
+  const ids = new Set(caseData.cases.map((c) => c.id));
+  for (const id of requiredCaseIds) {
+    if (!ids.has(id)) throw new Error(`missing ${label} regression case: ${id}`);
+  }
+  for (const c of caseData.cases) {
+    if (!c.id || !c.scenario || !Array.isArray(c.expected) || c.expected.length < 2) {
+      throw new Error(`invalid ${label} regression case: ${c.id ?? '<missing id>'}`);
+    }
   }
 }
+
+validateCases('research-router', data, requiredIds);
+validateCases('browser-auth', browserAuthData, requiredBrowserAuthIds);
 
 // Prefer bounded first-party/site-specific structured interfaces when they
 // provide the needed live evidence without weakening scope verification.
@@ -122,5 +133,5 @@ for (const pattern of requiredAbEvolutionGuardrails) {
 }
 
 console.log(
-  `research-router gate passed: ${data.cases.length} cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
+  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
 );

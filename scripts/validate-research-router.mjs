@@ -33,6 +33,7 @@ const requiredIds = [
   'evidence-pack-vs-downstream-overclaim',
   'bruceai-ab-vs-user-facing-complexity',
   'ab-candidate-vs-baseline-promotion',
+  'bruceai-ab-system-vs-business-options',
 ];
 
 if (!Array.isArray(data.cases)) throw new Error('cases must be an array');
@@ -66,6 +67,8 @@ const requiredGuardrails = [
   /BruceAI simple evolution interface/i,
   /BruceAI A\/B/i,
   /candidate must remain isolated/i,
+  /system-version A\/B/i,
+  /Do not reinterpret.*business strateg/is,
 ];
 for (const pattern of requiredGuardrails) {
   if (!pattern.test(skill)) throw new Error(`research-router guardrail missing: ${pattern}`);
@@ -98,6 +101,11 @@ for (const pattern of requiredEvidencePackGuardrails) {
 const requiredAbEvolutionGuardrails = [
   /BruceAI: <task>/i,
   /BruceAI A\/B: <task>/i,
+  /system-version comparison/i,
+  /same business question/i,
+  /Do not invent a business `方案A` and `方案B`/i,
+  /Business-option comparison is different/i,
+  /keep the two axes separate/i,
   /current validated baseline/i,
   /one isolated candidate/i,
   /Correctness and evidence quality/i,

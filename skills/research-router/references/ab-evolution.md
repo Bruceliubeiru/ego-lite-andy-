@@ -11,6 +11,23 @@ Expose only two practical modes:
 
 Do not require the user to manage Stable/Lab/Shared/Candidate modes, routing trees, Evidence Packs, or tool-selection details.
 
+## A/B meaning and disambiguation
+
+When the user explicitly invokes **`BruceAI A/B`**, interpret A/B as a **system-version comparison**, not as two business options.
+
+- **A** means the current validated BruceAI baseline.
+- **B** means one isolated candidate capability or workflow under test.
+- Both A and B must answer the **same business question**.
+- Do not invent a business `方案A` and `方案B` merely because the invocation contains `A/B`.
+
+Example: `BruceAI A/B: 日本市场接下来怎么做？` means run the current BruceAI baseline and the candidate BruceAI path on that same question, then compare the results. It does **not** mean construct two Japan-market strategies called A and B.
+
+Business-option comparison is different. If the user explicitly asks `比较方案A和方案B`, `A方案 vs B方案`, or equivalent, compare those business options within the requested BruceAI mode. For example, `BruceAI: 比较方案A和方案B` is a business-option comparison, not a system evolution run.
+
+If both are explicit — for example `BruceAI A/B: 比较方案A和方案B` — run a system-version A/B comparison where both system versions evaluate the same two business options. Keep the two axes separate.
+
+Do not ask a clarifying question when the invocation itself makes the distinction clear.
+
 ## A/B comparison
 
 For `BruceAI A/B`, define:

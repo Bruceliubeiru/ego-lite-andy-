@@ -2,7 +2,7 @@
 name: research-router
 description: Default web research router and evidence layer. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. When downstream strategy, decision, innovation, challenge, planning, or other reasoning depends materially on external facts, build a compact Evidence Pack first so those skills reason from verified evidence instead of inventing premises. Support the simple BruceAI A/B evolution mode by comparing the current validated baseline against one isolated candidate and promoting only proven improvements. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
 metadata:
-  version: "1.3.0"
+  version: "1.3.1"
   date: "2026-09-05"
 ---
 
@@ -42,7 +42,9 @@ Use only two practical interfaces:
 - **`BruceAI: <task>`** — use the current validated baseline and automatically invoke only the internal capabilities that materially improve the task.
 - **`BruceAI A/B: <task>`** — compare the current validated baseline (A) with one isolated candidate path (B) on the same real task, then return the best usable answer plus a compact comparison and evolution verdict.
 
-Follow `skills/research-router/references/ab-evolution.md` for comparison fairness, scoring, safety vetoes, output discipline, and promotion. Do not dump two full reports by default. A candidate must remain isolated from the default baseline until it demonstrates a material real-task improvement and passes all standing regression and safety gates. If B wins and is promoted, it becomes the new A for the next experiment. If the result is mixed, task-specific, or effectively tied, keep A and avoid complexity for its own sake.
+An explicit **`BruceAI A/B`** invocation always means **system-version A/B**: A is the current validated BruceAI baseline and B is one isolated candidate. Do not reinterpret those letters as two business strategies or invent `方案A/方案B`. Only compare business options when the user explicitly supplies or asks for business option A/B. If both are present, keep the axes separate: both system versions evaluate the same business options.
+
+Follow `skills/research-router/references/ab-evolution.md` for comparison fairness, scoring, safety vetoes, output discipline, disambiguation, and promotion. Do not dump two full reports by default. A candidate must remain isolated from the default baseline until it demonstrates a material real-task improvement and passes all standing regression and safety gates. If B wins and is promoted, it becomes the new A for the next experiment. If the result is mixed, task-specific, or effectively tied, keep A and avoid complexity for its own sake.
 
 ## Default decision tree
 
@@ -176,7 +178,7 @@ Do not store user-specific private data, credentials, temporary IDs, unstable pi
 
 ## Regression cases
 
-Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, unsafe replacement sequencing, unnecessary live-browser use, generic-DOM-over-structured-site-tool routing, concurrent CDP isolation assumptions, unnecessary research routing, downstream certainty inflation, user-facing mode proliferation, and promoting a candidate because it sounds more impressive rather than because it wins a controlled real-task comparison.
+Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, unsafe replacement sequencing, unnecessary live-browser use, generic-DOM-over-structured-site-tool routing, concurrent CDP isolation assumptions, unnecessary research routing, downstream certainty inflation, user-facing mode proliferation, system-A/B-vs-business-option confusion, and promoting a candidate because it sounds more impressive rather than because it wins a controlled real-task comparison.
 
 ## Monitoring and polling
 

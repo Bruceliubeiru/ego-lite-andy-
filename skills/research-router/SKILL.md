@@ -1,9 +1,9 @@
 ---
 name: research-router
-description: Default web research router. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
+description: Default web research router and evidence layer. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. When downstream strategy, decision, innovation, challenge, planning, or other reasoning depends materially on external facts, build a compact Evidence Pack first so those skills reason from verified evidence instead of inventing premises. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
 metadata:
-  version: "1.1.1"
-  date: "2026-08-30"
+  version: "1.2.0"
+  date: "2026-09-05"
 ---
 
 # research-router
@@ -20,6 +20,18 @@ When the user asks for web-backed information, first classify the task, then rou
 4. **Search fallback** — If no native web search tool exists in the current agent environment, use `ego-browser` to search through a search engine or the target site's own search, then continue with the same verification rules.
 
 Do not ask the user which route to use unless the task genuinely requires a choice they must make. Tool selection is the agent's job.
+
+## Research OS role and downstream handoff
+
+Treat research-router as a shared evidence layer, not as an isolated research-only skill.
+
+When a downstream task such as decision-making, strategy, innovation, challenge, business planning, or execution design depends materially on external facts, run the relevant research first and build a compact **Evidence Pack** using `skills/research-router/references/evidence-pack.md`. The downstream layer should reason from that pack instead of reconstructing facts from memory or inventing missing premises.
+
+Do **not** force Research OS into tasks that do not need external evidence. Rewriting supplied text, translation, purely creative drafting, simple arithmetic, and other transformations based entirely on user-provided context should proceed directly unless the user explicitly asks for verification or outside research. Avoid web calls and Evidence Pack overhead when they cannot improve the answer.
+
+The Evidence Pack is normally an internal handoff, not extra user-facing verbosity. Preserve claim status, source scope, conflicts, and unknowns through the handoff. A downstream skill must not silently upgrade `Needs verification` or `High probability` evidence into confirmed fact. If downstream reasoning reveals a missing fact that could materially change the decision, route back through research-router to gather it.
+
+For consequential tasks, challenge the first plausible conclusion before final handoff. Look for a material counterexample, exception, newer source, account-specific restriction, hidden dependency, or alternative explanation. Update the Evidence Pack if the challenge changes the evidence state.
 
 ## Default decision tree
 
@@ -153,7 +165,7 @@ Do not store user-specific private data, credentials, temporary IDs, unstable pi
 
 ## Regression cases
 
-Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, unsafe replacement sequencing, unnecessary live-browser use, generic-DOM-over-structured-site-tool routing, and concurrent CDP isolation assumptions.
+Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, unsafe replacement sequencing, unnecessary live-browser use, generic-DOM-over-structured-site-tool routing, concurrent CDP isolation assumptions, unnecessary research routing, and downstream certainty inflation.
 
 ## Monitoring and polling
 

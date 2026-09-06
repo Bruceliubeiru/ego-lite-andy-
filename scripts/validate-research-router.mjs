@@ -3,12 +3,14 @@ import fs from 'node:fs';
 const skillPath = 'skills/research-router/SKILL.md';
 const casesPath = 'skills/research-router/evals/cases.json';
 const browserAuthCasesPath = 'skills/research-router/evals/browser-auth-gates.json';
+const collaborationCasesPath = 'skills/research-router/evals/collaboration-cases.json';
 const concurrencyRefPath = 'skills/research-router/references/ego-concurrency.md';
 const evidencePackRefPath = 'skills/research-router/references/evidence-pack.md';
 const abEvolutionRefPath = 'skills/research-router/references/ab-evolution.md';
 const skill = fs.readFileSync(skillPath, 'utf8');
 const data = JSON.parse(fs.readFileSync(casesPath, 'utf8'));
 const browserAuthData = JSON.parse(fs.readFileSync(browserAuthCasesPath, 'utf8'));
+const collaborationData = JSON.parse(fs.readFileSync(collaborationCasesPath, 'utf8'));
 const concurrencyRef = fs.readFileSync(concurrencyRefPath, 'utf8');
 const evidencePackRef = fs.readFileSync(evidencePackRefPath, 'utf8');
 const abEvolutionRef = fs.readFileSync(abEvolutionRefPath, 'utf8');
@@ -42,6 +44,17 @@ const requiredBrowserAuthIds = [
   'authenticated-page-verification-vs-auth-mechanism-support',
 ];
 
+const requiredCollaborationIds = [
+  'parallel-specialists-vs-duplicate-work',
+  'agent-majority-vs-evidence-weight',
+  'handoff-summary-vs-claim-state',
+  'challenger-vs-second-researcher',
+  'shared-evidence-vs-agent-memory',
+  'research-complete-vs-unresolved-critical-claim',
+  'verified-research-vs-execution-authority',
+  'orchestrator-vs-peer-final-answers',
+];
+
 function validateCases(label, caseData, requiredCaseIds) {
   if (!Array.isArray(caseData.cases)) throw new Error(`${label} cases must be an array`);
   const ids = new Set(caseData.cases.map((c) => c.id));
@@ -57,6 +70,7 @@ function validateCases(label, caseData, requiredCaseIds) {
 
 validateCases('research-router', data, requiredIds);
 validateCases('browser-auth', browserAuthData, requiredBrowserAuthIds);
+validateCases('collaboration', collaborationData, requiredCollaborationIds);
 
 // Prefer bounded first-party/site-specific structured interfaces when they
 // provide the needed live evidence without weakening scope verification.
@@ -104,6 +118,12 @@ const requiredEvidencePackGuardrails = [
   /route back through research-router/i,
   /internal handoff contract/i,
   /Keep it compact/i,
+  /manager-first/i,
+  /Adaptive collaboration depth/i,
+  /Work-unit handoff/i,
+  /Do not use agent majority vote/i,
+  /Execution gate/i,
+  /stop adding agents/i,
 ];
 for (const pattern of requiredEvidencePackGuardrails) {
   if (!pattern.test(evidencePackRef)) throw new Error(`Evidence Pack guardrail missing: ${pattern}`);
@@ -133,5 +153,5 @@ for (const pattern of requiredAbEvolutionGuardrails) {
 }
 
 console.log(
-  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
+  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${collaborationData.cases.length} collaboration cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
 );

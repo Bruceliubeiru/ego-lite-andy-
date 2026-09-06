@@ -1,0 +1,38 @@
+{
+  "version": "0.1.0",
+  "purpose": "Non-gating replay cases harvested from real BruceAI battles. A replay case is evidence for or against a lesson candidate; it is not a permanent runtime rule until a later promotion step.",
+  "sourceBattle": "GEO-GOOGLE-001",
+  "cases": [
+    {
+      "id": "geo-stale-thread-state-001",
+      "failureId": "F-001",
+      "lessonCandidateId": "L-001",
+      "scenario": "A long-running operational GitHub issue has an initial body describing a homepage as unknown to Google, but a later state-changing comment records fresh Search Console evidence that the homepage is already indexed. The researcher initializes a current Battle Ledger from the issue body without first consuming the newest state-changing comments.",
+      "misleadingConclusion": "Homepage indexing remains unknown and should stay in the active remediation path.",
+      "replayExpectation": [
+        "Read the latest state-changing issue comments/events before finalizing the current battle state.",
+        "Update the homepage claim to Confirmed indexed when the later Search Console evidence is found.",
+        "Narrow the active battle to the still-unverified /usj state instead of continuing to remediate the homepage.",
+        "Do not turn this single replay into a new hard gate by itself."
+      ],
+      "passCondition": "The replay avoids the stale homepage conclusion and produces the narrower current state without inventing new facts.",
+      "promotionStatus": "candidate"
+    },
+    {
+      "id": "geo-auth-ui-success-vs-read-executed-001",
+      "failureId": "F-002",
+      "lessonCandidateId": "L-002",
+      "scenario": "A GitHub Actions Growth Engine run shows the Google OIDC authentication step with UI conclusion=success under continue-on-error, while the Search Analytics and URL Inspection steps that are conditioned on the auth step's underlying outcome are both skipped. A researcher is tempted to summarize the run as successful authenticated GSC verification.",
+      "misleadingConclusion": "WIF authentication and GSC verification succeeded, so the provider state can be treated as freshly verified.",
+      "replayExpectation": [
+        "Keep configured, authentication result, and read-executed as separate states.",
+        "Do not use the auth step's softened UI conclusion as proof that the underlying auth outcome was success.",
+        "Require an executed Search Analytics or URL Inspection read, or another bounded authoritative provider read, before claiming fresh GSC verification.",
+        "If the underlying auth outcome or provider read cannot be proven, mark the fresh read path Needs verification rather than expanding permissions or inventing a fallback.",
+        "Do not turn this single replay into a new hard gate by itself."
+      ],
+      "passCondition": "The replay refuses to claim fresh GSC verification from the UI success alone and preserves the provider-read state as unverified until actual read evidence exists.",
+      "promotionStatus": "candidate"
+    }
+  ]
+}

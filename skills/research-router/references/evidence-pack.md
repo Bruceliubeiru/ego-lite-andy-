@@ -74,6 +74,8 @@ These improve efficiency but are not separate hard gates:
 - make parallel work orthogonal unless deliberate replication is needed;
 - merge claims and evidence, not agent opinions;
 - de-duplicate by underlying evidence lineage;
+- when refreshing a living operational source, consume the latest state-changing updates before finalizing current state, then reconcile them with prior evidence by authority, scope, and freshness rather than assuming either the initial body or newest update wins automatically;
+- for external provider verification, keep `configured`, authentication result, and `read-executed` distinct; a valid zero-result provider read still counts as executed, while a skipped/non-executed read does not prove fresh provider state;
 - stop adding specialists when decision-relevant claims are adequately verified, remaining uncertainty cannot change the action, verification is blocked and already explicit, or new workers would only duplicate evidence;
 - route back to research when a downstream layer discovers a missing or stale fact that could materially change the decision.
 

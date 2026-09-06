@@ -16,6 +16,14 @@ An Evidence Pack should contain only what can affect the decision:
 - **Conflicts and unknowns** — keep material contradictions, missing authenticated state, eligibility gaps, exact variant mapping, or other blockers visible.
 - **Decision impact** — mark whether unresolved uncertainty can change the recommendation or only affects detail.
 
+## Claim Ledger v0.1
+
+When a task has multiple material claims, multiple stages, or multiple specialists, use the compact Claim Ledger in `skills/research-router/references/claim-ledger.md` as the shared working state.
+
+Keep it to five fields: **Claim → Evidence → Status → Impact → Next action**. Research, challenge, strategy, innovation, and execution handoff should update the same rows instead of creating parallel narrative state.
+
+For simple work, skip the Ledger. It is a lightweight collaboration aid, not a new workflow engine or hard gate.
+
 ## BruceAI collaboration contract
 
 Use one orchestrator by default. It owns decomposition, shared constraints, final synthesis, and permission boundaries. Add specialists only when they cover a genuinely separate evidence domain or when a challenge pass has a realistic chance of changing the decision.

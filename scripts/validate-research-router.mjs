@@ -44,15 +44,12 @@ const requiredBrowserAuthIds = [
   'authenticated-page-verification-vs-auth-mechanism-support',
 ];
 
+// Keep collaboration hard gates intentionally small. Orchestration details are
+// defaults unless a demonstrated failure mode deserves promotion into a gate.
 const requiredCollaborationIds = [
-  'parallel-specialists-vs-duplicate-work',
-  'agent-majority-vs-evidence-weight',
-  'handoff-summary-vs-claim-state',
-  'challenger-vs-second-researcher',
-  'shared-evidence-vs-agent-memory',
-  'research-complete-vs-unresolved-critical-claim',
-  'verified-research-vs-execution-authority',
-  'orchestrator-vs-peer-final-answers',
+  'evidence-integrity-gate',
+  'conflict-resolution-gate',
+  'execution-authority-gate',
 ];
 
 function validateCases(label, caseData, requiredCaseIds) {
@@ -109,21 +106,14 @@ for (const pattern of requiredConcurrencyGuardrails) {
   if (!pattern.test(concurrencyRef)) throw new Error(`Ego concurrency guardrail missing: ${pattern}`);
 }
 
+// Collaboration is protected by three concepts, not a long checklist.
 const requiredEvidencePackGuardrails = [
   /Question and scope/i,
   /Confirmed.*High probability.*Needs verification/is,
   /Authority.*specificity.*freshness/is,
-  /Facts vs inference/i,
   /must not silently upgrade/i,
-  /route back through research-router/i,
-  /internal handoff contract/i,
-  /Keep it compact/i,
-  /manager-first/i,
-  /Adaptive collaboration depth/i,
-  /Work-unit handoff/i,
-  /Do not use agent majority vote/i,
-  /Execution gate/i,
-  /stop adding agents/i,
+  /Three hard collaboration gates/i,
+  /Evidence gate.*Conflict gate.*Execution gate/is,
 ];
 for (const pattern of requiredEvidencePackGuardrails) {
   if (!pattern.test(evidencePackRef)) throw new Error(`Evidence Pack guardrail missing: ${pattern}`);
@@ -153,5 +143,5 @@ for (const pattern of requiredAbEvolutionGuardrails) {
 }
 
 console.log(
-  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${collaborationData.cases.length} collaboration cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
+  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${collaborationData.cases.length} collaboration hard gates, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
 );

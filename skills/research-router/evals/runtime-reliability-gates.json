@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "purpose": "Regression gates for Ego/browser runtime reliability and token-efficient recovery behavior.",
   "cases": [
     {
@@ -74,6 +74,17 @@
         "Escalate breadth progressively only when narrower reads cannot locate or prove the needed fact, and stop expanding once sufficient evidence is obtained; do not collect extra page state merely because the helper permits it.",
         "Preserve evidence completeness while optimizing cost: a narrow snapshot must not omit material account, plan, region, date, variant, hidden-state, or conflict context required to answer correctly. If the scope is uncertain, broaden deliberately or cross-check rather than asserting from an incomplete slice.",
         "A timeout or high token cost from an oversized observation is a signal to reduce scope or change read path, not a reason to widen browser permissions, use privileged CDP, or weaken verification discipline."
+      ]
+    },
+    {
+      "id": "browser-evaluator-null-vs-proven-empty-result",
+      "scenario": "A browser extraction through Ego evaluate()/js() returns null or undefined-looking output even though the JavaScript expression is valid and may contain nested function returns, callbacks, function declarations, or other syntax that a released/runtime-specific evaluator wrapper can transform incorrectly.",
+      "expected": [
+        "Do not treat a silent null from model-generated browser JavaScript as proof that the page has no matching data when the exact runtime has a known or plausible evaluator-transformation failure. Separate page-level emptiness from evaluator-level result loss.",
+        "Before asserting an empty result, retry with one bounded semantically equivalent expression that avoids the suspected transform edge case, or cross-check through an independent structured/DOM read path. Keep the probe read-only and scoped to the same target evidence.",
+        "Do not normalize all nulls into runtime bugs: genuine null/empty page values remain valid. Escalate only when the expression contract predicts a non-null value, a control expression behaves differently, or independent evidence conflicts with the returned null.",
+        "Preserve exact released/installed runtime context when diagnosing evaluator semantics. Do not assume an upstream patch, dev branch behavior, or neighboring helper generation is already present in the user's runtime.",
+        "A workaround for result loss must not expand browser, profile, credential, filesystem, network, or write permissions. If no bounded independent check can distinguish an empty page result from evaluator failure, mark the evidence unresolved rather than inventing absence."
       ]
     }
   ]

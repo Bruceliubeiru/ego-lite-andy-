@@ -54,6 +54,7 @@ const requiredRuntimeReliabilityIds = [
   'browser-timeout-vs-blind-retry-loop',
   'visual-screenshot-timeout-vs-target-local-fallback',
   'browser-navigation-vs-stale-execution-context',
+  'site-learning-absence-vs-workspace-resolution-failure',
 ];
 
 // Keep collaboration hard gates intentionally small. Orchestration details are

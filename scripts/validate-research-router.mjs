@@ -52,6 +52,7 @@ const requiredBrowserAuthIds = [
 const requiredRuntimeReliabilityIds = [
   'browser-helper-time-unit-vs-runtime-contract',
   'browser-timeout-vs-blind-retry-loop',
+  'visual-screenshot-timeout-vs-target-local-fallback',
   'browser-navigation-vs-stale-execution-context',
 ];
 

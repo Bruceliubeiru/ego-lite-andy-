@@ -52,6 +52,7 @@ const requiredBrowserAuthIds = [
 const requiredRuntimeReliabilityIds = [
   'browser-helper-time-unit-vs-runtime-contract',
   'browser-timeout-vs-blind-retry-loop',
+  'browser-navigation-vs-stale-execution-context',
 ];
 
 // Keep collaboration hard gates intentionally small. Orchestration details are

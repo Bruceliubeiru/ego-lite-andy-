@@ -44,6 +44,7 @@ const requiredBrowserAuthIds = [
   'authenticated-page-verification-vs-auth-mechanism-support',
   'community-port-vs-official-runtime-support',
   'task-space-profile-vs-browser-level-side-effect-scope',
+  'privileged-browser-script-vs-sensitive-egress',
 ];
 
 // Keep collaboration hard gates intentionally small. Orchestration details are

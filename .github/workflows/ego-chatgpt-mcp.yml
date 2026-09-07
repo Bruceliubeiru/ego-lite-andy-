@@ -1,0 +1,30 @@
+name: Ego ChatGPT MCP
+
+on:
+  pull_request:
+    paths:
+      - "package/ego-chatgpt-mcp/**"
+      - ".github/workflows/ego-chatgpt-mcp.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "package/ego-chatgpt-mcp/**"
+      - ".github/workflows/ego-chatgpt-mcp.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: package/ego-chatgpt-mcp
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - run: npm install --ignore-scripts
+      - run: npm run verify

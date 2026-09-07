@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "purpose": "Regression gates for Ego/browser runtime reliability and token-efficient recovery behavior.",
   "cases": [
     {
@@ -20,6 +20,17 @@
         "After one confirmed timeout, prefer a cheaper independent read path or a documented fallback that proves the needed fact, and record that visual verification is degraded rather than pretending the screenshot succeeded.",
         "Do not promote an unverified workaround merely because it avoids the timeout; keep the fallback scoped to the evidence it can actually prove and preserve version/runtime context.",
         "Use retries only when there is a concrete reason to expect changed conditions, and cap them so timeout handling cannot dominate token, wall-clock, or browser-resource budgets."
+      ]
+    },
+    {
+      "id": "browser-navigation-vs-stale-execution-context",
+      "scenario": "A browser workflow reloads or navigates the current page while model-generated JavaScript, element handles, refs, or CDP/session assumptions from the previous document are still in scope, so the page lifecycle can destroy the execution context and make subsequent operations fail, hang, or act on stale state.",
+      "expected": [
+        "Treat a committed reload or navigation as a document/context boundary: do not assume JavaScript execution contexts, DOM handles, semantic refs, or page-state observations from the previous document remain valid afterward.",
+        "Prefer the released runtime's documented high-level navigation/reload helper when it provides the needed behavior and lifecycle wait; do not replace an in-page reload with raw CDP merely by habit.",
+        "After navigation, wait for an observable lifecycle or target postcondition and reacquire the page context, handles/refs, and material account or variant markers before trusting subsequent evidence.",
+        "If raw CDP reload/navigation is necessary, first verify the exact released runtime's target/session scope and do not let the workaround bypass existing CDP isolation, profile-scope, or postcondition gates.",
+        "Do not retry commands against a destroyed or stale context in a loop. Re-establish a fresh context or fail closed and report degraded live-page verification."
       ]
     }
   ]

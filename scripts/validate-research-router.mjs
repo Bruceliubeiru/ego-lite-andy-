@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const skillPath = 'skills/research-router/SKILL.md';
 const casesPath = 'skills/research-router/evals/cases.json';
 const browserAuthCasesPath = 'skills/research-router/evals/browser-auth-gates.json';
+const runtimeReliabilityCasesPath = 'skills/research-router/evals/runtime-reliability-gates.json';
 const collaborationCasesPath = 'skills/research-router/evals/collaboration-cases.json';
 const concurrencyRefPath = 'skills/research-router/references/ego-concurrency.md';
 const evidencePackRefPath = 'skills/research-router/references/evidence-pack.md';
@@ -10,6 +11,7 @@ const abEvolutionRefPath = 'skills/research-router/references/ab-evolution.md';
 const skill = fs.readFileSync(skillPath, 'utf8');
 const data = JSON.parse(fs.readFileSync(casesPath, 'utf8'));
 const browserAuthData = JSON.parse(fs.readFileSync(browserAuthCasesPath, 'utf8'));
+const runtimeReliabilityData = JSON.parse(fs.readFileSync(runtimeReliabilityCasesPath, 'utf8'));
 const collaborationData = JSON.parse(fs.readFileSync(collaborationCasesPath, 'utf8'));
 const concurrencyRef = fs.readFileSync(concurrencyRefPath, 'utf8');
 const evidencePackRef = fs.readFileSync(evidencePackRefPath, 'utf8');
@@ -47,6 +49,11 @@ const requiredBrowserAuthIds = [
   'privileged-browser-script-vs-sensitive-egress',
 ];
 
+const requiredRuntimeReliabilityIds = [
+  'browser-helper-time-unit-vs-runtime-contract',
+  'browser-timeout-vs-blind-retry-loop',
+];
+
 // Keep collaboration hard gates intentionally small. Orchestration details are
 // defaults unless a demonstrated failure mode deserves promotion into a gate.
 const requiredCollaborationIds = [
@@ -70,6 +77,7 @@ function validateCases(label, caseData, requiredCaseIds) {
 
 validateCases('research-router', data, requiredIds);
 validateCases('browser-auth', browserAuthData, requiredBrowserAuthIds);
+validateCases('runtime-reliability', runtimeReliabilityData, requiredRuntimeReliabilityIds);
 validateCases('collaboration', collaborationData, requiredCollaborationIds);
 
 // Prefer bounded first-party/site-specific structured interfaces when they
@@ -146,5 +154,5 @@ for (const pattern of requiredAbEvolutionGuardrails) {
 }
 
 console.log(
-  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${collaborationData.cases.length} collaboration hard gates, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
+  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${runtimeReliabilityData.cases.length} runtime-reliability cases, ${collaborationData.cases.length} collaboration hard gates, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
 );

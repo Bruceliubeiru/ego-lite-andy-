@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0",
+  "purpose": "Regression gates for Ego/browser runtime reliability and token-efficient recovery behavior.",
+  "cases": [
+    {
+      "id": "browser-helper-time-unit-vs-runtime-contract",
+      "scenario": "A browser workflow uses a wait/sleep/timeout helper whose unit or signature differs across Ego helper generations, released versions, or neighboring browser frameworks, and an agent is tempted to infer the unit from habit or from a different API.",
+      "expected": [
+        "Do not infer timing units from Playwright, Puppeteer, Cypress, upstream-main examples, or neighboring helpers; verify the exact helper signature for the released or installed runtime before issuing a long wait.",
+        "Prefer state-based waits over long fixed sleeps. When a fixed wait is unavoidable, use a small bounded value whose unit is confirmed for that exact helper and runtime.",
+        "If the runtime contract is ambiguous, fail fast or probe with a harmless short wait rather than risking a multi-minute or multi-hour hang.",
+        "Keep timeout-unit claims scoped to the exact API generation: for example, upstream main documents page.waitForTimeout(ms) in milliseconds, while older/global helper reports may use different semantics; do not silently transfer one contract to another."
+      ]
+    },
+    {
+      "id": "browser-timeout-vs-blind-retry-loop",
+      "scenario": "A read-only browser observation such as screenshot capture repeatedly times out while other read paths remain healthy, and the workflow is tempted to retry the same expensive operation without new evidence that conditions changed.",
+      "expected": [
+        "Do not loop the same expensive timed-out observation without a material state change or a bounded retry budget.",
+        "After one confirmed timeout, prefer a cheaper independent read path or a documented fallback that proves the needed fact, and record that visual verification is degraded rather than pretending the screenshot succeeded.",
+        "Do not promote an unverified workaround merely because it avoids the timeout; keep the fallback scoped to the evidence it can actually prove and preserve version/runtime context.",
+        "Use retries only when there is a concrete reason to expect changed conditions, and cap them so timeout handling cannot dominate token, wall-clock, or browser-resource budgets."
+      ]
+    }
+  ]
+}

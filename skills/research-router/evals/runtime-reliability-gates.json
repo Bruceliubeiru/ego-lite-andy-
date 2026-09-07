@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "purpose": "Regression gates for Ego/browser runtime reliability and token-efficient recovery behavior.",
   "cases": [
     {
@@ -63,6 +63,17 @@
         "When safe non-sensitive instrumentation is available, prefer bounded checks such as process identity/liveness, newly created crash reports, task-space/page presence, or window visibility/state before assigning a failure class. Do not broaden into credential, profile, or unrelated filesystem inspection merely to strengthen attribution.",
         "Do not reuse older crashes, logs, or nearby incidents as proof that the current reproduction has the same cause unless the new run reproduces the relevant instrumented signature. Preserve correlation as a hypothesis, not a confirmed cause.",
         "If the exact cause remains unresolved, report the narrowest confirmed symptom and the strongest ruled-in/ruled-out evidence instead of inventing a root cause; route architecture or remediation changes through review when they depend on an unproven causal attribution."
+      ]
+    },
+    {
+      "id": "observation-breadth-vs-proof-need",
+      "scenario": "A rich SPA or very large page can be inspected with a full-page semantic snapshot, but the research task already has a known target, bounded region, or structured read path and the broader observation may traverse or serialize far more state than is needed, increasing timeout and token risk.",
+      "expected": [
+        "Match observation breadth to the proof requirement. When the target or relevant region is already known, prefer a bounded first-party/site-specific tool, scoped semantic snapshot, stable selector, or target-local read before traversing the entire page.",
+        "Do not turn this into a blanket ban on full-page snapshots: broad observation remains appropriate for genuine discovery when the relevant control, section, or evidence location is unknown.",
+        "Escalate breadth progressively only when narrower reads cannot locate or prove the needed fact, and stop expanding once sufficient evidence is obtained; do not collect extra page state merely because the helper permits it.",
+        "Preserve evidence completeness while optimizing cost: a narrow snapshot must not omit material account, plan, region, date, variant, hidden-state, or conflict context required to answer correctly. If the scope is uncertain, broaden deliberately or cross-check rather than asserting from an incomplete slice.",
+        "A timeout or high token cost from an oversized observation is a signal to reduce scope or change read path, not a reason to widen browser permissions, use privileged CDP, or weaken verification discipline."
       ]
     }
   ]

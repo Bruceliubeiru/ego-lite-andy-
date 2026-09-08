@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
@@ -24,10 +24,12 @@
     },
     {
       "id": "acquisition-failure-vs-negative-fact",
-      "scenario": "Evidence acquisition fails because of an automation challenge, profile-import failure, script/evaluator failure, stale execution context, timeout, or unsupported authentication path.",
+      "scenario": "Evidence acquisition fails or exposes only a bounded visibility surface because of an automation challenge, profile-import failure, script/evaluator failure, stale execution context, timeout, unsupported authentication path, or a foreground browser surface that omits still-existing background Task Spaces or sessions. Upstream citrolabs/ego-lite#347 reports Dock activation sometimes showing a fresh regular Space while prior Agent Task Spaces remain alive and visible through the Spaces overview.",
       "expected": [
-        "Represent the acquisition limitation explicitly; do not convert it into evidence that the account, content, entitlement, or state is absent.",
-        "Use an independent bounded read path when one can prove the same fact without expanding sensitive permissions.",
+        "Represent the acquisition or visibility limitation explicitly; do not convert it into evidence that the account, content, entitlement, task space, session, or state is absent.",
+        "Treat absence from the current foreground tab/window/Space as local-to-that-observation-surface unless a bounded authoritative enumeration proves broader absence.",
+        "Use an independent bounded read path, such as a task-space listing or appropriate first-party state enumeration, when it can prove the same fact without expanding sensitive permissions or taking control from another owner.",
+        "Do not create, reclaim, close, or mutate Spaces merely to test whether hidden/background state exists.",
         "If no equivalent safe path exists, keep the claim Needs verification or blocked rather than asserting a negative fact."
       ]
     },

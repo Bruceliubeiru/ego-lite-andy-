@@ -12,11 +12,35 @@ const SOURCE_CLASS_BY_ADAPTER = {
   community_source: 'community',
 };
 
+const ALLOWED_PROVENANCE_FIELDS = [
+  'observed_at',
+  'task_space',
+  'profile',
+  'account_marker',
+  'page_url',
+  'document_marker',
+  'frame_marker',
+  'session_marker',
+  'region',
+  'auth_state',
+  'challenge_state',
+  'provider_execution',
+];
+
 function requiredString(value, label) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`${label} must be a non-empty string`);
   }
   return value;
+}
+
+function pickBoundedProvenance(observation) {
+  const provenance = {};
+  for (const field of ALLOWED_PROVENANCE_FIELDS) {
+    const value = observation.provenance?.[field];
+    if (value !== undefined && value !== null && value !== '') provenance[field] = value;
+  }
+  return provenance;
 }
 
 /**
@@ -39,6 +63,7 @@ export function normalizeEvidenceObservation(observation) {
 
   if (NON_EVIDENCE_OUTCOMES.has(outcome)) {
     const reason = requiredString(observation.failure_reason ?? observation.limitations?.[0], 'failure_reason');
+    const provenance = pickBoundedProvenance(observation);
     return {
       evidence: null,
       limitation: {
@@ -46,6 +71,7 @@ export function normalizeEvidenceObservation(observation) {
         outcome,
         reason,
         pointer: typeof observation.pointer === 'string' ? observation.pointer : null,
+        ...(Object.keys(provenance).length > 0 ? { provenance } : {}),
       },
     };
   }
@@ -83,26 +109,8 @@ export function normalizeEvidenceObservation(observation) {
   const provenance = {
     quality: observation.provenance?.quality ?? 'unknown',
     source_identity,
+    ...pickBoundedProvenance(observation),
   };
-
-  const allowedProvenanceFields = [
-    'observed_at',
-    'task_space',
-    'profile',
-    'account_marker',
-    'page_url',
-    'document_marker',
-    'frame_marker',
-    'session_marker',
-    'region',
-    'auth_state',
-    'challenge_state',
-    'provider_execution',
-  ];
-  for (const field of allowedProvenanceFields) {
-    const value = observation.provenance?.[field];
-    if (value !== undefined && value !== null && value !== '') provenance[field] = value;
-  }
 
   if (adapter === 'authenticated_page') {
     if (provenance.auth_state !== 'confirmed') {

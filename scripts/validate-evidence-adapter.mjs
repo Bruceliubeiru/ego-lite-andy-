@@ -5,6 +5,7 @@ import { normalizeEvidenceObservation } from './evidence-adapter.mjs';
 const fixturePaths = [
   'skills/research-router/evals/evidence-adapter-fixtures.json',
   'skills/research-router/evals/evidence-adapter-consistency-fixtures.json',
+  'skills/research-router/evals/evidence-adapter-limitation-provenance-fixtures.json',
 ];
 const fixtureSets = fixturePaths.map((path) => JSON.parse(fs.readFileSync(path, 'utf8')));
 
@@ -35,6 +36,21 @@ for (const fixtures of fixtureSets) {
         fixture.expected_limitation_outcome,
         `fixture '${fixture.name}' limitation outcome changed`,
       );
+
+      if (fixture.expected_limitation_provenance) {
+        assert.deepEqual(
+          result.limitation?.provenance,
+          fixture.expected_limitation_provenance,
+          `fixture '${fixture.name}' limitation provenance changed`,
+        );
+      }
+      for (const field of fixture.expected_absent_limitation_provenance ?? []) {
+        assert.equal(
+          Object.prototype.hasOwnProperty.call(result.limitation?.provenance ?? {}, field),
+          false,
+          `fixture '${fixture.name}' unexpectedly copied limitation provenance field '${field}'`,
+        );
+      }
     }
   }
 

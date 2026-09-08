@@ -1,6 +1,6 @@
 {
-  "version": "1.0",
-  "purpose": "Executable fixtures for adapter-to-Evidence-Envelope normalization. Failed or blocked acquisitions must remain limitations rather than negative evidence.",
+  "version": "1.1",
+  "purpose": "Executable fixtures for adapter-to-Evidence-Envelope normalization. Failed or blocked acquisitions must remain limitations rather than negative evidence, and provider-backed success must prove a read was actually executed.",
   "valid": [
     {
       "name": "public first-party page success",
@@ -55,6 +55,25 @@
         "freshness": "current",
         "provenance": {"quality": "verified", "provider_execution": "read_executed"},
         "limitations": ["zero matching rows"]
+      },
+      "expect_evidence": true,
+      "expected_source_class": "connector_or_api"
+    },
+    {
+      "name": "repository read success is explicitly executed",
+      "observation": {
+        "adapter": "repository",
+        "outcome": "success",
+        "evidence_id": "e-repo-1",
+        "direction": "support",
+        "pointer": "repo://owner/name/path@sha",
+        "lineage_id": "repo-blob:sha:path",
+        "source_identity": "repository file at exact ref",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "read_executed"},
+        "limitations": []
       },
       "expect_evidence": true,
       "expected_source_class": "connector_or_api"
@@ -142,6 +161,23 @@
       "error_contains": "failure_reason must be a non-empty string"
     },
     {
+      "name": "successful connector cannot omit execution proof",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "evidence_id": "bad-missing-exec",
+        "direction": "context",
+        "pointer": "connector://configured-provider",
+        "lineage_id": "connector-configured-provider",
+        "source_identity": "configured provider",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified"}
+      },
+      "error_contains": "requires provenance.provider_execution=read_executed"
+    },
+    {
       "name": "successful connector cannot claim skipped execution",
       "observation": {
         "adapter": "connector_api",
@@ -156,7 +192,24 @@
         "freshness": "current",
         "provenance": {"quality": "verified", "provider_execution": "skipped"}
       },
-      "error_contains": "success cannot use provider_execution=skipped"
+      "error_contains": "requires provenance.provider_execution=read_executed"
+    },
+    {
+      "name": "successful repository cannot use not-applicable execution",
+      "observation": {
+        "adapter": "repository",
+        "outcome": "success",
+        "evidence_id": "bad-repo-exec",
+        "direction": "support",
+        "pointer": "repo://owner/name/path",
+        "lineage_id": "repo-path",
+        "source_identity": "repository path",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "not_applicable"}
+      },
+      "error_contains": "requires provenance.provider_execution=read_executed"
     }
   ]
 }

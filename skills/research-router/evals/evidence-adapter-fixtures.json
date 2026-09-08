@@ -1,0 +1,162 @@
+{
+  "version": "1.0",
+  "purpose": "Executable fixtures for adapter-to-Evidence-Envelope normalization. Failed or blocked acquisitions must remain limitations rather than negative evidence.",
+  "valid": [
+    {
+      "name": "public first-party page success",
+      "observation": {
+        "adapter": "public_page",
+        "outcome": "success",
+        "evidence_id": "e-public-1",
+        "direction": "support",
+        "pointer": "https://example.com/policy",
+        "lineage_id": "url:https://example.com/policy",
+        "source_identity": "Example official policy",
+        "authority": "primary",
+        "specificity": "scoped",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "observed_at": "2026-09-09T00:00:00Z", "page_url": "https://example.com/policy", "auth_state": "not_applicable", "challenge_state": "none"},
+        "limitations": []
+      },
+      "expect_evidence": true,
+      "expected_source_class": "first_party_public"
+    },
+    {
+      "name": "authenticated page requires confirmed account state",
+      "observation": {
+        "adapter": "authenticated_page",
+        "outcome": "success",
+        "evidence_id": "e-auth-1",
+        "direction": "support",
+        "pointer": "ego://settings/account",
+        "lineage_id": "account-page:settings/account",
+        "source_identity": "authenticated account settings",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "auth_state": "confirmed", "account_marker": "target-account", "page_url": "https://example.com/settings"},
+        "limitations": []
+      },
+      "expect_evidence": true,
+      "expected_source_class": "first_party_authenticated"
+    },
+    {
+      "name": "connector zero-result read is still executed evidence",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "evidence_id": "e-api-1",
+        "direction": "context",
+        "pointer": "connector://search/result/0",
+        "lineage_id": "connector-read:query-123",
+        "source_identity": "provider API read",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "read_executed"},
+        "limitations": ["zero matching rows"]
+      },
+      "expect_evidence": true,
+      "expected_source_class": "connector_or_api"
+    },
+    {
+      "name": "blocked browser acquisition becomes limitation only",
+      "observation": {
+        "adapter": "authenticated_page",
+        "outcome": "blocked",
+        "pointer": "https://example.com/account",
+        "failure_reason": "site challenge prevented account verification"
+      },
+      "expect_evidence": false,
+      "expected_limitation_outcome": "blocked"
+    },
+    {
+      "name": "failed repository read becomes limitation only",
+      "observation": {
+        "adapter": "repository",
+        "outcome": "failed",
+        "pointer": "repo://owner/name/path",
+        "failure_reason": "requested ref could not be resolved"
+      },
+      "expect_evidence": false,
+      "expected_limitation_outcome": "failed"
+    },
+    {
+      "name": "search snippet stays navigation only",
+      "observation": {
+        "adapter": "search_snippet",
+        "outcome": "success",
+        "evidence_id": "e-snippet-1",
+        "direction": "context",
+        "pointer": "search://result/1",
+        "lineage_id": "search-result:1",
+        "source_identity": "search result snippet",
+        "authority": "navigation_only",
+        "specificity": "broad",
+        "freshness": "stale_or_unknown",
+        "provenance": {"quality": "partial"},
+        "limitations": ["underlying source not opened"]
+      },
+      "expect_evidence": true,
+      "expected_source_class": "search_snippet"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "authenticated evidence without confirmed auth",
+      "observation": {
+        "adapter": "authenticated_page",
+        "outcome": "success",
+        "evidence_id": "bad-auth",
+        "direction": "support",
+        "pointer": "ego://account",
+        "lineage_id": "account-page",
+        "source_identity": "account page",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "partial", "auth_state": "unknown"}
+      },
+      "error_contains": "requires provenance.auth_state=confirmed"
+    },
+    {
+      "name": "snippet cannot be promoted to primary",
+      "observation": {
+        "adapter": "search_snippet",
+        "outcome": "success",
+        "evidence_id": "bad-snippet",
+        "direction": "support",
+        "pointer": "search://result/2",
+        "lineage_id": "search-result:2",
+        "source_identity": "snippet",
+        "authority": "primary",
+        "specificity": "broad",
+        "freshness": "current",
+        "provenance": {"quality": "partial"}
+      },
+      "error_contains": "must remain navigation_only"
+    },
+    {
+      "name": "failed acquisition without reason is invalid",
+      "observation": {"adapter": "connector_api", "outcome": "failed"},
+      "error_contains": "failure_reason must be a non-empty string"
+    },
+    {
+      "name": "successful connector cannot claim skipped execution",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "evidence_id": "bad-exec",
+        "direction": "context",
+        "pointer": "connector://query",
+        "lineage_id": "connector-query",
+        "source_identity": "provider connector",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "skipped"}
+      },
+      "error_contains": "success cannot use provider_execution=skipped"
+    }
+  ]
+}

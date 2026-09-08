@@ -1,4 +1,10 @@
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {
+  countIndependentEvidenceLineages,
+  projectEvidenceEnvelopeToLedger,
+  validateEvidenceEnvelope,
+} from './evidence-envelope.mjs';
 
 const skillPath = 'skills/research-router/SKILL.md';
 const casesPath = 'skills/research-router/evals/cases.json';
@@ -6,6 +12,7 @@ const browserAuthCasesPath = 'skills/research-router/evals/browser-auth-gates.js
 const runtimeReliabilityCasesPath = 'skills/research-router/evals/runtime-reliability-gates.json';
 const collaborationCasesPath = 'skills/research-router/evals/collaboration-cases.json';
 const evidenceEngineCasesPath = 'skills/research-router/evals/evidence-engine-cases.json';
+const evidenceEnvelopeFixturesPath = 'skills/research-router/evals/evidence-envelope-fixtures.json';
 const concurrencyRefPath = 'skills/research-router/references/ego-concurrency.md';
 const evidencePackRefPath = 'skills/research-router/references/evidence-pack.md';
 const evidenceEnvelopeSchemaPath = 'skills/research-router/references/evidence-envelope.schema.json';
@@ -16,6 +23,7 @@ const browserAuthData = JSON.parse(fs.readFileSync(browserAuthCasesPath, 'utf8')
 const runtimeReliabilityData = JSON.parse(fs.readFileSync(runtimeReliabilityCasesPath, 'utf8'));
 const collaborationData = JSON.parse(fs.readFileSync(collaborationCasesPath, 'utf8'));
 const evidenceEngineData = JSON.parse(fs.readFileSync(evidenceEngineCasesPath, 'utf8'));
+const evidenceEnvelopeFixtures = JSON.parse(fs.readFileSync(evidenceEnvelopeFixturesPath, 'utf8'));
 const concurrencyRef = fs.readFileSync(concurrencyRefPath, 'utf8');
 const evidencePackRef = fs.readFileSync(evidencePackRefPath, 'utf8');
 const evidenceEnvelopeSchema = JSON.parse(fs.readFileSync(evidenceEnvelopeSchemaPath, 'utf8'));
@@ -152,6 +160,41 @@ requireSchemaFields(
   ['quality', 'source_identity'],
 );
 
+// Run a small executable semantic layer over the schema. These checks only
+// reject internally inconsistent states; they do not pretend to verify the
+// truth of external evidence or infer confidence from evidence count.
+for (const fixture of evidenceEnvelopeFixtures.valid ?? []) {
+  const errors = validateEvidenceEnvelope(fixture.envelope);
+  if (errors.length) {
+    throw new Error(`valid Evidence Envelope fixture '${fixture.name}' failed: ${errors.join('; ')}`);
+  }
+}
+for (const fixture of evidenceEnvelopeFixtures.invalid ?? []) {
+  const errors = validateEvidenceEnvelope(fixture.envelope);
+  if (!errors.some((error) => error.includes(fixture.expect_error))) {
+    throw new Error(
+      `invalid Evidence Envelope fixture '${fixture.name}' did not fail as expected; got: ${errors.join('; ')}`,
+    );
+  }
+}
+const projectionFixture = evidenceEnvelopeFixtures.valid.find(
+  (fixture) => fixture.name === evidenceEnvelopeFixtures.projection?.fixture,
+);
+if (!projectionFixture) throw new Error('Evidence Envelope projection fixture not found');
+assert.deepEqual(
+  projectEvidenceEnvelopeToLedger(projectionFixture.envelope),
+  evidenceEnvelopeFixtures.projection.expected,
+  'Evidence Envelope -> Claim Ledger projection changed unexpectedly',
+);
+assert.equal(
+  countIndependentEvidenceLineages(
+    evidenceEnvelopeFixtures.lineage.envelope,
+    'support',
+  ),
+  evidenceEnvelopeFixtures.lineage.expected_support_count,
+  'Evidence lineage de-duplication changed unexpectedly',
+);
+
 // Prefer bounded first-party/site-specific structured interfaces when they
 // provide the needed live evidence without weakening scope verification.
 const requiredGuardrails = [
@@ -240,5 +283,5 @@ for (const pattern of requiredAbEvolutionGuardrails) {
 }
 
 console.log(
-  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${runtimeReliabilityData.cases.length} runtime-reliability cases, ${collaborationData.cases.length} collaboration hard gates, ${evidenceEngineData.cases.length} evidence-engine model cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
+  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${runtimeReliabilityData.cases.length} runtime-reliability cases, ${collaborationData.cases.length} collaboration hard gates, ${evidenceEngineData.cases.length} evidence-engine model cases, ${(evidenceEnvelopeFixtures.valid ?? []).length} valid evidence-envelope fixtures, ${(evidenceEnvelopeFixtures.invalid ?? []).length} invalid evidence-envelope fixtures, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
 );

@@ -12,6 +12,17 @@ const SOURCE_CLASS_BY_ADAPTER = {
   community_source: 'community',
 };
 
+const AUTHORITY_VALUES = new Set([
+  'primary',
+  'authoritative_secondary',
+  'secondary',
+  'community',
+  'navigation_only',
+]);
+const SPECIFICITY_VALUES = new Set(['exact', 'scoped', 'broad', 'unknown']);
+const FRESHNESS_VALUES = new Set(['current', 'dated', 'stale_or_unknown']);
+const PROVENANCE_QUALITY_VALUES = new Set(['verified', 'partial', 'unknown', 'not_applicable']);
+
 const ALLOWED_PROVENANCE_FIELDS = [
   'observed_at',
   'task_space',
@@ -27,6 +38,12 @@ const ALLOWED_PROVENANCE_FIELDS = [
   'provider_execution',
 ];
 
+const PROVENANCE_ENUM_VALUES = {
+  auth_state: new Set(['confirmed', 'not_authenticated', 'blocked', 'unknown', 'not_applicable']),
+  challenge_state: new Set(['none', 'present', 'resolved_by_user', 'unknown', 'not_applicable']),
+  provider_execution: new Set(['read_executed', 'configured_only', 'skipped', 'failed', 'not_applicable']),
+};
+
 function requiredString(value, label) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`${label} must be a non-empty string`);
@@ -34,18 +51,34 @@ function requiredString(value, label) {
   return value;
 }
 
-function boundedProvenanceString(value, field) {
+function requiredEnum(value, label, allowed) {
+  const normalized = requiredString(value, label);
+  if (!allowed.has(normalized)) {
+    throw new Error(`${label} has unsupported value: ${normalized}`);
+  }
+  return normalized;
+}
+
+function boundedProvenanceString(value, field, enforceEnvelopeEnum = false) {
   if (value === undefined || value === null || value === '') return null;
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`provenance.${field} must be a non-empty string marker`);
   }
+  const allowed = PROVENANCE_ENUM_VALUES[field];
+  if (enforceEnvelopeEnum && allowed && !allowed.has(value)) {
+    throw new Error(`provenance.${field} has unsupported value: ${value}`);
+  }
   return value;
 }
 
-function pickBoundedProvenance(observation) {
+function pickBoundedProvenance(observation, enforceEnvelopeEnums = false) {
   const provenance = {};
   for (const field of ALLOWED_PROVENANCE_FIELDS) {
-    const value = boundedProvenanceString(observation.provenance?.[field], field);
+    const value = boundedProvenanceString(
+      observation.provenance?.[field],
+      field,
+      enforceEnvelopeEnums,
+    );
     if (value !== null) provenance[field] = value;
   }
   return provenance;
@@ -71,7 +104,10 @@ export function normalizeEvidenceObservation(observation) {
 
   if (NON_EVIDENCE_OUTCOMES.has(outcome)) {
     const reason = requiredString(observation.failure_reason ?? observation.limitations?.[0], 'failure_reason');
-    const provenance = pickBoundedProvenance(observation);
+    // Limitation provenance is intentionally only field/shape bounded. It may
+    // preserve runtime/provider diagnostic markers that are not legal Evidence
+    // Envelope enum values, because the limitation itself is not evidence.
+    const provenance = pickBoundedProvenance(observation, false);
     return {
       evidence: null,
       limitation: {
@@ -102,9 +138,9 @@ export function normalizeEvidenceObservation(observation) {
   const lineage_id = requiredString(observation.lineage_id, 'lineage_id');
   const source_identity = requiredString(observation.source_identity, 'source_identity');
   const direction = requiredString(observation.direction, 'direction');
-  const authority = requiredString(observation.authority, 'authority');
-  const specificity = requiredString(observation.specificity, 'specificity');
-  const freshness = requiredString(observation.freshness, 'freshness');
+  const authority = requiredEnum(observation.authority, 'authority', AUTHORITY_VALUES);
+  const specificity = requiredEnum(observation.specificity, 'specificity', SPECIFICITY_VALUES);
+  const freshness = requiredEnum(observation.freshness, 'freshness', FRESHNESS_VALUES);
 
   if (!['support', 'contradict', 'context'].includes(direction)) {
     throw new Error(`unsupported direction: ${direction}`);
@@ -115,9 +151,13 @@ export function normalizeEvidenceObservation(observation) {
   }
 
   const provenance = {
-    quality: observation.provenance?.quality ?? 'unknown',
+    quality: requiredEnum(
+      observation.provenance?.quality ?? 'unknown',
+      'provenance.quality',
+      PROVENANCE_QUALITY_VALUES,
+    ),
     source_identity,
-    ...pickBoundedProvenance(observation),
+    ...pickBoundedProvenance(observation, true),
   };
 
   if (adapter === 'authenticated_page') {

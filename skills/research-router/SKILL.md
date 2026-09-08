@@ -2,8 +2,8 @@
 name: research-router
 description: Default web research router and evidence layer. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. When downstream strategy, decision, innovation, challenge, planning, or other reasoning depends materially on external facts, build a compact Evidence Pack first so those skills reason from verified evidence instead of inventing premises. Support the simple BruceAI A/B evolution mode by comparing the current validated baseline against one isolated candidate and promoting only proven improvements. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
 metadata:
-  version: "1.3.1"
-  date: "2026-09-05"
+  version: "1.4.0"
+  date: "2026-09-09"
 ---
 
 # research-router
@@ -31,7 +31,23 @@ Do **not** force Research OS into tasks that do not need external evidence. Rewr
 
 The Evidence Pack is normally an internal handoff, not extra user-facing verbosity. Preserve claim status, source scope, conflicts, and unknowns through the handoff. A downstream skill must not silently upgrade `Needs verification` or `High probability` evidence into confirmed fact. If downstream reasoning reveals a missing fact that could materially change the decision, route back through research-router to gather it.
 
-For consequential tasks, challenge the first plausible conclusion before final handoff. Look for a material counterexample, exception, newer source, account-specific restriction, hidden dependency, or alternative explanation. Update the Evidence Pack if the challenge changes the evidence state.
+### Evidence Engine v1 activation
+
+For **consequential, contested, authenticated, browser-dependent, or multi-source** research, use the claim-level **Evidence Envelope** defined in `skills/research-router/references/evidence-envelope.schema.json` for each material claim whose uncertainty could change the decision. The Evidence Pack remains the handoff; the Envelope is the canonical internal state for the claims that need stronger provenance and conflict discipline.
+
+Keep activation selective:
+
+- **Simple lookup** — do not create an Envelope when one bounded authoritative read is enough and provenance ambiguity cannot change the answer.
+- **Material claim** — create or update one Envelope when account/plan/region/variant/date scope, authenticated state, conflicting evidence, browser provenance, causal inference, or acquisition failure can materially change the conclusion.
+- **Minimum provenance** — record only the boundary markers actually exposed and needed to prove the claim. Never invent missing task-space/profile/page/session/account identifiers, and never collect passwords, tokens, cookies, credential-store contents, whole profiles, or unrelated browsing state to make provenance metadata look complete.
+- **Acquisition failure is not a negative fact** — timeout, challenge, importer failure, stale context, evaluator/script failure, unsupported authentication, or provider-read failure means the evidence path is degraded or blocked unless an independent bounded read proves absence.
+- **Lineage before counting** — multiple agents, snippets, summaries, mirrors, or tool outputs derived from the same underlying source share one evidence lineage and do not become independent verification by repetition.
+- **Facts before inference** — keep `observed_fact`, `inference`, `causal`, `estimate`, and `recommendation` distinct; challenge a material inference or causal claim before treating it as high-confidence decision input.
+- **Stop on sufficiency** — once the material claim is adequately verified and more evidence cannot change the decision, stop expanding provenance or adding sources.
+
+Do not expose the Envelope to the user by default. Project it into the compact Claim Ledger or final answer only when that improves coordination, auditability, or decision quality. Evidence Engine v1 does **not** add another collaboration hard gate; the existing Evidence, Conflict, and Execution gates remain the veto surface.
+
+For consequential tasks, challenge the first plausible conclusion before final handoff. Look for a material counterexample, exception, newer source, account-specific restriction, hidden dependency, or alternative explanation. Update the Evidence Pack and any affected Evidence Envelope if the challenge changes the evidence state.
 
 ## BruceAI simple evolution interface
 
@@ -179,6 +195,8 @@ Do not store user-specific private data, credentials, temporary IDs, unstable pi
 ## Regression cases
 
 Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, unsafe replacement sequencing, unnecessary live-browser use, generic-DOM-over-structured-site-tool routing, concurrent CDP isolation assumptions, unnecessary research routing, downstream certainty inflation, user-facing mode proliferation, system-A/B-vs-business-option confusion, and promoting a candidate because it sounds more impressive rather than because it wins a controlled real-task comparison.
+
+Also preserve `skills/research-router/evals/evidence-engine-cases.json` when changing claim representation, provenance handling, conflict/lineage semantics, acquisition-failure handling, or fact-vs-inference behavior. Those cases consolidate existing evidence rules and do not add a new user-facing mode or collaboration hard gate.
 
 ## Monitoring and polling
 

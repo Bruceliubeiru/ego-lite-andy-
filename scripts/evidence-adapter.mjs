@@ -95,8 +95,13 @@ export function normalizeEvidenceObservation(observation) {
     if (value !== undefined && value !== null && value !== '') provenance[field] = value;
   }
 
-  if (adapter === 'authenticated_page' && provenance.auth_state !== 'confirmed') {
-    throw new Error('authenticated_page requires provenance.auth_state=confirmed');
+  if (adapter === 'authenticated_page') {
+    if (provenance.auth_state !== 'confirmed') {
+      throw new Error('authenticated_page requires provenance.auth_state=confirmed');
+    }
+    if (specificity === 'exact' && !provenance.account_marker) {
+      throw new Error('exact authenticated_page evidence requires provenance.account_marker');
+    }
   }
 
   if (adapter === 'connector_api' || adapter === 'repository') {

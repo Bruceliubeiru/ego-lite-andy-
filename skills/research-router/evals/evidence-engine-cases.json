@@ -1,0 +1,60 @@
+{
+  "version": "1.0.0",
+  "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
+  "cases": [
+    {
+      "id": "scope-specific-evidence-vs-broader-rule",
+      "scenario": "A broad current first-party policy appears to conflict with a current authenticated first-party page for the exact account, plan, region, or period being researched.",
+      "expected": [
+        "Keep both pieces of evidence in the same claim envelope with their different scope and provenance rather than averaging them.",
+        "Use the authenticated exact-scope evidence for the user's actual state and the broader policy for the general rule unless stronger evidence resolves the mismatch.",
+        "If the conflict remains material, keep the claim Conflicted or conditional instead of silently upgrading certainty."
+      ]
+    },
+    {
+      "id": "same-content-vs-wrong-provenance-boundary",
+      "scenario": "A browser/network result contains the expected URL or payload, but the originating page, document, frame, CDP session, task space, profile, or account cannot be tied to the target research context.",
+      "expected": [
+        "Do not accept matching content alone as proof that the evidence came from the target context.",
+        "Record provenance as partial or unknown and seek a bounded page-local or session-bound verification path.",
+        "If attribution cannot be established and it can change the conclusion, leave the claim Needs verification."
+      ]
+    },
+    {
+      "id": "acquisition-failure-vs-negative-fact",
+      "scenario": "Evidence acquisition fails because of an automation challenge, profile-import failure, script/evaluator failure, stale execution context, timeout, or unsupported authentication path.",
+      "expected": [
+        "Represent the acquisition limitation explicitly; do not convert it into evidence that the account, content, entitlement, or state is absent.",
+        "Use an independent bounded read path when one can prove the same fact without expanding sensitive permissions.",
+        "If no equivalent safe path exists, keep the claim Needs verification or blocked rather than asserting a negative fact."
+      ]
+    },
+    {
+      "id": "duplicate-discovery-vs-independent-verification",
+      "scenario": "Several agents, snippets, summaries, mirrors, or tool outputs ultimately derive from the same underlying page, document, API response, or browser observation.",
+      "expected": [
+        "Assign the same evidence lineage to derivative discoveries of the same underlying source.",
+        "Do not increase confidence merely because the same lineage appears multiple times.",
+        "Seek a genuinely independent or more specific source only when it can materially change the claim state."
+      ]
+    },
+    {
+      "id": "degraded-fallback-vs-equivalent-proof",
+      "scenario": "A preferred evidence path fails and a fallback returns only partial or different evidence, such as DOM state instead of visual proof, a local canvas read instead of a full screenshot, or a generic policy instead of authenticated state.",
+      "expected": [
+        "Record the fallback's actual provenance, scope, and limitations rather than treating it as automatically equivalent to the failed path.",
+        "Only promote the claim if the fallback independently proves the material fact at the required scope.",
+        "Otherwise keep confidence lower or the claim Needs verification even if the fallback itself executed successfully."
+      ]
+    },
+    {
+      "id": "fact-vs-inference-vs-causal-claim",
+      "scenario": "Observed evidence establishes a page state or metric, while downstream reasoning wants to infer a broader explanation, cause, estimate, or recommendation from it.",
+      "expected": [
+        "Keep observed_fact, inference, causal, estimate, and recommendation as distinct claim kinds.",
+        "Do not let downstream reasoning silently transform an observed fact into a confirmed causal claim.",
+        "Challenge material causal or inferential claims with an alternative explanation or counterexample before high-confidence use."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bruceai.local/schemas/evidence-envelope-v1.json",
+  "title": "BruceAI Evidence Envelope v1",
+  "description": "Compact claim-level evidence contract for consequential, contested, authenticated, browser-dependent, or multi-source research. It preserves scope, provenance, conflict, uncertainty, and decision impact without turning simple research into a workflow engine.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "claim_id",
+    "claim_kind",
+    "claim",
+    "scope",
+    "status",
+    "evidence",
+    "conflicts",
+    "confidence",
+    "decision_impact",
+    "next_action"
+  ],
+  "properties": {
+    "version": {
+      "const": "1.0"
+    },
+    "claim_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claim_kind": {
+      "enum": [
+        "observed_fact",
+        "inference",
+        "causal",
+        "estimate",
+        "recommendation"
+      ]
+    },
+    "claim": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "object",
+      "description": "Only material dimensions needed to keep the claim from being silently generalized.",
+      "additionalProperties": false,
+      "properties": {
+        "account": {"type": "string"},
+        "plan": {"type": "string"},
+        "region": {"type": "string"},
+        "jurisdiction": {"type": "string"},
+        "variant": {"type": "string"},
+        "year": {"type": ["string", "integer"]},
+        "date": {"type": "string"},
+        "cohort": {"type": "string"},
+        "runtime_version": {"type": "string"},
+        "other": {
+          "type": "object",
+          "additionalProperties": {"type": ["string", "number", "boolean"]}
+        }
+      }
+    },
+    "status": {
+      "enum": [
+        "Confirmed",
+        "High probability",
+        "Needs verification",
+        "Conflicted"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "evidence_id",
+          "direction",
+          "pointer",
+          "lineage_id",
+          "source_class",
+          "authority",
+          "specificity",
+          "freshness",
+          "provenance",
+          "limitations"
+        ],
+        "properties": {
+          "evidence_id": {"type": "string", "minLength": 1},
+          "direction": {"enum": ["support", "contradict", "context"]},
+          "pointer": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Source/page/tool pointer; prefer a pointer and concise paraphrase over source dumps."
+          },
+          "lineage_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable identifier for the underlying evidence lineage so summaries or duplicate discoveries of the same source are not counted as independent verification."
+          },
+          "source_class": {
+            "enum": [
+              "first_party_public",
+              "first_party_authenticated",
+              "user_supplied",
+              "connector_or_api",
+              "independent_authoritative",
+              "secondary",
+              "community",
+              "search_snippet"
+            ]
+          },
+          "authority": {"enum": ["primary", "authoritative_secondary", "secondary", "community", "navigation_only"]},
+          "specificity": {"enum": ["exact", "scoped", "broad", "unknown"]},
+          "freshness": {"enum": ["current", "dated", "stale_or_unknown"]},
+          "provenance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["quality", "source_identity"],
+            "properties": {
+              "quality": {"enum": ["verified", "partial", "unknown", "not_applicable"]},
+              "source_identity": {"type": "string", "minLength": 1},
+              "observed_at": {"type": "string"},
+              "task_space": {"type": "string"},
+              "profile": {"type": "string"},
+              "account_marker": {"type": "string"},
+              "page_url": {"type": "string"},
+              "document_marker": {"type": "string"},
+              "frame_marker": {"type": "string"},
+              "session_marker": {"type": "string"},
+              "region": {"type": "string"},
+              "auth_state": {"enum": ["confirmed", "not_authenticated", "blocked", "unknown", "not_applicable"]},
+              "challenge_state": {"enum": ["none", "present", "resolved_by_user", "unknown", "not_applicable"]},
+              "provider_execution": {"enum": ["read_executed", "configured_only", "skipped", "failed", "not_applicable"]}
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["evidence_ids", "issue", "state"],
+        "properties": {
+          "evidence_ids": {
+            "type": "array",
+            "minItems": 2,
+            "items": {"type": "string"}
+          },
+          "issue": {"type": "string", "minLength": 1},
+          "state": {"enum": ["unresolved", "resolved", "not_material"]},
+          "resolution_basis": {"type": "string"}
+        }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "reason"],
+      "properties": {
+        "level": {"enum": ["high", "medium", "low", "blocked"]},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "decision_impact": {"enum": ["High", "Medium", "Low"]},
+    "next_action": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Single next useful step such as none, verify, challenge, research, decide, or a bounded execution proposal."
+    }
+  }
+}

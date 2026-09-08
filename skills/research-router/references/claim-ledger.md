@@ -31,8 +31,12 @@ Use it only when a task has multiple material claims, multiple stages, or multip
 - `Next action` exists to prevent open-ended research. Set it to `none` when more work has no decision value.
 - The Ledger is not a transcript, task manager, memory store, or workflow engine.
 
-## Relationship to the Evidence Pack
+## Relationship to Evidence Engine v1 and the Evidence Pack
+
+For consequential, contested, authenticated, browser-dependent, or multi-source work, the canonical claim state is the Evidence Envelope defined in `skills/research-router/references/evidence-envelope.schema.json`.
+
+The Claim Ledger is a compact human/agent projection of that state: **Claim → Evidence → Status → Impact → Next action**. It intentionally omits detailed provenance, lineage, confidence rationale, and conflict structure so collaboration stays lightweight. Do not let a shorter Ledger row erase uncertainty or scope that exists in the underlying envelope.
 
 The Evidence Pack is the research handoff contract. The Claim Ledger is its compact working table when shared state is useful.
 
-Do not duplicate the same information in both forms. For multi-claim work, the Evidence Pack can point to the Ledger and add only the question/scope, material conflict context, and final synthesis needed downstream.
+Do not duplicate the same information in multiple narrative forms. For multi-claim work, the Evidence Pack can point to the Ledger and the underlying envelopes, then add only the question/scope, material conflict context, and final synthesis needed downstream.

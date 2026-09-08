@@ -7,6 +7,7 @@ const fixturePaths = [
   'skills/research-router/evals/evidence-adapter-consistency-fixtures.json',
   'skills/research-router/evals/evidence-adapter-limitation-provenance-fixtures.json',
   'skills/research-router/evals/evidence-adapter-provenance-type-fixtures.json',
+  'skills/research-router/evals/evidence-adapter-schema-enum-fixtures.json',
 ];
 const fixtureSets = fixturePaths.map((path) => JSON.parse(fs.readFileSync(path, 'utf8')));
 

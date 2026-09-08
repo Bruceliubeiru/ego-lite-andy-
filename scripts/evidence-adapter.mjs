@@ -101,8 +101,8 @@ export function normalizeEvidenceObservation(observation) {
 
   if (adapter === 'connector_api' || adapter === 'repository') {
     const execution = provenance.provider_execution;
-    if (execution && execution !== 'read_executed' && execution !== 'not_applicable') {
-      throw new Error(`${adapter} success cannot use provider_execution=${execution}`);
+    if (execution !== 'read_executed') {
+      throw new Error(`${adapter} success requires provenance.provider_execution=read_executed`);
     }
   }
 

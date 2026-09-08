@@ -1,6 +1,6 @@
 {
-  "version": "1.1",
-  "purpose": "Executable fixtures for adapter-to-Evidence-Envelope normalization. Failed or blocked acquisitions must remain limitations rather than negative evidence, and provider-backed success must prove a read was actually executed.",
+  "version": "1.2",
+  "purpose": "Executable fixtures for adapter-to-Evidence-Envelope normalization. Failed or blocked acquisitions must remain limitations rather than negative evidence, provider-backed success must prove a read was actually executed, and exact authenticated evidence must identify the intended account context without forcing account identity onto broader authenticated observations.",
   "valid": [
     {
       "name": "public first-party page success",
@@ -36,6 +36,25 @@
         "freshness": "current",
         "provenance": {"quality": "verified", "auth_state": "confirmed", "account_marker": "target-account", "page_url": "https://example.com/settings"},
         "limitations": []
+      },
+      "expect_evidence": true,
+      "expected_source_class": "first_party_authenticated"
+    },
+    {
+      "name": "authenticated scoped page does not require account identity",
+      "observation": {
+        "adapter": "authenticated_page",
+        "outcome": "success",
+        "evidence_id": "e-auth-scoped",
+        "direction": "context",
+        "pointer": "ego://authenticated/help",
+        "lineage_id": "authenticated-help",
+        "source_identity": "authenticated help page",
+        "authority": "primary",
+        "specificity": "scoped",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "auth_state": "confirmed", "page_url": "https://example.com/help"},
+        "limitations": ["account identity is not material to this claim"]
       },
       "expect_evidence": true,
       "expected_source_class": "first_party_authenticated"
@@ -137,6 +156,23 @@
         "provenance": {"quality": "partial", "auth_state": "unknown"}
       },
       "error_contains": "requires provenance.auth_state=confirmed"
+    },
+    {
+      "name": "exact authenticated evidence cannot omit account marker",
+      "observation": {
+        "adapter": "authenticated_page",
+        "outcome": "success",
+        "evidence_id": "bad-account-marker",
+        "direction": "support",
+        "pointer": "ego://settings/account",
+        "lineage_id": "account-page:unknown-account",
+        "source_identity": "authenticated settings page",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "auth_state": "confirmed", "page_url": "https://example.com/settings"}
+      },
+      "error_contains": "exact authenticated_page evidence requires provenance.account_marker"
     },
     {
       "name": "snippet cannot be promoted to primary",

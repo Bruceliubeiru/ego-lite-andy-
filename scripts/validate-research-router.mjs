@@ -60,6 +60,7 @@ const requiredRuntimeReliabilityIds = [
   'browser-evaluator-null-vs-proven-empty-result',
   'browser-script-construction-failure-vs-page-evidence',
   'batch-rendering-vs-resource-budget',
+  'network-waiter-vs-originating-page-session',
 ];
 
 // Keep collaboration hard gates intentionally small. Orchestration details are

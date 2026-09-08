@@ -5,16 +5,20 @@ const casesPath = 'skills/research-router/evals/cases.json';
 const browserAuthCasesPath = 'skills/research-router/evals/browser-auth-gates.json';
 const runtimeReliabilityCasesPath = 'skills/research-router/evals/runtime-reliability-gates.json';
 const collaborationCasesPath = 'skills/research-router/evals/collaboration-cases.json';
+const evidenceEngineCasesPath = 'skills/research-router/evals/evidence-engine-cases.json';
 const concurrencyRefPath = 'skills/research-router/references/ego-concurrency.md';
 const evidencePackRefPath = 'skills/research-router/references/evidence-pack.md';
+const evidenceEnvelopeSchemaPath = 'skills/research-router/references/evidence-envelope.schema.json';
 const abEvolutionRefPath = 'skills/research-router/references/ab-evolution.md';
 const skill = fs.readFileSync(skillPath, 'utf8');
 const data = JSON.parse(fs.readFileSync(casesPath, 'utf8'));
 const browserAuthData = JSON.parse(fs.readFileSync(browserAuthCasesPath, 'utf8'));
 const runtimeReliabilityData = JSON.parse(fs.readFileSync(runtimeReliabilityCasesPath, 'utf8'));
 const collaborationData = JSON.parse(fs.readFileSync(collaborationCasesPath, 'utf8'));
+const evidenceEngineData = JSON.parse(fs.readFileSync(evidenceEngineCasesPath, 'utf8'));
 const concurrencyRef = fs.readFileSync(concurrencyRefPath, 'utf8');
 const evidencePackRef = fs.readFileSync(evidencePackRefPath, 'utf8');
+const evidenceEnvelopeSchema = JSON.parse(fs.readFileSync(evidenceEnvelopeSchemaPath, 'utf8'));
 const abEvolutionRef = fs.readFileSync(abEvolutionRefPath, 'utf8');
 
 const requiredIds = [
@@ -72,6 +76,17 @@ const requiredCollaborationIds = [
   'execution-authority-gate',
 ];
 
+// Evidence Engine cases consolidate existing evidence rules into one claim
+// representation. They are model-contract regressions, not new hard gates.
+const requiredEvidenceEngineIds = [
+  'scope-specific-evidence-vs-broader-rule',
+  'same-content-vs-wrong-provenance-boundary',
+  'acquisition-failure-vs-negative-fact',
+  'duplicate-discovery-vs-independent-verification',
+  'degraded-fallback-vs-equivalent-proof',
+  'fact-vs-inference-vs-causal-claim',
+];
+
 function validateCases(label, caseData, requiredCaseIds) {
   if (!Array.isArray(caseData.cases)) throw new Error(`${label} cases must be an array`);
   const ids = new Set(caseData.cases.map((c) => c.id));
@@ -89,6 +104,53 @@ validateCases('research-router', data, requiredIds);
 validateCases('browser-auth', browserAuthData, requiredBrowserAuthIds);
 validateCases('runtime-reliability', runtimeReliabilityData, requiredRuntimeReliabilityIds);
 validateCases('collaboration', collaborationData, requiredCollaborationIds);
+validateCases('evidence-engine', evidenceEngineData, requiredEvidenceEngineIds);
+
+function requireSchemaFields(label, actual, required) {
+  if (!Array.isArray(actual)) throw new Error(`${label} must be an array`);
+  const fields = new Set(actual);
+  for (const field of required) {
+    if (!fields.has(field)) throw new Error(`${label} missing required field: ${field}`);
+  }
+}
+
+if (evidenceEnvelopeSchema.title !== 'BruceAI Evidence Envelope v1') {
+  throw new Error('Evidence Envelope schema title/version identity changed unexpectedly');
+}
+requireSchemaFields('Evidence Envelope required', evidenceEnvelopeSchema.required, [
+  'version',
+  'claim_id',
+  'claim_kind',
+  'claim',
+  'scope',
+  'status',
+  'evidence',
+  'conflicts',
+  'confidence',
+  'decision_impact',
+  'next_action',
+]);
+requireSchemaFields(
+  'Evidence Envelope evidence-item required',
+  evidenceEnvelopeSchema.properties?.evidence?.items?.required,
+  [
+    'evidence_id',
+    'direction',
+    'pointer',
+    'lineage_id',
+    'source_class',
+    'authority',
+    'specificity',
+    'freshness',
+    'provenance',
+    'limitations',
+  ],
+);
+requireSchemaFields(
+  'Evidence Envelope provenance required',
+  evidenceEnvelopeSchema.properties?.evidence?.items?.properties?.provenance?.required,
+  ['quality', 'source_identity'],
+);
 
 // Prefer bounded first-party/site-specific structured interfaces when they
 // provide the needed live evidence without weakening scope verification.
@@ -135,6 +197,13 @@ const requiredEvidencePackGuardrails = [
   /must not silently upgrade/i,
   /Three hard collaboration gates/i,
   /Evidence gate.*Conflict gate.*Execution gate/is,
+  /Evidence Engine v1/i,
+  /Evidence Envelope/i,
+  /Evidence lineage/i,
+  /Provenance discipline/i,
+  /failed evidence path is not itself evidence of absence/i,
+  /does .*not.*add a fourth hard collaboration gate/i,
+  /Claim Ledger.*projection/is,
 ];
 for (const pattern of requiredEvidencePackGuardrails) {
   if (!pattern.test(evidencePackRef)) throw new Error(`Evidence Pack guardrail missing: ${pattern}`);
@@ -164,5 +233,5 @@ for (const pattern of requiredAbEvolutionGuardrails) {
 }
 
 console.log(
-  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${runtimeReliabilityData.cases.length} runtime-reliability cases, ${collaborationData.cases.length} collaboration hard gates, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
+  `research-router gate passed: ${data.cases.length} core cases, ${browserAuthData.cases.length} browser-auth cases, ${runtimeReliabilityData.cases.length} runtime-reliability cases, ${collaborationData.cases.length} collaboration hard gates, ${evidenceEngineData.cases.length} evidence-engine model cases, ${requiredGuardrails.length} routing guardrails, ${requiredConcurrencyGuardrails.length} concurrency guardrails, ${requiredEvidencePackGuardrails.length} evidence-pack guardrails, ${requiredAbEvolutionGuardrails.length} A/B evolution guardrails`,
 );

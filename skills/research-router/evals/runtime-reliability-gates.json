@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "purpose": "Regression gates for Ego/browser runtime reliability and token-efficient recovery behavior.",
   "cases": [
     {
@@ -85,6 +85,17 @@
         "Do not normalize all nulls into runtime bugs: genuine null/empty page values remain valid. Escalate only when the expression contract predicts a non-null value, a control expression behaves differently, or independent evidence conflicts with the returned null.",
         "Preserve exact released/installed runtime context when diagnosing evaluator semantics. Do not assume an upstream patch, dev branch behavior, or neighboring helper generation is already present in the user's runtime.",
         "A workaround for result loss must not expand browser, profile, credential, filesystem, network, or write permissions. If no bounded independent check can distinguish an empty page result from evaluator failure, mark the evidence unresolved rather than inventing absence."
+      ]
+    },
+    {
+      "id": "browser-script-construction-failure-vs-page-evidence",
+      "scenario": "A browser research command fails during Node/module loading, JavaScript parsing, dynamic-string construction, or helper invocation before it can reliably read the intended page fact, and the workflow is tempted to interpret the missing output as evidence that the fact is absent or to escape the failure by widening browser capabilities.",
+      "expected": [
+        "Separate harness/runtime construction failures from page evidence. A module-format error, syntax error, quoting/template-literal failure, or helper-signature mismatch proves nothing about whether the requested page fact exists.",
+        "Verify the exact released or installed runtime contract before correcting the command, including the execution environment, module format, helper signature, and evaluator generation. Do not universalize a version-specific rule such as always using ESM imports when another supported runtime has a different contract.",
+        "Use one bounded corrective probe: simplify the expression, pass dynamic values as serialized data or helper parameters, or switch to the exact runtime-supported module form. Do not keep rebuilding increasingly complex nested strings or retrying an identical parse/module failure.",
+        "Do not introduce raw CDP, reload/navigation, broad filesystem access, credentials, arbitrary network access, or external writes merely to bypass a script-construction error. Any independently necessary fallback must still satisfy the existing navigation, isolation, sensitive-egress, and postcondition gates.",
+        "If the corrected bounded probe cannot establish the intended fact, mark live-page verification unresolved or use an independent read path instead of asserting absence from a command that never produced valid page evidence."
       ]
     }
   ]

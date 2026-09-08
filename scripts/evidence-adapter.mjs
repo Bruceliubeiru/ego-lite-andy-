@@ -54,6 +54,15 @@ export function normalizeEvidenceObservation(observation) {
     throw new Error(`unsupported acquisition outcome: ${outcome}`);
   }
 
+  // A provider/runtime may surface transport-level success while also returning
+  // an application/tool error. Preserve that contradiction as an acquisition
+  // failure signal instead of turning it into evidence. Emitters should map an
+  // explicit current-call error into result_error; absence of this field is not
+  // treated as proof that no hidden error exists.
+  if (typeof observation.result_error === 'string' && observation.result_error.trim() !== '') {
+    throw new Error('success observation cannot contain result_error');
+  }
+
   const evidence_id = requiredString(observation.evidence_id, 'evidence_id');
   const pointer = requiredString(observation.pointer, 'pointer');
   const lineage_id = requiredString(observation.lineage_id, 'lineage_id');

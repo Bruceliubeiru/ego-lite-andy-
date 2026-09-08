@@ -59,6 +59,7 @@ const requiredRuntimeReliabilityIds = [
   'observation-breadth-vs-proof-need',
   'browser-evaluator-null-vs-proven-empty-result',
   'browser-script-construction-failure-vs-page-evidence',
+  'batch-rendering-vs-resource-budget',
 ];
 
 // Keep collaboration hard gates intentionally small. Orchestration details are

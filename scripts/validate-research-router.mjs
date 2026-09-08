@@ -47,6 +47,7 @@ const requiredBrowserAuthIds = [
   'community-port-vs-official-runtime-support',
   'task-space-profile-vs-browser-level-side-effect-scope',
   'privileged-browser-script-vs-sensitive-egress',
+  'page-provided-webmcp-tool-vs-trusted-research-interface',
 ];
 
 const requiredRuntimeReliabilityIds = [

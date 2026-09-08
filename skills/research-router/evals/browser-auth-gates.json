@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "purpose": "Supplemental regression gates for authenticated live-page verification when browser/runtime authentication mechanisms are unsupported or structurally limited.",
   "cases": [
     {
@@ -85,6 +85,17 @@
         "For account-specific research, verify the actual Ego profile/account marker or another bounded authenticated postcondition before treating the runtime as carrying the user's session. If import is broken or ambiguous, mark authenticated verification unavailable/unresolved and preserve public first-party evidence separately.",
         "Do not compensate by reading/exporting source-browser cookies, Login Data, saved passwords, credential stores, or whole-profile files, and do not weaken browser/OS security controls. Import diagnostics may use only non-sensitive capability/status metadata needed to distinguish discovery failure from proven absence.",
         "A later successful importer listing is not by itself proof that the exact target account/session was transferred; verify the target site's account context after import before relying on personalized evidence."
+      ]
+    },
+    {
+      "id": "site-automation-challenge-vs-account-or-content-absence",
+      "scenario": "A site blocks or degrades an automated or instrumented browser session during login or page access, while manual or other browser contexts may behave differently. Upstream ego-lite issue #376 reports Instagram blocking even manual login inside the Ego browser and speculates about bot detection, so the observed challenge may be environment-specific without proving anything about the account, credentials, content, or eligibility.",
+      "expected": [
+        "Do not interpret a bot-detection page, challenge loop, login block, degraded response, or automation-specific denial as proof that the user's account is invalid, the requested content does not exist, or the user is personally ineligible.",
+        "Separate site-level challenge state from account/content state. Preserve the exact observed challenge and runtime/browser context, and require an independent bounded source or a later verified live-page postcondition before making an account-specific or absence claim.",
+        "Do not try to defeat anti-bot, abuse-prevention, device-trust, rate-limit, or authentication controls by spoofing fingerprints, rotating identities, extracting cookies/tokens, using stealth patches, bypassing CAPTCHAs, or weakening browser/OS security settings merely to obtain research evidence.",
+        "Prefer first-party public/search/fetch evidence for generic claims, an allowed official API or connector when available, or user-completed authentication/challenge handling when the site explicitly requires human participation. Keep the personalized claim unresolved if those paths cannot establish it.",
+        "A successful page load in another browser, profile, region, or unauthenticated context is not by itself proof that the blocked authenticated target context would produce the same personalized result; preserve account, region, variant, and document provenance before upgrading confidence."
       ]
     }
   ]

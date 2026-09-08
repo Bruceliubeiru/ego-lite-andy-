@@ -34,11 +34,19 @@ function requiredString(value, label) {
   return value;
 }
 
+function boundedProvenanceString(value, field) {
+  if (value === undefined || value === null || value === '') return null;
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`provenance.${field} must be a non-empty string marker`);
+  }
+  return value;
+}
+
 function pickBoundedProvenance(observation) {
   const provenance = {};
   for (const field of ALLOWED_PROVENANCE_FIELDS) {
-    const value = observation.provenance?.[field];
-    if (value !== undefined && value !== null && value !== '') provenance[field] = value;
+    const value = boundedProvenanceString(observation.provenance?.[field], field);
+    if (value !== null) provenance[field] = value;
   }
   return provenance;
 }

@@ -1,0 +1,76 @@
+{
+  "version": "1.0",
+  "purpose": "Executable fixtures ensuring failed, blocked, skipped, or non-executed acquisition paths preserve only bounded supplied provenance needed to scope the failure, without becoming evidence or copying arbitrary sensitive fields.",
+  "valid": [
+    {
+      "name": "blocked authenticated page preserves challenge scope",
+      "observation": {
+        "adapter": "authenticated_page",
+        "outcome": "blocked",
+        "pointer": "https://example.com/account",
+        "failure_reason": "site challenge prevented account verification",
+        "provenance": {
+          "observed_at": "2026-09-09T01:20:00Z",
+          "page_url": "https://example.com/account",
+          "region": "HK",
+          "auth_state": "unknown",
+          "challenge_state": "automation_challenge",
+          "cookie": "must-not-copy",
+          "access_token": "must-not-copy"
+        }
+      },
+      "expect_evidence": false,
+      "expected_limitation_outcome": "blocked",
+      "expected_limitation_provenance": {
+        "observed_at": "2026-09-09T01:20:00Z",
+        "page_url": "https://example.com/account",
+        "region": "HK",
+        "auth_state": "unknown",
+        "challenge_state": "automation_challenge"
+      },
+      "expected_absent_limitation_provenance": ["cookie", "access_token"]
+    },
+    {
+      "name": "failed repository read preserves execution boundary",
+      "observation": {
+        "adapter": "repository",
+        "outcome": "failed",
+        "pointer": "repo://owner/name/path@missing-ref",
+        "failure_reason": "requested ref could not be resolved",
+        "provenance": {
+          "observed_at": "2026-09-09T01:21:00Z",
+          "provider_execution": "not_executed"
+        }
+      },
+      "expect_evidence": false,
+      "expected_limitation_outcome": "failed",
+      "expected_limitation_provenance": {
+        "observed_at": "2026-09-09T01:21:00Z",
+        "provider_execution": "not_executed"
+      }
+    },
+    {
+      "name": "skipped connector preserves task boundary without fabricating source identity",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "skipped",
+        "pointer": "connector://provider/query",
+        "failure_reason": "provider read was intentionally skipped after sufficient first-party evidence",
+        "provenance": {
+          "task_space": "research-task-7",
+          "session_marker": "session-3",
+          "provider_execution": "skipped"
+        }
+      },
+      "expect_evidence": false,
+      "expected_limitation_outcome": "skipped",
+      "expected_limitation_provenance": {
+        "task_space": "research-task-7",
+        "session_marker": "session-3",
+        "provider_execution": "skipped"
+      },
+      "expected_absent_limitation_provenance": ["source_identity", "quality"]
+    }
+  ],
+  "invalid": []
+}

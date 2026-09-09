@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.4.1",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
@@ -24,11 +24,12 @@
     },
     {
       "id": "acquisition-failure-vs-negative-fact",
-      "scenario": "Evidence acquisition fails, exposes only a bounded visibility surface, or returns a successful-but-empty enumeration whose completeness is not independently established. Causes include an automation challenge, profile-import failure, script/evaluator failure, stale execution context, timeout, unsupported authentication path, a foreground browser surface that omits still-existing background Task Spaces or sessions, or a provider command that reports success with an empty collection even though the underlying population may not have been exhaustively enumerated. Upstream citrolabs/ego-lite#347 reports Dock activation sometimes showing a fresh regular Space while prior Agent Task Spaces remain alive and visible through the Spaces overview; #360 reports `import list` returning `success:true` with `profiles:[]` despite real Chrome profiles existing on disk.",
+      "scenario": "Evidence acquisition fails, exposes only a bounded visibility surface, or returns a successful-but-empty enumeration whose completeness is not independently established for the material claim scope. Causes include an automation challenge, profile-import failure, script/evaluator failure, stale execution context, timeout, unsupported authentication path, a foreground browser surface that omits still-existing background Task Spaces or sessions, or a provider command that reports success with an empty collection even though the underlying population may not have been exhaustively enumerated. Upstream citrolabs/ego-lite#347 reports Dock activation sometimes showing a fresh regular Space while prior Agent Task Spaces remain alive and visible through the Spaces overview; #360 reports `import list` returning `success:true` with `profiles:[]` despite real Chrome profiles existing on disk.",
       "expected": [
         "Represent the acquisition, visibility, or enumeration limitation explicitly; do not convert it into evidence that the account, content, entitlement, task space, session, profile, or state is absent.",
         "Treat absence from the current foreground tab/window/Space or from a successful empty list as local-to-that-observation-surface unless a bounded authoritative enumeration proves completeness for the material scope.",
-        "A successful empty read may remain context evidence that the bounded query executed, but direct support or contradiction based on absence requires independently established exhaustive enumeration for the relevant scope.",
+        "A successful empty read may remain context evidence that the bounded query executed, but direct support or contradiction based on absence requires independently established exhaustive enumeration whose account, region, plan, population, time window, and other material scope dimensions match the claim being evaluated.",
+        "An exhaustive enumeration of the wrong scope is not negative evidence for the target scope; preserve the mismatch explicitly and re-plan toward one bounded exact-scope verification if available.",
         "Use an independent bounded read path, such as a task-space listing or appropriate first-party state enumeration, when it can prove the same fact without expanding sensitive permissions or taking control from another owner.",
         "Do not create, reclaim, close, or mutate Spaces merely to test whether hidden/background state exists.",
         "If no equivalent safe path exists, keep the claim Needs verification or blocked rather than asserting a negative fact."

@@ -114,14 +114,18 @@ for (const c of data.cases) {
         `${c.id}: independent lineage accounting changed unexpectedly`,
       );
     }
-    if (c.observation.absence_observed === true && c.observation.exhaustive_enumeration_established !== true) {
+    if (
+      c.observation.absence_observed === true &&
+      (c.observation.exhaustive_enumeration_established !== true ||
+        c.observation.enumeration_scope_matches_claim !== true)
+    ) {
       assert.equal(
         c.after.claim_status,
         c.before.claim_status,
-        `${c.id}: a successful empty observation without proven exhaustive enumeration must not become a negative fact`,
+        `${c.id}: an empty observation must not become a negative fact unless exhaustive enumeration is proven for the material claim scope`,
       );
       if (!c.observation.limitation) {
-        throw new Error(`${c.id}: non-exhaustive empty evidence must preserve its visibility/enumeration limitation`);
+        throw new Error(`${c.id}: absence evidence without exact-scope exhaustive enumeration must preserve its visibility/enumeration limitation`);
       }
     }
     if (c.observation.claim_status_after) {

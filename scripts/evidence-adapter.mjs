@@ -44,6 +44,9 @@ const PROVENANCE_ENUM_VALUES = {
   provider_execution: new Set(['read_executed', 'configured_only', 'skipped', 'failed', 'not_applicable']),
 };
 
+const UNPROVEN_EMPTY_RESULT_LIMITATION =
+  'empty result does not prove absence because enumeration completeness is unverified';
+
 function requiredString(value, label) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`${label} must be a non-empty string`);
@@ -57,6 +60,12 @@ function requiredEnum(value, label, allowed) {
     throw new Error(`${label} has unsupported value: ${normalized}`);
   }
   return normalized;
+}
+
+function optionalBoolean(value, label) {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'boolean') throw new Error(`${label} must be a boolean when provided`);
+  return value;
 }
 
 function boundedProvenanceString(value, field, enforceEnvelopeEnum = false) {
@@ -141,6 +150,9 @@ export function normalizeEvidenceObservation(observation) {
   const authority = requiredEnum(observation.authority, 'authority', AUTHORITY_VALUES);
   const specificity = requiredEnum(observation.specificity, 'specificity', SPECIFICITY_VALUES);
   const freshness = requiredEnum(observation.freshness, 'freshness', FRESHNESS_VALUES);
+  const resultEmpty = optionalBoolean(observation.result_empty, 'result_empty') ?? false;
+  const enumerationComplete =
+    optionalBoolean(observation.enumeration_complete, 'enumeration_complete') ?? false;
 
   if (!['support', 'contradict', 'context'].includes(direction)) {
     throw new Error(`unsupported direction: ${direction}`);
@@ -148,6 +160,18 @@ export function normalizeEvidenceObservation(observation) {
 
   if (adapter === 'search_snippet' && authority !== 'navigation_only') {
     throw new Error('search_snippet must remain navigation_only evidence');
+  }
+
+  // A successful empty read proves that a bounded query executed, not that the
+  // requested entity/state is globally absent. Direct support/contradiction
+  // from an empty result therefore requires the emitter to have independently
+  // established exhaustive enumeration for the material scope. Context-only
+  // evidence remains allowed and carries a standardized limitation when
+  // completeness is unknown.
+  if (resultEmpty && direction !== 'context' && !enumerationComplete) {
+    throw new Error(
+      'empty result cannot support or contradict a claim without enumeration_complete=true',
+    );
   }
 
   const provenance = {
@@ -176,6 +200,11 @@ export function normalizeEvidenceObservation(observation) {
     }
   }
 
+  const limitations = Array.isArray(observation.limitations) ? [...observation.limitations] : [];
+  if (resultEmpty && !enumerationComplete && !limitations.includes(UNPROVEN_EMPTY_RESULT_LIMITATION)) {
+    limitations.push(UNPROVEN_EMPTY_RESULT_LIMITATION);
+  }
+
   return {
     evidence: {
       evidence_id,
@@ -187,7 +216,7 @@ export function normalizeEvidenceObservation(observation) {
       specificity,
       freshness,
       provenance,
-      limitations: Array.isArray(observation.limitations) ? observation.limitations : [],
+      limitations,
     },
     limitation: null,
   };

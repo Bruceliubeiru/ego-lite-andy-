@@ -1,5 +1,5 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "purpose": "Executable semantic fixtures for the BruceAI research control loop. Core invariants are supplemented by grounded replays tied to existing standing veto cases, without introducing a new workflow engine or collaboration gate.",
   "cases": [
     {
@@ -252,6 +252,39 @@
         "independent_lineages": ["official-policy"],
         "replanned": true,
         "next_action": "reacquire one fresh bounded target-scoped page document or session proof"
+      }
+    },
+    {
+      "id": "replay-observed-fact-does-not-confirm-causal-claim",
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "fact-vs-inference-vs-causal-claim"
+      },
+      "before": {
+        "revision": 70,
+        "claim_kind": "causal",
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["baseline-observed-metric"],
+        "next_action": "verify whether the observed metric movement proves the proposed cause"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "new-observed-page-state",
+        "supports_claim_kind": "observed_fact",
+        "claim_status_after": "Needs verification",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 71,
+        "claim_kind": "causal",
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["baseline-observed-metric", "new-observed-page-state"],
+        "replanned": true,
+        "next_action": "challenge the causal claim with a rival explanation or discriminating bounded verification"
       }
     }
   ]

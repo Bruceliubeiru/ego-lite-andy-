@@ -1,0 +1,42 @@
+{
+  "version": "1.0.0",
+  "purpose": "Regression cases for materiality-first claim decomposition in BruceAI Research OS.",
+  "cases": [
+    {
+      "id": "decision-relevant-vs-exhaustive-decomposition",
+      "scenario": "A consequential research question could be decomposed into dozens of factual subtopics, but only a few can change the recommendation or next verification step.",
+      "expected": [
+        "Start from the decision boundary and keep only claims whose truth could materially change the decision or next verification step.",
+        "Do not create an exhaustive taxonomy merely because the facts are researchable.",
+        "Prefer high-impact uncertainty over low-impact easy lookups."
+      ]
+    },
+    {
+      "id": "compound-claim-vs-falsifiable-claims",
+      "scenario": "One claim bundles multiple propositions that could have different evidence, scope, status, or decision impact.",
+      "expected": [
+        "Split the compound statement into independently falsifiable material claims.",
+        "Keep scope attached to each resulting claim.",
+        "Do not split further when child claims would share the same evidence, status, and decision impact."
+      ]
+    },
+    {
+      "id": "shared-premise-vs-false-independent-confirmation",
+      "scenario": "Several apparent subclaims are restatements of one premise or are all supported by summaries derived from the same underlying evidence lineage.",
+      "expected": [
+        "Keep the shared premise explicit instead of manufacturing multiple independent confirmations.",
+        "Do not increase confidence by counting correlated restatements or repeated summaries as separate support.",
+        "Use lineage-aware Evidence Engine handling for the underlying evidence."
+      ]
+    },
+    {
+      "id": "first-frame-vs-rival-explanation",
+      "scenario": "The first plausible decomposition of a causal or strategic problem points strongly toward one explanation, but a realistic rival explanation could lead to a different action.",
+      "expected": [
+        "Identify at least one plausible rival explanation, exception, or disconfirming claim before treating the first frame as sufficient.",
+        "Keep observed fact, inference, causal explanation, estimate, and recommendation distinct.",
+        "Research the rival first when it is high-impact and still uncertain."
+      ]
+    }
+  ]
+}

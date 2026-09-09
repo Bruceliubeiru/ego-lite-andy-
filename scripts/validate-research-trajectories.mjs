@@ -114,6 +114,16 @@ for (const c of data.cases) {
         `${c.id}: independent lineage accounting changed unexpectedly`,
       );
     }
+    if (c.observation.absence_observed === true && c.observation.exhaustive_enumeration_established !== true) {
+      assert.equal(
+        c.after.claim_status,
+        c.before.claim_status,
+        `${c.id}: a successful empty observation without proven exhaustive enumeration must not become a negative fact`,
+      );
+      if (!c.observation.limitation) {
+        throw new Error(`${c.id}: non-exhaustive empty evidence must preserve its visibility/enumeration limitation`);
+      }
+    }
     if (c.observation.claim_status_after) {
       assert.equal(
         c.after.claim_status,
@@ -157,6 +167,7 @@ for (const required of [
   'replay-causal-nondiscriminating-evidence-stops',
   'replay-unresolved-provenance-does-not-create-independence',
   'replay-observed-fact-does-not-confirm-causal-claim',
+  'replay-successful-empty-read-preserves-unknown',
   'replay-ui-success-does-not-prove-provider-read',
 ]) {
   if (!ids.has(required)) throw new Error(`missing research trajectory semantic fixture: ${required}`);

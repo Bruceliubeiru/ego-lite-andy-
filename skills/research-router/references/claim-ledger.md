@@ -1,4 +1,4 @@
-# BruceAI Claim Ledger v0.4
+# BruceAI Claim Ledger v0.5
 
 The Claim Ledger is the smallest shared state for BruceAI research, challenge, strategy, innovation, and execution handoff.
 
@@ -66,6 +66,20 @@ If several conflict dimensions remain plausible, preserve the claim as `Conflict
 
 For causal conflicts, compare rival explanations against discriminating predictions. Prefer evidence that would differ under the competing explanations rather than evidence that both explanations already predict. If no safe bounded read can discriminate them and the distinction does not change the decision, stop and preserve the causal uncertainty instead of over-researching.
 
+## Research control loop: observe, update, then re-plan
+
+The verification plan is deliberately **one material step deep**. A useful next action is not a license to execute a precomputed chain of later actions after the evidence state has changed.
+
+1. **Select one highest-value verification action.** It may contain a bounded set of reads only when they are jointly required to answer the same immediate question and their order does not depend on intermediate results.
+2. **Execute and observe the result.** Record acquisition failures as limitations, not negative evidence. Preserve scope, lineage, provenance, and material conflicts.
+3. **Update the affected claim state before doing more research.** Re-evaluate `Status`, `Impact`, conflict diagnosis, confidence, and `Next action` using the new evidence. Do not leave later actions anchored to a stale pre-verification ledger.
+4. **Recompute the next action from the updated state.** A result may confirm the decision, create a new conflict, eliminate a rival explanation, make another claim decision-sensitive, or make all remaining research low-value.
+5. **Stop immediately when the stopping rule is met.** Do not finish a queued research batch merely because it was planned before the last observation.
+
+Do not serialize independent bounded reads unnecessarily. Parallel reads are acceptable when none depends on another's result, all are safe/read-only, and each remains useful under every plausible outcome of the others. When an intermediate result can change whether a later read is needed, its scope, or which source should be consulted, re-plan before continuing.
+
+This loop is a control discipline, not a new hard collaboration gate. Evidence, Conflict, and Execution remain the only hard gates.
+
 ### Stopping rule
 
 Set `Next action` to `none` and stop researching when all remaining unresolved claims satisfy at least one of these conditions:
@@ -91,6 +105,7 @@ Stopping is not the same as claiming certainty. Preserve residual uncertainty in
 - Scope travels with the claim. Do not silently generalize evidence from one account, plan, region, year, or variant.
 - Stronger evidence may change `Status`; downstream reasoning alone may not.
 - If evidence conflicts, diagnose the conflict dimension first; keep `Conflicted` until the conflict gate resolves it or make the decision conditional.
+- Re-plan after each material verification result; do not execute stale queued actions whose value depended on the old evidence state.
 - `Next action` exists to prevent open-ended research. Set it to `none` when more work has no decision value.
 - The Ledger is not a transcript, task manager, memory store, or workflow engine.
 

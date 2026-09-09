@@ -18,7 +18,7 @@ for (const [gate, path] of Object.entries(standingGatePaths)) {
   standingCaseIds.set(gate, new Set((gateData.cases ?? []).map((c) => c.id)));
 }
 
-if (!Array.isArray(data.cases) || data.cases.length < 9) {
+if (!Array.isArray(data.cases) || data.cases.length < 10) {
   throw new Error('research trajectory fixtures must include semantic and grounded replay cases');
 }
 
@@ -113,6 +113,18 @@ for (const c of data.cases) {
         `${c.id}: updated claim status must reflect the material observation`,
       );
     }
+    if (c.before.claim_kind === 'causal' && c.observation.supports_claim_kind === 'observed_fact') {
+      assert.notEqual(
+        c.after.claim_status,
+        'Confirmed',
+        `${c.id}: observed facts must not directly confirm a causal claim`,
+      );
+      assert.equal(
+        c.after.claim_kind,
+        'causal',
+        `${c.id}: observed evidence must not silently rewrite the causal claim kind`,
+      );
+    }
     if (typeof c.observation.decision_sensitive_after === 'boolean') {
       assert.equal(
         c.after.decision_sensitive,
@@ -133,12 +145,13 @@ for (const required of [
   'replay-degraded-fallback-preserves-uncertainty',
   'replay-causal-nondiscriminating-evidence-stops',
   'replay-unresolved-provenance-does-not-create-independence',
+  'replay-observed-fact-does-not-confirm-causal-claim',
 ]) {
   if (!ids.has(required)) throw new Error(`missing research trajectory semantic fixture: ${required}`);
 }
 
-if (groundedReplayCount < 5) {
-  throw new Error('research trajectory gate must include at least five cases grounded in standing veto tests');
+if (groundedReplayCount < 6) {
+  throw new Error('research trajectory gate must include at least six cases grounded in standing veto tests');
 }
 
 console.log(

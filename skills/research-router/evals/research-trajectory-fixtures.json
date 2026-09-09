@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "purpose": "Executable semantic fixtures for the BruceAI research control loop. Core invariants are supplemented by grounded replays tied to existing standing veto cases, without introducing a new workflow engine or collaboration gate.",
   "cases": [
     {
@@ -221,6 +221,37 @@
         "replanned": true,
         "next_action": "none",
         "stop_reason": "no safe decision-relevant discriminating bounded read is available; preserve causal uncertainty"
+      }
+    },
+    {
+      "id": "replay-unresolved-provenance-does-not-create-independence",
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "same-content-vs-wrong-provenance-boundary"
+      },
+      "before": {
+        "revision": 60,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-policy"],
+        "next_action": "verify the exact authenticated page state from the target session"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "provenance_established": false,
+        "limitation": "matching content was observed but the page document session or account boundary could not be tied to the target context",
+        "claim_status_after": "Needs verification",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 61,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-policy"],
+        "replanned": true,
+        "next_action": "reacquire one fresh bounded target-scoped page document or session proof"
       }
     }
   ]

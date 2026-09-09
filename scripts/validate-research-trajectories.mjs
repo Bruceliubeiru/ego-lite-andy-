@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 
 const fixturesPath = 'skills/research-router/evals/research-trajectory-fixtures.json';
 const data = JSON.parse(fs.readFileSync(fixturesPath, 'utf8'));
+const battleReplayData = JSON.parse(
+  fs.readFileSync('skills/research-router/evals/battle-replay-cases.json', 'utf8'),
+);
+const battleReplayIds = new Set((battleReplayData.cases ?? []).map((c) => c.id));
 
 const standingGatePaths = {
   'runtime-reliability-gates': 'skills/research-router/evals/runtime-reliability-gates.json',
@@ -36,6 +40,10 @@ for (const c of data.cases) {
     if (!gateIds.has(c.grounding.case_id)) {
       throw new Error(`${c.id}: grounding case '${c.grounding.case_id}' does not exist in '${c.grounding.gate}'`);
     }
+  }
+
+  if (c.battle_replay_id && !battleReplayIds.has(c.battle_replay_id)) {
+    throw new Error(`${c.id}: battle replay '${c.battle_replay_id}' does not exist in battle-replay-cases.json`);
   }
 
   assert.equal(
@@ -113,16 +121,19 @@ for (const c of data.cases) {
         `${c.id}: updated claim status must reflect the material observation`,
       );
     }
-    if (c.before.claim_kind === 'causal' && c.observation.supports_claim_kind === 'observed_fact') {
+    if (
+      ['inference', 'causal'].includes(c.before.claim_kind) &&
+      c.observation.supports_claim_kind === 'observed_fact'
+    ) {
       assert.notEqual(
         c.after.claim_status,
         'Confirmed',
-        `${c.id}: observed facts must not directly confirm a causal claim`,
+        `${c.id}: observed facts must not directly confirm an inference or causal claim`,
       );
       assert.equal(
         c.after.claim_kind,
-        'causal',
-        `${c.id}: observed evidence must not silently rewrite the causal claim kind`,
+        c.before.claim_kind,
+        `${c.id}: observed evidence must not silently rewrite the claim kind`,
       );
     }
     if (typeof c.observation.decision_sensitive_after === 'boolean') {
@@ -146,6 +157,7 @@ for (const required of [
   'replay-causal-nondiscriminating-evidence-stops',
   'replay-unresolved-provenance-does-not-create-independence',
   'replay-observed-fact-does-not-confirm-causal-claim',
+  'replay-ui-success-does-not-prove-provider-read',
 ]) {
   if (!ids.has(required)) throw new Error(`missing research trajectory semantic fixture: ${required}`);
 }

@@ -1,9 +1,10 @@
 {
-  "version": "1.5.0",
-  "purpose": "Executable semantic fixtures for the BruceAI research control loop. Core invariants are supplemented by grounded replays tied to existing standing veto cases, without introducing a new workflow engine or collaboration gate.",
+  "version": "1.6.0",
+  "purpose": "Executable semantic fixtures for the BruceAI research control loop. Core invariants are supplemented by grounded replays tied to existing standing veto cases; selected trajectories may also reference non-gating real battle replays for historical provenance without promoting those candidates into new collaboration gates.",
   "cases": [
     {
       "id": "decisive-evidence-invalidates-stale-plan",
+      "battle_replay_id": "geo-stale-thread-state-001",
       "before": {
         "revision": 4,
         "claim_status": "Needs verification",
@@ -345,6 +346,40 @@
         "independent_lineages": ["underlying-secondary-report", "exact-scope-first-party"],
         "replanned": true,
         "next_action": "compare authority specificity freshness and provenance, then run one discriminating verification only if material"
+      }
+    },
+    {
+      "id": "replay-ui-success-does-not-prove-provider-read",
+      "battle_replay_id": "geo-auth-ui-success-vs-read-executed-001",
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "fact-vs-inference-vs-causal-claim"
+      },
+      "before": {
+        "revision": 100,
+        "claim_kind": "inference",
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["workflow-configuration"],
+        "next_action": "treat the softened auth UI success as fresh authenticated provider verification"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "workflow-ui-conclusion",
+        "supports_claim_kind": "observed_fact",
+        "claim_status_after": "Needs verification",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 101,
+        "claim_kind": "inference",
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["workflow-configuration", "workflow-ui-conclusion"],
+        "replanned": true,
+        "next_action": "verify that an authoritative provider read actually executed before claiming fresh authenticated verification"
       }
     }
   ]

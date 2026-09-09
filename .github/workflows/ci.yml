@@ -28,6 +28,9 @@ jobs:
       - name: Validate research-router regression gate
         working-directory: .
         run: node scripts/validate-research-router.mjs
+      - name: Validate research control-loop trajectories
+        working-directory: .
+        run: node scripts/validate-research-trajectories.mjs
       - name: Validate evidence adapter normalization
         working-directory: .
         run: node scripts/validate-evidence-adapter.mjs

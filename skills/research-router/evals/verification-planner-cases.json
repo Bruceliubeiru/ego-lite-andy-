@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "purpose": "Regression cases for choosing the next BruceAI research action by expected decision value rather than queue order, ease, or repeated evidence.",
+  "version": "1.1.0",
+  "purpose": "Regression cases for choosing and re-planning the next BruceAI research action by expected decision value rather than queue order, ease, repeated evidence, or a stale precomputed plan.",
   "cases": [
     {
       "id": "high-impact-vs-decision-sensitive",
@@ -54,6 +54,24 @@
         "Stop researching and set the relevant Next action values to none.",
         "Do not equate stopping with certainty; preserve residual uncertainty in the evidence handoff.",
         "Avoid spending tokens on facts that cannot alter the decision."
+      ]
+    },
+    {
+      "id": "precomputed-batch-vs-observe-and-replan",
+      "scenario": "A planner initially chooses three sequential verification actions A, B, and C. Action A returns decisive scoped evidence that confirms the recommendation and makes B and C unable to change the decision, but they were part of the original research queue.",
+      "expected": [
+        "Update the affected claims immediately after A before executing later dependent research actions.",
+        "Recompute the next action from the new evidence state instead of blindly continuing the original queue.",
+        "Stop and skip B and C when the stopping rule is now met, while preserving any residual uncertainty that remains."
+      ]
+    },
+    {
+      "id": "intermediate-result-changes-verification-path",
+      "scenario": "The first verification action can return either an account-specific exception or the generic rule. If it returns the exception, the next useful read is an effective-date/account check; if it returns the generic rule, the next useful read is a different plan-scope check. A preplanned second action would only be correct for one branch.",
+      "expected": [
+        "Do not execute the conditional second action before observing and incorporating the first result.",
+        "Re-diagnose scope/conflict and select the next verification from the updated claim state.",
+        "Allow parallel reads only when each remains useful under every plausible outcome of the others and none depends on an intermediate result."
       ]
     }
   ]

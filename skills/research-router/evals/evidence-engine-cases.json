@@ -1,5 +1,5 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
@@ -59,6 +59,42 @@
         "Keep observed_fact, inference, causal, estimate, and recommendation as distinct claim kinds.",
         "Do not let downstream reasoning silently transform an observed fact into a confirmed causal claim.",
         "Challenge material causal or inferential claims with an alternative explanation or counterexample before high-confidence use."
+      ]
+    },
+    {
+      "id": "apparent-conflict-vs-scope-mismatch",
+      "scenario": "Two authoritative sources appear to disagree, but one applies to a generic population while the other applies to a narrower account, region, cohort, plan, product variant, or jurisdiction.",
+      "expected": [
+        "Diagnose scope before declaring a factual contradiction.",
+        "Allow both claims to remain true at their own scopes when the evidence supports that interpretation.",
+        "If the user decision depends on the narrower scope, verify that scope rather than collecting more generic sources."
+      ]
+    },
+    {
+      "id": "apparent-conflict-vs-definition-mismatch",
+      "scenario": "Two dashboards or documents report different values for what appears to be the same metric, but the denominator, unit, population, time grain, or calculation definition may differ.",
+      "expected": [
+        "Check definitions, units, denominators, and time grain before treating the values as contradictory.",
+        "Prefer a bounded definition or methodology read over adding a third summary source.",
+        "Keep the claim Conflicted if the definitions cannot be reconciled and the difference can change the decision."
+      ]
+    },
+    {
+      "id": "conflict-resolution-vs-majority-vote",
+      "scenario": "Three secondary summaries derived from one underlying report agree with each other while one current first-party exact-scope observation points the other way.",
+      "expected": [
+        "Collapse the derivative summaries into one evidence lineage rather than treating them as three votes.",
+        "Compare authority, specificity, freshness, and provenance instead of resolving the conflict by source count.",
+        "Select a discriminating verification only if the conflict remains material after lineage and scope normalization."
+      ]
+    },
+    {
+      "id": "causal-conflict-vs-nondiscriminating-evidence",
+      "scenario": "Two rival causal explanations both predict the already-observed metric pattern, and additional proposed research would collect more evidence that both explanations also predict.",
+      "expected": [
+        "Keep the causal claim unresolved rather than treating compatible evidence as discriminating proof.",
+        "Seek a safe bounded observation whose expected result differs under the rival explanations.",
+        "If no decision-relevant discriminating read is available, preserve causal uncertainty and stop rather than expanding research indefinitely."
       ]
     }
   ]

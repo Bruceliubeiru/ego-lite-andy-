@@ -1,4 +1,4 @@
-# BruceAI Claim Ledger v0.3
+# BruceAI Claim Ledger v0.4
 
 The Claim Ledger is the smallest shared state for BruceAI research, challenge, strategy, innovation, and execution handoff.
 
@@ -45,6 +45,27 @@ Do not invent numeric probabilities, information-gain scores, or fake precision 
 
 Before executing the selected action, challenge it once: identify the strongest reason it might be low-value or misleading. Common counterexamples include duplicate lineage, wrong account/region/variant, an observation surface too narrow to prove absence, a result that cannot change the decision, or a cheaper authoritative read that dominates it.
 
+## Conflict reasoning: diagnose before collecting more evidence
+
+`Conflicted` is not itself a diagnosis. Before widening research, identify the smallest plausible conflict dimension that can explain why apparently opposing evidence differs.
+
+Check these dimensions first:
+
+1. **Scope** — account, plan, region, cohort, variant, jurisdiction, inventory class, or other population boundary differs.
+2. **Time / freshness** — the evidence describes different policy dates, release versions, booking windows, market periods, or observed states.
+3. **Definition / denominator** — the sources use the same word for different metrics, eligibility rules, populations, units, or calculation methods.
+4. **Provenance / observation surface** — one result comes from the wrong page, account, frame, document, session, profile, cached state, partial listing, or non-exhaustive visibility surface.
+5. **Method / causal model** — two analyses observe compatible facts but attribute them to different mechanisms or use different estimation methods.
+6. **Authority** — the sources genuinely assert incompatible rules at the same material scope and time, and neither can be explained away by a narrower provenance or definition mismatch.
+
+Do not call two pieces of evidence contradictory until their material scope and definitions overlap. A generic rule and an exact-account exception may both be true. A monthly metric and a daily run-rate may both be true. A policy page and a stale cached snippet may not deserve equal conflict weight.
+
+When a likely conflict dimension is identified, choose the **smallest discriminating verification** that could resolve it. Examples: verify the exact account rather than search more generic policy pages; confirm the metric denominator rather than find a third dashboard; check the effective date rather than average old and new documentation; enumerate the bounded population rather than infer absence from a partial view.
+
+If several conflict dimensions remain plausible, preserve the claim as `Conflicted` and rank the next verification by the same decision-value rules above. Do not resolve a conflict by majority vote, repeated summaries from one lineage, or silently preferring the source that matches the first hypothesis.
+
+For causal conflicts, compare rival explanations against discriminating predictions. Prefer evidence that would differ under the competing explanations rather than evidence that both explanations already predict. If no safe bounded read can discriminate them and the distinction does not change the decision, stop and preserve the causal uncertainty instead of over-researching.
+
 ### Stopping rule
 
 Set `Next action` to `none` and stop researching when all remaining unresolved claims satisfy at least one of these conditions:
@@ -69,7 +90,7 @@ Stopping is not the same as claiming certainty. Preserve residual uncertainty in
 - Update the existing row when evidence changes; do not create a second narrative version of the same claim.
 - Scope travels with the claim. Do not silently generalize evidence from one account, plan, region, year, or variant.
 - Stronger evidence may change `Status`; downstream reasoning alone may not.
-- If evidence conflicts, keep `Conflicted` until the conflict gate resolves it or make the decision conditional.
+- If evidence conflicts, diagnose the conflict dimension first; keep `Conflicted` until the conflict gate resolves it or make the decision conditional.
 - `Next action` exists to prevent open-ended research. Set it to `none` when more work has no decision value.
 - The Ledger is not a transcript, task manager, memory store, or workflow engine.
 

@@ -1,0 +1,127 @@
+{
+  "version": "1.0",
+  "purpose": "Executable fixtures that distinguish a successful empty read from proof of absence. Empty results may remain context evidence when enumeration completeness is unknown, but direct support or contradiction from absence requires the emitter to have independently established exhaustive enumeration for the material scope.",
+  "valid": [
+    {
+      "name": "empty connector read with unknown completeness remains context only",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_empty": true,
+        "enumeration_complete": false,
+        "evidence_id": "e-empty-context",
+        "direction": "context",
+        "pointer": "connector://profiles/list",
+        "lineage_id": "connector-read:profiles-list",
+        "source_identity": "provider profile enumeration",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "read_executed"},
+        "limitations": []
+      },
+      "expect_evidence": true,
+      "expected_source_class": "connector_or_api",
+      "expected_evidence_limitations": [
+        "empty result does not prove absence because enumeration completeness is unverified"
+      ]
+    },
+    {
+      "name": "exhaustive empty connector read may directly support scoped absence",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_empty": true,
+        "enumeration_complete": true,
+        "evidence_id": "e-empty-complete",
+        "direction": "support",
+        "pointer": "connector://authoritative-inventory/list-all",
+        "lineage_id": "connector-read:authoritative-inventory-list-all",
+        "source_identity": "authoritative exhaustive inventory enumeration",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "read_executed"},
+        "limitations": []
+      },
+      "expect_evidence": true,
+      "expected_source_class": "connector_or_api"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "empty read cannot support absence without exhaustive enumeration",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_empty": true,
+        "enumeration_complete": false,
+        "evidence_id": "bad-empty-support",
+        "direction": "support",
+        "pointer": "connector://profiles/list",
+        "lineage_id": "connector-read:profiles-list",
+        "source_identity": "provider profile enumeration",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "read_executed"}
+      },
+      "error_contains": "empty result cannot support or contradict a claim without enumeration_complete=true"
+    },
+    {
+      "name": "empty read cannot contradict existence without exhaustive enumeration",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_empty": true,
+        "evidence_id": "bad-empty-contradict",
+        "direction": "contradict",
+        "pointer": "connector://profiles/list",
+        "lineage_id": "connector-read:profiles-list",
+        "source_identity": "provider profile enumeration",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "read_executed"}
+      },
+      "error_contains": "empty result cannot support or contradict a claim without enumeration_complete=true"
+    },
+    {
+      "name": "result_empty must be explicit boolean",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_empty": "yes",
+        "evidence_id": "bad-empty-type",
+        "direction": "context",
+        "pointer": "connector://query",
+        "lineage_id": "connector-read:query",
+        "source_identity": "provider query",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "read_executed"}
+      },
+      "error_contains": "result_empty must be a boolean when provided"
+    },
+    {
+      "name": "enumeration_complete must be explicit boolean",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_empty": true,
+        "enumeration_complete": "yes",
+        "evidence_id": "bad-complete-type",
+        "direction": "context",
+        "pointer": "connector://query",
+        "lineage_id": "connector-read:query",
+        "source_identity": "provider query",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "read_executed"}
+      },
+      "error_contains": "enumeration_complete must be a boolean when provided"
+    }
+  ]
+}

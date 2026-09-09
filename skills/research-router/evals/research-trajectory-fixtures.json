@@ -106,59 +106,246 @@
     },
     {
       "id": "replay-evaluator-null-preserves-unknown",
-      "grounding": {"gate": "runtime-reliability-gates", "case_id": "browser-evaluator-null-vs-proven-empty-result"},
-      "before": {"revision": 20, "claim_status": "Needs verification", "decision_sensitive": true, "independent_lineages": ["official-page-policy"], "next_action": "use browser evaluator to verify live page state"},
-      "observation": {"kind": "acquisition_failure", "material": true, "limitation": "bounded evaluator returned null but page-level emptiness is not distinguished from runtime result loss", "invalidates_stale_action": true},
-      "after": {"revision": 21, "claim_status": "Needs verification", "decision_sensitive": true, "independent_lineages": ["official-page-policy"], "replanned": true, "next_action": "cross-check with one bounded independent DOM or structured read"}
+      "grounding": {
+        "gate": "runtime-reliability-gates",
+        "case_id": "browser-evaluator-null-vs-proven-empty-result"
+      },
+      "before": {
+        "revision": 20,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-page-policy"],
+        "next_action": "use browser evaluator to verify live page state"
+      },
+      "observation": {
+        "kind": "acquisition_failure",
+        "material": true,
+        "limitation": "bounded evaluator returned null but page-level emptiness is not distinguished from runtime result loss",
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 21,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-page-policy"],
+        "replanned": true,
+        "next_action": "cross-check with one bounded independent DOM or structured read"
+      }
     },
     {
       "id": "replay-scope-conflict-changes-verification-path",
-      "grounding": {"gate": "evidence-engine-cases", "case_id": "apparent-conflict-vs-scope-mismatch"},
-      "before": {"revision": 30, "claim_status": "High probability", "decision_sensitive": true, "independent_lineages": ["generic-policy"], "next_action": "collect another generic policy source"},
-      "observation": {"kind": "evidence", "material": true, "lineage_id": "exact-scope-observation", "claim_status_after": "Conflicted", "decision_sensitive_after": true, "invalidates_stale_action": true},
-      "after": {"revision": 31, "claim_status": "Conflicted", "decision_sensitive": true, "independent_lineages": ["generic-policy", "exact-scope-observation"], "replanned": true, "next_action": "verify the material account region plan or cohort scope"}
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "apparent-conflict-vs-scope-mismatch"
+      },
+      "before": {
+        "revision": 30,
+        "claim_status": "High probability",
+        "decision_sensitive": true,
+        "independent_lineages": ["generic-policy"],
+        "next_action": "collect another generic policy source"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "exact-scope-observation",
+        "claim_status_after": "Conflicted",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 31,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["generic-policy", "exact-scope-observation"],
+        "replanned": true,
+        "next_action": "verify the material account region plan or cohort scope"
+      }
     },
     {
       "id": "replay-degraded-fallback-preserves-uncertainty",
-      "grounding": {"gate": "evidence-engine-cases", "case_id": "degraded-fallback-vs-equivalent-proof"},
-      "before": {"revision": 40, "claim_status": "Needs verification", "decision_sensitive": true, "independent_lineages": ["authenticated-target-page"], "next_action": "obtain exact-scope visual proof from the authenticated target page"},
-      "observation": {"kind": "evidence", "material": true, "lineage_id": "dom-fallback", "claim_status_after": "Needs verification", "decision_sensitive_after": true, "invalidates_stale_action": true},
-      "after": {"revision": 41, "claim_status": "Needs verification", "decision_sensitive": true, "independent_lineages": ["authenticated-target-page", "dom-fallback"], "replanned": true, "next_action": "seek one bounded equivalent proof path or preserve the fallback limitation"}
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "degraded-fallback-vs-equivalent-proof"
+      },
+      "before": {
+        "revision": 40,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["authenticated-target-page"],
+        "next_action": "obtain exact-scope visual proof from the authenticated target page"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "dom-fallback",
+        "claim_status_after": "Needs verification",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 41,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["authenticated-target-page", "dom-fallback"],
+        "replanned": true,
+        "next_action": "seek one bounded equivalent proof path or preserve the fallback limitation"
+      }
     },
     {
       "id": "replay-causal-nondiscriminating-evidence-stops",
-      "grounding": {"gate": "evidence-engine-cases", "case_id": "causal-conflict-vs-nondiscriminating-evidence"},
-      "before": {"revision": 50, "claim_status": "Conflicted", "decision_sensitive": true, "independent_lineages": ["shared-metric-pattern"], "next_action": "collect another correlational summary compatible with both explanations"},
-      "observation": {"kind": "evidence", "material": true, "lineage_id": "additional-compatible-metric", "claim_status_after": "Conflicted", "decision_sensitive_after": true, "invalidates_stale_action": true},
-      "after": {"revision": 51, "claim_status": "Conflicted", "decision_sensitive": true, "independent_lineages": ["shared-metric-pattern", "additional-compatible-metric"], "replanned": true, "next_action": "none", "stop_reason": "no safe decision-relevant discriminating bounded read is available; preserve causal uncertainty"}
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "causal-conflict-vs-nondiscriminating-evidence"
+      },
+      "before": {
+        "revision": 50,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["shared-metric-pattern"],
+        "next_action": "collect another correlational summary compatible with both explanations"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "additional-compatible-metric",
+        "claim_status_after": "Conflicted",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 51,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["shared-metric-pattern", "additional-compatible-metric"],
+        "replanned": true,
+        "next_action": "none",
+        "stop_reason": "no safe decision-relevant discriminating bounded read is available; preserve causal uncertainty"
+      }
     },
     {
       "id": "replay-unresolved-provenance-does-not-create-independence",
-      "grounding": {"gate": "evidence-engine-cases", "case_id": "same-content-vs-wrong-provenance-boundary"},
-      "before": {"revision": 60, "claim_status": "Needs verification", "decision_sensitive": true, "independent_lineages": ["official-policy"], "next_action": "verify the exact authenticated page state from the target session"},
-      "observation": {"kind": "evidence", "material": true, "provenance_established": false, "limitation": "matching content was observed but the page document session or account boundary could not be tied to the target context", "claim_status_after": "Needs verification", "decision_sensitive_after": true, "invalidates_stale_action": true},
-      "after": {"revision": 61, "claim_status": "Needs verification", "decision_sensitive": true, "independent_lineages": ["official-policy"], "replanned": true, "next_action": "reacquire one fresh bounded target-scoped page document or session proof"}
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "same-content-vs-wrong-provenance-boundary"
+      },
+      "before": {
+        "revision": 60,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-policy"],
+        "next_action": "verify the exact authenticated page state from the target session"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "provenance_established": false,
+        "limitation": "matching content was observed but the page document session or account boundary could not be tied to the target context",
+        "claim_status_after": "Needs verification",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 61,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-policy"],
+        "replanned": true,
+        "next_action": "reacquire one fresh bounded target-scoped page document or session proof"
+      }
     },
     {
       "id": "replay-observed-fact-does-not-confirm-causal-claim",
-      "grounding": {"gate": "evidence-engine-cases", "case_id": "fact-vs-inference-vs-causal-claim"},
-      "before": {"revision": 70, "claim_kind": "causal", "claim_status": "Needs verification", "decision_sensitive": true, "independent_lineages": ["baseline-observed-metric"], "next_action": "verify whether the observed metric movement proves the proposed cause"},
-      "observation": {"kind": "evidence", "material": true, "lineage_id": "new-observed-page-state", "supports_claim_kind": "observed_fact", "claim_status_after": "Needs verification", "decision_sensitive_after": true, "invalidates_stale_action": true},
-      "after": {"revision": 71, "claim_kind": "causal", "claim_status": "Needs verification", "decision_sensitive": true, "independent_lineages": ["baseline-observed-metric", "new-observed-page-state"], "replanned": true, "next_action": "challenge the causal claim with a rival explanation or discriminating bounded verification"}
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "fact-vs-inference-vs-causal-claim"
+      },
+      "before": {
+        "revision": 70,
+        "claim_kind": "causal",
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["baseline-observed-metric"],
+        "next_action": "verify whether the observed metric movement proves the proposed cause"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "new-observed-page-state",
+        "supports_claim_kind": "observed_fact",
+        "claim_status_after": "Needs verification",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 71,
+        "claim_kind": "causal",
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["baseline-observed-metric", "new-observed-page-state"],
+        "replanned": true,
+        "next_action": "challenge the causal claim with a rival explanation or discriminating bounded verification"
+      }
     },
     {
       "id": "replay-definition-mismatch-prefers-methodology-read",
-      "grounding": {"gate": "evidence-engine-cases", "case_id": "apparent-conflict-vs-definition-mismatch"},
-      "before": {"revision": 80, "claim_status": "Conflicted", "decision_sensitive": true, "independent_lineages": ["dashboard-a", "dashboard-b"], "next_action": "collect a third summary of the metric"},
-      "observation": {"kind": "evidence", "material": true, "lineage_id": "metric-definition-read", "claim_status_after": "Conflicted", "decision_sensitive_after": true, "invalidates_stale_action": true},
-      "after": {"revision": 81, "claim_status": "Conflicted", "decision_sensitive": true, "independent_lineages": ["dashboard-a", "dashboard-b", "metric-definition-read"], "replanned": true, "next_action": "reconcile denominator unit population and time grain before seeking more sources"}
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "apparent-conflict-vs-definition-mismatch"
+      },
+      "before": {
+        "revision": 80,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["dashboard-a", "dashboard-b"],
+        "next_action": "collect a third summary of the metric"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "metric-definition-read",
+        "claim_status_after": "Conflicted",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 81,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["dashboard-a", "dashboard-b", "metric-definition-read"],
+        "replanned": true,
+        "next_action": "reconcile denominator unit population and time grain before seeking more sources"
+      }
     },
     {
       "id": "replay-lineage-collapse-blocks-majority-vote",
-      "grounding": {"gate": "evidence-engine-cases", "case_id": "conflict-resolution-vs-majority-vote"},
-      "before": {"revision": 90, "claim_status": "Conflicted", "decision_sensitive": true, "independent_lineages": ["underlying-secondary-report", "exact-scope-first-party"], "next_action": "treat three agreeing summaries as a majority over the first-party observation"},
-      "observation": {"kind": "evidence", "material": true, "lineage_id": "underlying-secondary-report", "claim_status_after": "Conflicted", "decision_sensitive_after": true, "invalidates_stale_action": true},
-      "after": {"revision": 91, "claim_status": "Conflicted", "decision_sensitive": true, "independent_lineages": ["underlying-secondary-report", "exact-scope-first-party"], "replanned": true, "next_action": "compare authority specificity freshness and provenance, then run one discriminating verification only if material"}
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "conflict-resolution-vs-majority-vote"
+      },
+      "before": {
+        "revision": 90,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["underlying-secondary-report", "exact-scope-first-party"],
+        "next_action": "treat three agreeing summaries as a majority over the first-party observation"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "underlying-secondary-report",
+        "claim_status_after": "Conflicted",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 91,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["underlying-secondary-report", "exact-scope-first-party"],
+        "replanned": true,
+        "next_action": "compare authority specificity freshness and provenance, then run one discriminating verification only if material"
+      }
     }
   ]
 }

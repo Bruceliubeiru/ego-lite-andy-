@@ -4,15 +4,39 @@ import assert from 'node:assert/strict';
 const fixturesPath = 'skills/research-router/evals/research-trajectory-fixtures.json';
 const data = JSON.parse(fs.readFileSync(fixturesPath, 'utf8'));
 
-if (!Array.isArray(data.cases) || data.cases.length < 4) {
-  throw new Error('research trajectory fixtures must include the standing semantic cases');
+const standingGatePaths = {
+  'runtime-reliability-gates': 'skills/research-router/evals/runtime-reliability-gates.json',
+  'evidence-engine-cases': 'skills/research-router/evals/evidence-engine-cases.json',
+  'browser-auth-gates': 'skills/research-router/evals/browser-auth-gates.json',
+  'collaboration-cases': 'skills/research-router/evals/collaboration-cases.json',
+  'research-router-cases': 'skills/research-router/evals/cases.json',
+};
+
+const standingCaseIds = new Map();
+for (const [gate, path] of Object.entries(standingGatePaths)) {
+  const gateData = JSON.parse(fs.readFileSync(path, 'utf8'));
+  standingCaseIds.set(gate, new Set((gateData.cases ?? []).map((c) => c.id)));
+}
+
+if (!Array.isArray(data.cases) || data.cases.length < 6) {
+  throw new Error('research trajectory fixtures must include semantic and grounded replay cases');
 }
 
 const ids = new Set();
+let groundedReplayCount = 0;
 for (const c of data.cases) {
   if (!c.id || ids.has(c.id)) throw new Error(`invalid or duplicate trajectory case id: ${c.id}`);
   ids.add(c.id);
   if (!c.before || !c.observation || !c.after) throw new Error(`trajectory case '${c.id}' is incomplete`);
+
+  if (c.grounding) {
+    groundedReplayCount += 1;
+    const gateIds = standingCaseIds.get(c.grounding.gate);
+    if (!gateIds) throw new Error(`${c.id}: unknown standing gate '${c.grounding.gate}'`);
+    if (!gateIds.has(c.grounding.case_id)) {
+      throw new Error(`${c.id}: grounding case '${c.grounding.case_id}' does not exist in '${c.grounding.gate}'`);
+    }
+  }
 
   assert.equal(
     c.after.revision,
@@ -84,8 +108,16 @@ for (const required of [
   'new-conflict-replans-before-more-research',
   'acquisition-failure-does-not-become-negative-evidence',
   'same-lineage-summary-does-not-increase-independence',
+  'replay-evaluator-null-preserves-unknown',
+  'replay-scope-conflict-changes-verification-path',
 ]) {
   if (!ids.has(required)) throw new Error(`missing research trajectory semantic fixture: ${required}`);
 }
 
-console.log(`research trajectory gate passed: ${data.cases.length} executable state-transition fixtures`);
+if (groundedReplayCount < 2) {
+  throw new Error('research trajectory gate must include at least two cases grounded in standing veto tests');
+}
+
+console.log(
+  `research trajectory gate passed: ${data.cases.length} state-transition fixtures (${groundedReplayCount} grounded replays)`,
+);

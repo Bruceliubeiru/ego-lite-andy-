@@ -1,0 +1,108 @@
+{
+  "version": "1.0.0",
+  "purpose": "Executable semantic fixtures for the BruceAI research control loop. These test state-transition invariants without introducing a new workflow engine or collaboration gate.",
+  "cases": [
+    {
+      "id": "decisive-evidence-invalidates-stale-plan",
+      "before": {
+        "revision": 4,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-policy"],
+        "next_action": "verify exact account state"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "exact-account-ui",
+        "claim_status_after": "Confirmed",
+        "decision_sensitive_after": false,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 5,
+        "claim_status": "Confirmed",
+        "decision_sensitive": false,
+        "independent_lineages": ["official-policy", "exact-account-ui"],
+        "replanned": true,
+        "next_action": "none"
+      }
+    },
+    {
+      "id": "new-conflict-replans-before-more-research",
+      "before": {
+        "revision": 2,
+        "claim_status": "High probability",
+        "decision_sensitive": true,
+        "independent_lineages": ["generic-official-policy"],
+        "next_action": "verify plan scope"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "exact-account-ui",
+        "claim_status_after": "Conflicted",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 3,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["generic-official-policy", "exact-account-ui"],
+        "replanned": true,
+        "next_action": "diagnose scope or effective-date conflict"
+      }
+    },
+    {
+      "id": "acquisition-failure-does-not-become-negative-evidence",
+      "before": {
+        "revision": 7,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-doc"],
+        "next_action": "read authenticated page"
+      },
+      "observation": {
+        "kind": "acquisition_failure",
+        "material": true,
+        "limitation": "authenticated page read failed within the bounded target session",
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 8,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-doc"],
+        "replanned": true,
+        "next_action": "choose another safe bounded verification path"
+      }
+    },
+    {
+      "id": "same-lineage-summary-does-not-increase-independence",
+      "before": {
+        "revision": 11,
+        "claim_status": "High probability",
+        "decision_sensitive": true,
+        "independent_lineages": ["upstream-release-notes"],
+        "next_action": "find independent runtime evidence"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "upstream-release-notes",
+        "claim_status_after": "High probability",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": false
+      },
+      "after": {
+        "revision": 12,
+        "claim_status": "High probability",
+        "decision_sensitive": true,
+        "independent_lineages": ["upstream-release-notes"],
+        "replanned": true,
+        "next_action": "find independent runtime evidence"
+      }
+    }
+  ]
+}

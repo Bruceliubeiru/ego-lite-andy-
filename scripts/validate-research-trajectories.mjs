@@ -22,6 +22,30 @@ for (const [gate, path] of Object.entries(standingGatePaths)) {
   standingCaseIds.set(gate, new Set((gateData.cases ?? []).map((c) => c.id)));
 }
 
+const hasExactScopeExhaustiveAbsenceProof = (observation) =>
+  observation.absence_observed === true &&
+  observation.exhaustive_enumeration_established === true &&
+  observation.enumeration_scope_matches_claim === true;
+
+assert.equal(
+  hasExactScopeExhaustiveAbsenceProof({
+    absence_observed: true,
+    exhaustive_enumeration_established: true,
+    enumeration_scope_matches_claim: false,
+  }),
+  false,
+  'exhaustive enumeration of the wrong scope must not qualify as negative evidence',
+);
+assert.equal(
+  hasExactScopeExhaustiveAbsenceProof({
+    absence_observed: true,
+    exhaustive_enumeration_established: true,
+    enumeration_scope_matches_claim: true,
+  }),
+  true,
+  'exact-scope exhaustive enumeration should qualify for absence evaluation',
+);
+
 if (!Array.isArray(data.cases) || data.cases.length < 10) {
   throw new Error('research trajectory fixtures must include semantic and grounded replay cases');
 }
@@ -114,11 +138,7 @@ for (const c of data.cases) {
         `${c.id}: independent lineage accounting changed unexpectedly`,
       );
     }
-    if (
-      c.observation.absence_observed === true &&
-      (c.observation.exhaustive_enumeration_established !== true ||
-        c.observation.enumeration_scope_matches_claim !== true)
-    ) {
+    if (c.observation.absence_observed === true && !hasExactScopeExhaustiveAbsenceProof(c.observation)) {
       assert.equal(
         c.after.claim_status,
         c.before.claim_status,

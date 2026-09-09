@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "purpose": "Executable semantic fixtures for the BruceAI research control loop. Core invariants are supplemented by grounded replays tied to existing standing veto cases, without introducing a new workflow engine or collaboration gate.",
   "cases": [
     {
@@ -285,6 +285,66 @@
         "independent_lineages": ["baseline-observed-metric", "new-observed-page-state"],
         "replanned": true,
         "next_action": "challenge the causal claim with a rival explanation or discriminating bounded verification"
+      }
+    },
+    {
+      "id": "replay-definition-mismatch-prefers-methodology-read",
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "apparent-conflict-vs-definition-mismatch"
+      },
+      "before": {
+        "revision": 80,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["dashboard-a", "dashboard-b"],
+        "next_action": "collect a third summary of the metric"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "metric-definition-read",
+        "claim_status_after": "Conflicted",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 81,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["dashboard-a", "dashboard-b", "metric-definition-read"],
+        "replanned": true,
+        "next_action": "reconcile denominator unit population and time grain before seeking more sources"
+      }
+    },
+    {
+      "id": "replay-lineage-collapse-blocks-majority-vote",
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "conflict-resolution-vs-majority-vote"
+      },
+      "before": {
+        "revision": 90,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["underlying-secondary-report", "exact-scope-first-party"],
+        "next_action": "treat three agreeing summaries as a majority over the first-party observation"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "underlying-secondary-report",
+        "claim_status_after": "Conflicted",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 91,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["underlying-secondary-report", "exact-scope-first-party"],
+        "replanned": true,
+        "next_action": "compare authority specificity freshness and provenance, then run one discriminating verification only if material"
       }
     }
   ]

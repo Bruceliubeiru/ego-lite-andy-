@@ -8,6 +8,7 @@ const fixturePaths = [
   'skills/research-router/evals/evidence-adapter-limitation-provenance-fixtures.json',
   'skills/research-router/evals/evidence-adapter-provenance-type-fixtures.json',
   'skills/research-router/evals/evidence-adapter-schema-enum-fixtures.json',
+  'skills/research-router/evals/evidence-adapter-empty-result-fixtures.json',
 ];
 const fixtureSets = fixturePaths.map((path) => JSON.parse(fs.readFileSync(path, 'utf8')));
 
@@ -31,6 +32,13 @@ for (const fixtures of fixtureSets) {
         `fixture '${fixture.name}' source class changed`,
       );
       assert.equal(result.limitation, null, `fixture '${fixture.name}' should not emit limitation`);
+      for (const limitation of fixture.expected_evidence_limitations ?? []) {
+        assert.equal(
+          result.evidence.limitations.includes(limitation),
+          true,
+          `fixture '${fixture.name}' missing expected evidence limitation '${limitation}'`,
+        );
+      }
     } else {
       assert.equal(result.evidence, null, `fixture '${fixture.name}' must not create evidence`);
       assert.equal(

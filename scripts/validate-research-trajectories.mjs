@@ -18,7 +18,7 @@ for (const [gate, path] of Object.entries(standingGatePaths)) {
   standingCaseIds.set(gate, new Set((gateData.cases ?? []).map((c) => c.id)));
 }
 
-if (!Array.isArray(data.cases) || data.cases.length < 6) {
+if (!Array.isArray(data.cases) || data.cases.length < 8) {
   throw new Error('research trajectory fixtures must include semantic and grounded replay cases');
 }
 
@@ -50,6 +50,10 @@ for (const c of data.cases) {
 
   if (c.after.decision_sensitive === false) {
     assert.equal(c.after.next_action, 'none', `${c.id}: non-decision-sensitive state must stop research`);
+  }
+
+  if (c.after.next_action === 'none' && c.after.decision_sensitive !== false && !c.after.stop_reason) {
+    throw new Error(`${c.id}: stopping with decision-sensitive uncertainty must preserve an explicit stop_reason`);
   }
 
   if (c.observation.invalidates_stale_action) {
@@ -110,12 +114,14 @@ for (const required of [
   'same-lineage-summary-does-not-increase-independence',
   'replay-evaluator-null-preserves-unknown',
   'replay-scope-conflict-changes-verification-path',
+  'replay-degraded-fallback-preserves-uncertainty',
+  'replay-causal-nondiscriminating-evidence-stops',
 ]) {
   if (!ids.has(required)) throw new Error(`missing research trajectory semantic fixture: ${required}`);
 }
 
-if (groundedReplayCount < 2) {
-  throw new Error('research trajectory gate must include at least two cases grounded in standing veto tests');
+if (groundedReplayCount < 4) {
+  throw new Error('research trajectory gate must include at least four cases grounded in standing veto tests');
 }
 
 console.log(

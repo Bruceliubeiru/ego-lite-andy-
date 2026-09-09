@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "purpose": "Executable semantic fixtures for the BruceAI research control loop. Core invariants are supplemented by grounded replays tied to existing standing veto cases, without introducing a new workflow engine or collaboration gate.",
   "cases": [
     {
@@ -160,6 +160,67 @@
         "independent_lineages": ["generic-policy", "exact-scope-observation"],
         "replanned": true,
         "next_action": "verify the material account region plan or cohort scope"
+      }
+    },
+    {
+      "id": "replay-degraded-fallback-preserves-uncertainty",
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "degraded-fallback-vs-equivalent-proof"
+      },
+      "before": {
+        "revision": 40,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["authenticated-target-page"],
+        "next_action": "obtain exact-scope visual proof from the authenticated target page"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "dom-fallback",
+        "claim_status_after": "Needs verification",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 41,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["authenticated-target-page", "dom-fallback"],
+        "replanned": true,
+        "next_action": "seek one bounded equivalent proof path or preserve the fallback limitation"
+      }
+    },
+    {
+      "id": "replay-causal-nondiscriminating-evidence-stops",
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "causal-conflict-vs-nondiscriminating-evidence"
+      },
+      "before": {
+        "revision": 50,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["shared-metric-pattern"],
+        "next_action": "collect another correlational summary compatible with both explanations"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "additional-compatible-metric",
+        "claim_status_after": "Conflicted",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 51,
+        "claim_status": "Conflicted",
+        "decision_sensitive": true,
+        "independent_lineages": ["shared-metric-pattern", "additional-compatible-metric"],
+        "replanned": true,
+        "next_action": "none",
+        "stop_reason": "no safe decision-relevant discriminating bounded read is available; preserve causal uncertainty"
       }
     }
   ]

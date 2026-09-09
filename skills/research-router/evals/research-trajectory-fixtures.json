@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "purpose": "Executable semantic fixtures for the BruceAI research control loop. Core invariants are supplemented by grounded replays tied to existing standing veto cases; selected trajectories may also reference non-gating real battle replays for historical provenance without promoting those candidates into new collaboration gates.",
   "cases": [
     {
@@ -346,6 +346,39 @@
         "independent_lineages": ["underlying-secondary-report", "exact-scope-first-party"],
         "replanned": true,
         "next_action": "compare authority specificity freshness and provenance, then run one discriminating verification only if material"
+      }
+    },
+    {
+      "id": "replay-successful-empty-read-preserves-unknown",
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "acquisition-failure-vs-negative-fact"
+      },
+      "before": {
+        "revision": 95,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-capability-doc"],
+        "next_action": "treat a successful empty enumeration as proof that no target state exists"
+      },
+      "observation": {
+        "kind": "evidence",
+        "material": true,
+        "lineage_id": "bounded-successful-empty-list",
+        "absence_observed": true,
+        "exhaustive_enumeration_established": false,
+        "limitation": "the bounded query executed and returned an empty collection, but completeness of the relevant population was not independently established",
+        "claim_status_after": "Needs verification",
+        "decision_sensitive_after": true,
+        "invalidates_stale_action": true
+      },
+      "after": {
+        "revision": 96,
+        "claim_status": "Needs verification",
+        "decision_sensitive": true,
+        "independent_lineages": ["official-capability-doc", "bounded-successful-empty-list"],
+        "replanned": true,
+        "next_action": "use one bounded authoritative exhaustive enumeration if available; otherwise preserve unknown without mutating state"
       }
     },
     {

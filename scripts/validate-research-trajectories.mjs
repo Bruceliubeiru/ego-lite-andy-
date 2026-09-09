@@ -18,7 +18,7 @@ for (const [gate, path] of Object.entries(standingGatePaths)) {
   standingCaseIds.set(gate, new Set((gateData.cases ?? []).map((c) => c.id)));
 }
 
-if (!Array.isArray(data.cases) || data.cases.length < 8) {
+if (!Array.isArray(data.cases) || data.cases.length < 9) {
   throw new Error('research trajectory fixtures must include semantic and grounded replay cases');
 }
 
@@ -82,14 +82,30 @@ for (const c of data.cases) {
   }
 
   if (c.observation.kind === 'evidence') {
-    if (!c.observation.lineage_id) throw new Error(`${c.id}: evidence observation must declare lineage_id`);
-    const expectedLineages = new Set(c.before.independent_lineages);
-    expectedLineages.add(c.observation.lineage_id);
-    assert.deepEqual(
-      afterLineages,
-      [...expectedLineages].sort(),
-      `${c.id}: independent lineage accounting changed unexpectedly`,
-    );
+    if (c.observation.provenance_established === false) {
+      assert.deepEqual(
+        afterLineages,
+        beforeLineages,
+        `${c.id}: evidence with unresolved provenance must not increase independent lineage count`,
+      );
+      assert.equal(
+        c.after.claim_status,
+        c.before.claim_status,
+        `${c.id}: evidence with unresolved material provenance must not upgrade claim truth status`,
+      );
+      if (!c.observation.limitation) {
+        throw new Error(`${c.id}: unresolved evidence provenance must preserve a bounded limitation`);
+      }
+    } else {
+      if (!c.observation.lineage_id) throw new Error(`${c.id}: evidence observation must declare lineage_id`);
+      const expectedLineages = new Set(c.before.independent_lineages);
+      expectedLineages.add(c.observation.lineage_id);
+      assert.deepEqual(
+        afterLineages,
+        [...expectedLineages].sort(),
+        `${c.id}: independent lineage accounting changed unexpectedly`,
+      );
+    }
     if (c.observation.claim_status_after) {
       assert.equal(
         c.after.claim_status,
@@ -116,12 +132,13 @@ for (const required of [
   'replay-scope-conflict-changes-verification-path',
   'replay-degraded-fallback-preserves-uncertainty',
   'replay-causal-nondiscriminating-evidence-stops',
+  'replay-unresolved-provenance-does-not-create-independence',
 ]) {
   if (!ids.has(required)) throw new Error(`missing research trajectory semantic fixture: ${required}`);
 }
 
-if (groundedReplayCount < 4) {
-  throw new Error('research trajectory gate must include at least four cases grounded in standing veto tests');
+if (groundedReplayCount < 5) {
+  throw new Error('research trajectory gate must include at least five cases grounded in standing veto tests');
 }
 
 console.log(

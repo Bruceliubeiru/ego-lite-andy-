@@ -1,5 +1,5 @@
 {
-  "version": "1.4.1",
+  "version": "1.5.0",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
@@ -9,6 +9,16 @@
         "Keep both pieces of evidence in the same claim envelope with their different scope and provenance rather than averaging them.",
         "Use the authenticated exact-scope evidence for the user's actual state and the broader policy for the general rule unless stronger evidence resolves the mismatch.",
         "If the conflict remains material, keep the claim Conflicted or conditional instead of silently upgrading certainty."
+      ]
+    },
+    {
+      "id": "stale-state-vs-newer-material-evidence",
+      "scenario": "A long-running issue, dashboard, cached page, prior provider read, or earlier research summary records an older state, while a newer bounded observation from the same material scope records a state change that can alter the current decision.",
+      "expected": [
+        "Treat observation time and effective state time as material provenance when the claim is about current state; do not let an older summary or initial issue body silently override newer state-changing evidence.",
+        "When sources describe successive states rather than the same moment, preserve both in temporal order instead of manufacturing a factual conflict.",
+        "Before acting on a consequential current-state claim, consume the newest relevant state-changing evidence available within the bounded target scope and invalidate stale next actions when that evidence changes the decision.",
+        "Do not infer that a newer source is more authoritative merely because it is newer; freshness only resolves temporal state when provenance and scope are sufficient for the claim being evaluated."
       ]
     },
     {

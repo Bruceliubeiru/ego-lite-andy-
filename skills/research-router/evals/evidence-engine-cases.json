@@ -1,13 +1,14 @@
 {
-  "version": "1.5.3",
+  "version": "1.5.4",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
       "id": "scope-specific-evidence-vs-broader-rule",
-      "scenario": "A broad current first-party policy appears to conflict with a current authenticated first-party page for the exact account, plan, region, or period being researched.",
+      "scenario": "A broad current first-party policy appears to conflict with current exact-scope evidence for the account, plan, region, period, product/runtime version, or execution environment being researched.",
       "expected": [
         "Keep both pieces of evidence in the same claim envelope with their different scope and provenance rather than averaging them.",
-        "Use the authenticated exact-scope evidence for the user's actual state and the broader policy for the general rule unless stronger evidence resolves the mismatch.",
+        "Use the strongest exact-scope evidence for the user's actual state and the broader policy for the general rule unless stronger evidence resolves the mismatch.",
+        "Treat platform-family compatibility as a broad scope, not a universal environment guarantee: a statement such as 'runs on macOS' does not by itself prove that every macOS version, architecture, hardware generation, or app build can launch or behave equivalently. Conversely, a bounded failure report on one environment is scoped counterevidence, not proof that the whole platform family is unsupported. Upstream citrolabs/ego-lite#387 reports app 0.5.0.28 failing to run on macOS 12.7.6, with a second user reporting the same symptom; retain that evidence at its reported environment scope unless stronger verification broadens it.",
         "If the conflict remains material, keep the claim Conflicted or conditional instead of silently upgrading certainty."
       ]
     },

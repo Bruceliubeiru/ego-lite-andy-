@@ -49,6 +49,11 @@ const requiredGroundings = new Map([
   ],
 ]);
 
+const requiredBattleReplays = new Map([
+  ['decisive-evidence-invalidates-stale-plan', 'geo-stale-thread-state-001'],
+  ['replay-ui-success-does-not-prove-provider-read', 'geo-auth-ui-success-vs-read-executed-001'],
+]);
+
 const hasExactScopeExhaustiveAbsenceProof = (observation) =>
   observation.absence_observed === true &&
   observation.exhaustive_enumeration_established === true &&
@@ -104,6 +109,15 @@ for (const c of data.cases) {
 
   if (c.battle_replay_id && !battleReplayIds.has(c.battle_replay_id)) {
     throw new Error(`${c.id}: battle replay '${c.battle_replay_id}' does not exist in battle-replay-cases.json`);
+  }
+
+  if (requiredBattleReplays.has(c.id)) {
+    const requiredBattleReplayId = requiredBattleReplays.get(c.id);
+    assert.equal(
+      c.battle_replay_id,
+      requiredBattleReplayId,
+      `${c.id}: critical trajectory must retain provenance to battle replay ${requiredBattleReplayId}`,
+    );
   }
 
   assert.equal(
@@ -237,6 +251,10 @@ for (const required of [
 
 for (const requiredId of requiredGroundings.keys()) {
   if (!ids.has(requiredId)) throw new Error(`missing critical grounded research trajectory fixture: ${requiredId}`);
+}
+
+for (const requiredId of requiredBattleReplays.keys()) {
+  if (!ids.has(requiredId)) throw new Error(`missing critical battle-provenance research trajectory fixture: ${requiredId}`);
 }
 
 if (groundedReplayCount < 6) {

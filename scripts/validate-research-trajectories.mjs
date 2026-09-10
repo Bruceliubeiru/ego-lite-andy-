@@ -22,6 +22,33 @@ for (const [gate, path] of Object.entries(standingGatePaths)) {
   standingCaseIds.set(gate, new Set((gateData.cases ?? []).map((c) => c.id)));
 }
 
+const requiredGroundings = new Map([
+  [
+    'decisive-evidence-invalidates-stale-plan',
+    ['evidence-engine-cases', 'stale-state-vs-newer-material-evidence'],
+  ],
+  [
+    'same-lineage-summary-does-not-increase-independence',
+    ['evidence-engine-cases', 'duplicate-discovery-vs-independent-verification'],
+  ],
+  [
+    'replay-definition-mismatch-prefers-methodology-read',
+    ['evidence-engine-cases', 'apparent-conflict-vs-definition-mismatch'],
+  ],
+  [
+    'replay-lineage-collapse-blocks-majority-vote',
+    ['evidence-engine-cases', 'conflict-resolution-vs-majority-vote'],
+  ],
+  [
+    'replay-successful-empty-read-preserves-unknown',
+    ['evidence-engine-cases', 'acquisition-failure-vs-negative-fact'],
+  ],
+  [
+    'replay-ui-success-does-not-prove-provider-read',
+    ['evidence-engine-cases', 'fact-vs-inference-vs-causal-claim'],
+  ],
+]);
+
 const hasExactScopeExhaustiveAbsenceProof = (observation) =>
   observation.absence_observed === true &&
   observation.exhaustive_enumeration_established === true &&
@@ -64,6 +91,15 @@ for (const c of data.cases) {
     if (!gateIds.has(c.grounding.case_id)) {
       throw new Error(`${c.id}: grounding case '${c.grounding.case_id}' does not exist in '${c.grounding.gate}'`);
     }
+  }
+
+  if (requiredGroundings.has(c.id)) {
+    const [requiredGate, requiredCaseId] = requiredGroundings.get(c.id);
+    assert.deepEqual(
+      [c.grounding?.gate, c.grounding?.case_id],
+      [requiredGate, requiredCaseId],
+      `${c.id}: critical trajectory must remain grounded in ${requiredGate}/${requiredCaseId}`,
+    );
   }
 
   if (c.battle_replay_id && !battleReplayIds.has(c.battle_replay_id)) {
@@ -197,6 +233,10 @@ for (const required of [
   'replay-ui-success-does-not-prove-provider-read',
 ]) {
   if (!ids.has(required)) throw new Error(`missing research trajectory semantic fixture: ${required}`);
+}
+
+for (const requiredId of requiredGroundings.keys()) {
+  if (!ids.has(requiredId)) throw new Error(`missing critical grounded research trajectory fixture: ${requiredId}`);
 }
 
 if (groundedReplayCount < 6) {

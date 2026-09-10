@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
+  "version": "1.7.1",
   "purpose": "Executable semantic fixtures for the BruceAI research control loop. Core invariants are supplemented by grounded replays tied to existing standing veto cases; selected trajectories may also reference non-gating real battle replays for historical provenance without promoting those candidates into new collaboration gates.",
   "cases": [
     {
@@ -81,6 +81,10 @@
     },
     {
       "id": "same-lineage-summary-does-not-increase-independence",
+      "grounding": {
+        "gate": "evidence-engine-cases",
+        "case_id": "duplicate-discovery-vs-independent-verification"
+      },
       "before": {
         "revision": 11,
         "claim_status": "High probability",

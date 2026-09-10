@@ -191,6 +191,8 @@ for (const required of [
   'replay-causal-nondiscriminating-evidence-stops',
   'replay-unresolved-provenance-does-not-create-independence',
   'replay-observed-fact-does-not-confirm-causal-claim',
+  'replay-definition-mismatch-prefers-methodology-read',
+  'replay-lineage-collapse-blocks-majority-vote',
   'replay-successful-empty-read-preserves-unknown',
   'replay-ui-success-does-not-prove-provider-read',
 ]) {

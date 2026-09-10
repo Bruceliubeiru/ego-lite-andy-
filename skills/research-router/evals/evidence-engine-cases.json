@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.5.1",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
@@ -28,7 +28,7 @@
         "Do not accept matching content or a still-resolving ref alone as proof that the evidence came from the target context or node.",
         "For evidence obtained through a saved browser ref, treat frame identity, document identity, and node identity as one provenance chain when those boundaries can change the conclusion; reacquire a fresh scoped snapshot/ref after a document or frame replacement, and when the exact released runtime cannot guarantee ref identity across partial snapshots or agent rounds.",
         "Record provenance as partial or unknown and seek a bounded page-local, frame-local, or session-bound verification path rather than widening browser permissions or reading unrelated profile state.",
-        "Keep upstream-main fixes distinct from released/installed behavior: the ref-identity fix merged in citrolabs/ego-lite#375 is not proof that an older released runtime already preserves frame/document/node identity.",
+        "Tie provenance guarantees to the exact installed runtime rather than to upstream-main status alone: citrolabs/ego-lite v2.0.0, released 2026-09-10, includes the ref/frame provenance fixes from #375, #377, and #378, but that release is not evidence that older installed versions already preserve the same frame/document/node identity guarantees.",
         "If attribution cannot be established and it can change the conclusion, leave the claim Needs verification."
       ]
     },

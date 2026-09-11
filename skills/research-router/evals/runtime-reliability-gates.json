@@ -1,5 +1,5 @@
 {
-  "version": "1.9.0",
+  "version": "1.9.1",
   "purpose": "Regression gates for Ego/browser runtime reliability and token-efficient recovery behavior.",
   "cases": [
     {
@@ -9,7 +9,7 @@
         "Do not infer timing units from Playwright, Puppeteer, Cypress, upstream-main examples, or neighboring helpers; verify the exact helper signature for the released or installed runtime before issuing a long wait.",
         "Prefer state-based waits over long fixed sleeps. When a fixed wait is unavoidable, use a small bounded value whose unit is confirmed for that exact helper and runtime.",
         "If the runtime contract is ambiguous, fail fast or probe with a harmless short wait rather than risking a multi-minute or multi-hour hang.",
-        "Keep timeout-unit claims scoped to the exact API generation: for example, upstream main documents page.waitForTimeout(ms) in milliseconds, while older/global helper reports may use different semantics; do not silently transfer one contract to another."
+        "Keep timeout-unit claims scoped to the exact API generation and installed skill contract: citrolabs/ego-lite v2.0.0 introduced the Page API where page.waitForTimeout(4000) is 4000 milliseconds, while the legacy wait(4000) remains a 4000-second wait for compatibility. Do not silently transfer timing semantics between the new Page API, legacy helpers, neighboring frameworks, or older installed skill versions."
       ]
     },
     {

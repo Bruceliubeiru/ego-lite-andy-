@@ -1,5 +1,5 @@
 {
-  "version": "1.5.4",
+  "version": "1.5.5",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
@@ -24,9 +24,10 @@
     },
     {
       "id": "same-content-vs-wrong-provenance-boundary",
-      "scenario": "A browser/network result contains the expected URL, payload, text, or control, but the originating page, document, frame, CDP session, task space, profile, account, or saved semantic ref cannot be tied to the target research context. This includes partial snapshots or later agent rounds where an older ref may be reused for a sibling or replacement node even without a top-level navigation.",
+      "scenario": "A browser/network result contains the expected URL, payload, text, or control, but the originating window, page, document, frame, CDP session, task space, profile, account, or saved semantic ref cannot be tied to the target research context. This includes partial snapshots or later agent rounds where an older ref may be reused for a sibling or replacement node even without a top-level navigation.",
       "expected": [
-        "Do not accept matching content or a still-resolving ref alone as proof that the evidence came from the target context or node.",
+        "Do not accept matching content, visible focus, or a still-resolving ref alone as proof that the evidence came from the target context or node.",
+        "For multi-window or multi-Space browser state, bind consequential observations and target-changing actions to the exact originating window/Space/page when that identity can change the conclusion, then verify the target-local postcondition after the action. UI focus or the visually foreground window is not sufficient provenance when the runtime may route through stale/global active-target state. Upstream citrolabs/ego-lite#210, #267, and #390 are independent wrong-target reports across profile switching, DevTools, and Space selection; treat them as evidence for the shared target-identity boundary, not as proof that every build or action is affected.",
         "For evidence obtained through a saved browser ref, treat frame identity, document identity, and node identity as one provenance chain when those boundaries can change the conclusion; reacquire a fresh scoped snapshot/ref after a document or frame replacement, and when the exact released runtime cannot guarantee ref identity across partial snapshots or agent rounds.",
         "Record provenance as partial or unknown and seek a bounded page-local, frame-local, or session-bound verification path rather than widening browser permissions or reading unrelated profile state.",
         "Bind provenance guarantees to the exact executing component versions rather than to a repository tag or upstream-main status alone: citrolabs/ego-lite v2.0.0, released 2026-09-10, ships the ego-browser skill artifact and includes the ref/frame provenance fixes from #375, #377, and #378, but that tag does not by itself prove which separately downloaded ego lite browser app build is executing or that older skill installations preserve the same guarantees. When a claim depends on both browser-side and skill-side behavior, verify or retain the effective version provenance for both components; otherwise keep the guarantee partial or unknown.",

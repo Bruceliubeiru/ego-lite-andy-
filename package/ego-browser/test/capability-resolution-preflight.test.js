@@ -124,11 +124,14 @@ test("missing canonical path does not promote a shadow copy to negative evidence
 test("unreadable app path remains unverified instead of becoming evidence of absence", () => {
   const error = new Error("permission denied");
   error.code = "EACCES";
-  const result = inspectInstalledApp(["/Applications/ego lite.app/Contents/Info.plist"], {
-    lstatSync() {
-      throw error;
+  const result = inspectInstalledApp(
+    ["/Applications/ego lite.app/Contents/Info.plist"],
+    {
+      lstatSync() {
+        throw error;
+      },
     },
-  });
+  );
 
   assert.equal(result.status, "unverified");
   assert.equal(result.installations.length, 1);

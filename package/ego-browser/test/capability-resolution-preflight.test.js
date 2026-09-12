@@ -7,10 +7,21 @@ import {
 } from '../../../scripts/capability-resolution-preflight.mjs';
 
 test('parseSkillMetadata extracts bounded frontmatter version and date', () => {
-  assert.deepEqual(
-    parseSkillMetadata('---\nname: ego-browser\nmetadata:\n  version: "2.0.0"\n  date: "2026-09-09"\n---\n# ego-browser\n'),
-    { version: '2.0.0', date: '2026-09-09' },
-  );
+  const source = [
+    '---',
+    'name: ego-browser',
+    'metadata:',
+    '  version: "2.0.0"',
+    '  date: "2026-09-09"',
+    '---',
+    '# ego-browser',
+    '',
+  ].join('\n');
+
+  assert.deepEqual(parseSkillMetadata(source), {
+    version: '2.0.0',
+    date: '2026-09-09',
+  });
 });
 
 test('same realpath is not treated as a shadow conflict', () => {
@@ -31,8 +42,9 @@ test('same realpath is not treated as a shadow conflict', () => {
     },
   ]);
 
-  assert.equal(result.status, 'bounded-verified');
-  assert.equal(result.effectiveVersion, '2.0.0');
+  assert.equal(result.status, 'bounded-clear');
+  assert.equal(result.effectiveVersion, null);
+  assert.equal(result.candidateVersion, '2.0.0');
   assert.deepEqual(result.conflicts, []);
 });
 
@@ -56,7 +68,7 @@ test('different shadow copy makes effective Skill version ambiguous', () => {
 
   assert.equal(result.status, 'ambiguous');
   assert.equal(result.effectiveVersion, null);
-  assert.equal(result.canonicalVersion, '2.0.0');
+  assert.equal(result.candidateVersion, '2.0.0');
   assert.equal(result.conflicts.length, 1);
   assert.equal(result.conflicts[0].version, '1.2.6');
 });
@@ -79,5 +91,6 @@ test('missing canonical path does not promote a shadow copy to negative evidence
 
   assert.equal(result.status, 'unverified');
   assert.equal(result.effectiveVersion, null);
+  assert.equal(result.candidateVersion, null);
   assert.equal(result.conflicts.length, 1);
 });

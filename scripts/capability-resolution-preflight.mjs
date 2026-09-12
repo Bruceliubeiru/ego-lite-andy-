@@ -213,12 +213,17 @@ export function runPreflight({ homeDir = os.homedir(), cwd = process.cwd(), fsAp
   };
 }
 
+export function preflightExitCode(report) {
+  const statuses = [report?.skill?.resolution?.status, report?.app?.status];
+  if (statuses.includes('ambiguous')) return 2;
+  if (statuses.includes('unverified')) return 3;
+  return 0;
+}
+
 function main() {
   const report = runPreflight();
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-  if (report.skill.resolution.status === 'ambiguous' || report.app.status === 'ambiguous') {
-    process.exitCode = 2;
-  }
+  process.exitCode = preflightExitCode(report);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {

@@ -73,6 +73,30 @@ test("different shadow copy makes effective Skill version ambiguous", () => {
   assert.equal(result.conflicts[0].version, "1.2.6");
 });
 
+test("unreadable shadow path does not become evidence that no conflict exists", () => {
+  const result = evaluateSkillResolution([
+    {
+      role: "canonical",
+      exists: true,
+      path: "/home/user/.agents/skills/ego-browser/SKILL.md",
+      realpath: "/Applications/ego lite.app/skill/SKILL.md",
+      version: "2.0.0",
+    },
+    {
+      role: "shadow-candidate",
+      exists: null,
+      path: "/home/user/.pi/agent/skills/ego-browser/SKILL.md",
+      error: "EACCES",
+    },
+  ]);
+
+  assert.equal(result.status, "unverified");
+  assert.equal(result.effectiveVersion, null);
+  assert.equal(result.candidateVersion, "2.0.0");
+  assert.equal(result.conflicts.length, 1);
+  assert.equal(result.conflicts[0].error, "EACCES");
+});
+
 test("missing canonical path does not promote a shadow copy to negative evidence", () => {
   const result = evaluateSkillResolution([
     {

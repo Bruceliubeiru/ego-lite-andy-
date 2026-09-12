@@ -154,7 +154,17 @@ function readPlistKey(plistPath, key) {
 export function inspectInstalledApp(plistPaths, fsApi = fs) {
   const observed = [];
   for (const plistPath of plistPaths) {
-    if (!fsApi.existsSync(plistPath)) continue;
+    try {
+      fsApi.lstatSync(plistPath);
+    } catch (error) {
+      if (error?.code === 'ENOENT') continue;
+      observed.push({
+        plistPath,
+        error: error?.code || error?.message || String(error),
+      });
+      continue;
+    }
+
     try {
       observed.push({
         plistPath,
@@ -184,7 +194,9 @@ export function inspectInstalledApp(plistPaths, fsApi = fs) {
     reason:
       identities.size > 1
         ? 'multiple installed ego lite app bundles report different build identities'
-        : 'installed app identity observed; this does not prove which build is currently executing',
+        : readable.length > 0
+          ? 'installed app identity observed; this does not prove which build is currently executing'
+          : 'one or more documented app paths could not be inspected; acquisition failure is not evidence that the app is absent',
     installations: observed,
   };
 }

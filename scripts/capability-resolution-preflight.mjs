@@ -155,6 +155,46 @@ function readPlistKey(plistPath, key) {
   }).trim();
 }
 
+export function evaluateAppIdentity(observed) {
+  if (observed.length === 0) {
+    return {
+      status: 'unverified',
+      reason: 'ego lite Info.plist was not found in the two documented install locations',
+      installations: [],
+    };
+  }
+
+  const readable = observed.filter((item) => item.shortVersion || item.build);
+  const unreadable = observed.filter((item) => item.error);
+  const identities = new Set(readable.map((item) => `${item.shortVersion ?? ''}:${item.build ?? ''}`));
+
+  if (identities.size > 1) {
+    return {
+      status: 'ambiguous',
+      reason: 'multiple installed ego lite app bundles report different build identities',
+      installations: observed,
+    };
+  }
+
+  if (unreadable.length > 0) {
+    return {
+      status: 'unverified',
+      reason:
+        'one or more documented app paths could not be inspected; acquisition failure is not evidence that another installation is absent',
+      installations: observed,
+    };
+  }
+
+  return {
+    status: readable.length > 0 ? 'observed' : 'unverified',
+    reason:
+      readable.length > 0
+        ? 'installed app identity observed; this does not prove which build is currently executing'
+        : 'one or more documented app paths could not be inspected; acquisition failure is not evidence that the app is absent',
+    installations: observed,
+  };
+}
+
 export function inspectInstalledApp(plistPaths, fsApi = fs) {
   const observed = [];
   for (const plistPath of plistPaths) {
@@ -183,26 +223,7 @@ export function inspectInstalledApp(plistPaths, fsApi = fs) {
     }
   }
 
-  if (observed.length === 0) {
-    return {
-      status: 'unverified',
-      reason: 'ego lite Info.plist was not found in the two documented install locations',
-      installations: [],
-    };
-  }
-
-  const readable = observed.filter((item) => item.shortVersion || item.build);
-  const identities = new Set(readable.map((item) => `${item.shortVersion ?? ''}:${item.build ?? ''}`));
-  return {
-    status: identities.size > 1 ? 'ambiguous' : readable.length > 0 ? 'observed' : 'unverified',
-    reason:
-      identities.size > 1
-        ? 'multiple installed ego lite app bundles report different build identities'
-        : readable.length > 0
-          ? 'installed app identity observed; this does not prove which build is currently executing'
-          : 'one or more documented app paths could not be inspected; acquisition failure is not evidence that the app is absent',
-    installations: observed,
-  };
+  return evaluateAppIdentity(observed);
 }
 
 export function runPreflight({ homeDir = os.homedir(), cwd = process.cwd(), fsApi = fs } = {}) {

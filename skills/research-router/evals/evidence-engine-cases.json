@@ -1,5 +1,5 @@
 {
-  "version": "1.5.9",
+  "version": "1.5.10",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
@@ -69,10 +69,11 @@
     },
     {
       "id": "fact-vs-inference-vs-causal-claim",
-      "scenario": "Observed evidence establishes a page state or metric, while downstream reasoning wants to infer a broader explanation, cause, estimate, or recommendation from it.",
+      "scenario": "Observed evidence establishes a page state, metric, test result, or runtime failure, while downstream reasoning wants to infer a broader explanation, cause, regression attribution, estimate, or recommendation from it.",
       "expected": [
         "Keep observed_fact, inference, causal, estimate, and recommendation as distinct claim kinds.",
-        "Do not let downstream reasoning silently transform an observed fact into a confirmed causal claim.",
+        "Do not let downstream reasoning silently transform an observed fact into a confirmed causal claim. A failing test proves that the tested state failed under its recorded scope; it does not by itself prove that the candidate change caused the failure.",
+        "For change-attribution claims, compare a bounded unchanged baseline and candidate under materially equivalent environment, inputs, runtime, and artifact provenance when feasible. If the same failure reproduces on the unchanged base, treat that as counterevidence to a candidate-caused regression rather than hiding the failing test. Upstream pull request citrolabs/ego-lite#391 reports 17/69 real-browser E2E failures for a plugin-only change, then reproduces the primary failures on the target base with an identical built SDK SHA-256, supporting inherited-baseline failure rather than regression attribution to the plugin patch.",
         "Challenge material causal or inferential claims with an alternative explanation or counterexample before high-confidence use."
       ]
     },

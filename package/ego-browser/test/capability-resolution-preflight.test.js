@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  evaluateAppIdentity,
   evaluateSkillResolution,
   inspectInstalledApp,
   parseSkillMetadata,
@@ -164,6 +165,45 @@ test("unreadable app path remains unverified instead of becoming evidence of abs
   assert.equal(result.installations.length, 1);
   assert.equal(result.installations[0].error, "EACCES");
   assert.match(result.reason, /acquisition failure/i);
+});
+
+test("readable app identity plus unreadable known path remains unverified", () => {
+  const result = evaluateAppIdentity([
+    {
+      plistPath: "/Applications/ego lite.app/Contents/Info.plist",
+      shortVersion: "2.0.0",
+      build: "200",
+    },
+    {
+      plistPath: "/Users/test/Applications/ego lite.app/Contents/Info.plist",
+      error: "EACCES",
+    },
+  ]);
+
+  assert.equal(result.status, "unverified");
+  assert.equal(result.installations.length, 2);
+  assert.match(result.reason, /another installation is absent/i);
+});
+
+test("known conflicting app identities remain ambiguous even with another unreadable path", () => {
+  const result = evaluateAppIdentity([
+    {
+      plistPath: "/Applications/ego lite.app/Contents/Info.plist",
+      shortVersion: "2.0.0",
+      build: "200",
+    },
+    {
+      plistPath: "/Users/test/Applications/ego lite.app/Contents/Info.plist",
+      shortVersion: "1.2.6",
+      build: "126",
+    },
+    {
+      plistPath: "/Volumes/unknown/ego lite.app/Contents/Info.plist",
+      error: "EACCES",
+    },
+  ]);
+
+  assert.equal(result.status, "ambiguous");
 });
 
 test("preflight exit code keeps ambiguous and unverified results non-successful", () => {

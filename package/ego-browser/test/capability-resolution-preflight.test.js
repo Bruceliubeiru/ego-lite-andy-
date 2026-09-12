@@ -75,6 +75,33 @@ test("different shadow copy makes effective Skill version ambiguous", () => {
   assert.equal(result.conflicts[0].version, "1.2.6");
 });
 
+test("same-version shadow with different content identity remains ambiguous", () => {
+  const result = evaluateSkillResolution([
+    {
+      role: "canonical",
+      exists: true,
+      path: "/home/user/.agents/skills/ego-browser/SKILL.md",
+      realpath: "/home/user/.agents/skills/ego-browser/SKILL.md",
+      version: "2.0.0",
+      digest: "canonical-digest",
+    },
+    {
+      role: "shadow-candidate",
+      exists: true,
+      path: "/home/user/.claude/skills/ego-browser/SKILL.md",
+      realpath: "/home/user/.claude/skills/ego-browser/SKILL.md",
+      version: "2.0.0",
+      digest: "modified-copy-digest",
+    },
+  ]);
+
+  assert.equal(result.status, "ambiguous");
+  assert.equal(result.effectiveVersion, null);
+  assert.equal(result.candidateVersion, "2.0.0");
+  assert.equal(result.conflicts.length, 1);
+  assert.equal(result.conflicts[0].digest, "modified-copy-digest");
+});
+
 test("unreadable shadow path does not become evidence that no conflict exists", () => {
   const result = evaluateSkillResolution([
     {

@@ -84,6 +84,7 @@ export function evaluateSkillResolution(observations) {
     return {
       status: 'unverified',
       effectiveVersion: null,
+      candidateVersion: null,
       reason: 'canonical skill path was not readable',
       conflicts: presentShadows.map((item) => item.path),
     };
@@ -99,7 +100,7 @@ export function evaluateSkillResolution(observations) {
     return {
       status: 'ambiguous',
       effectiveVersion: null,
-      canonicalVersion: canonical.version,
+      candidateVersion: canonical.version,
       reason: 'known host/project skill copies can shadow the canonical path',
       conflicts: conflicts.map((item) => ({
         path: item.path,
@@ -110,11 +111,11 @@ export function evaluateSkillResolution(observations) {
   }
 
   return {
-    status: 'bounded-verified',
-    effectiveVersion: canonical.version,
-    canonicalVersion: canonical.version,
+    status: 'bounded-clear',
+    effectiveVersion: null,
+    candidateVersion: canonical.version,
     reason:
-      'no conflicting copy was found in the bounded, documented shadow paths checked by this preflight',
+      'no conflicting copy was found in the bounded, documented shadow paths; host-level effective resolution remains unverified',
     conflicts: [],
   };
 }
@@ -191,7 +192,7 @@ export function runPreflight({ homeDir = os.homedir(), cwd = process.cwd(), fsAp
     },
     app,
     confidenceNote:
-      'bounded-verified means no conflict was found in the documented paths checked; it is not proof of every host-specific precedence rule. Installed app identity is not runtime process identity.',
+      'bounded-clear means only that no conflict was found in the documented paths checked. It does not establish host-level effective Skill resolution. Installed app identity is not runtime process identity.',
   };
 }
 

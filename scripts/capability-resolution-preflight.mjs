@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 const SKILL_RELATIVE = path.join('skills', 'ego-browser', 'SKILL.md');
@@ -61,6 +62,7 @@ export function inspectSkillPath(candidate, fsApi = fs) {
       realpath,
       version: metadata.version,
       date: metadata.date,
+      digest: createHash('sha256').update(text).digest('hex'),
     };
   } catch (error) {
     if (error?.code === 'ENOENT') {
@@ -109,6 +111,7 @@ export function evaluateSkillResolution(observations) {
 
   const conflicts = presentShadows.filter((item) => {
     if (item.realpath && canonical.realpath && item.realpath === canonical.realpath) return false;
+    if (item.digest && canonical.digest) return item.digest !== canonical.digest;
     if (!item.version || !canonical.version) return true;
     return item.version !== canonical.version;
   });
@@ -122,6 +125,7 @@ export function evaluateSkillResolution(observations) {
       conflicts: conflicts.map((item) => ({
         path: item.path,
         version: item.version ?? null,
+        digest: item.digest ?? null,
         realpath: item.realpath ?? null,
       })),
     };

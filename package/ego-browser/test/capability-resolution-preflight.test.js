@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   evaluateSkillResolution,
   parseSkillMetadata,
+  preflightExitCode,
 } from "../../../scripts/capability-resolution-preflight.mjs";
 
 test("parseSkillMetadata extracts bounded frontmatter version and date", () => {
@@ -117,4 +118,38 @@ test("missing canonical path does not promote a shadow copy to negative evidence
   assert.equal(result.effectiveVersion, null);
   assert.equal(result.candidateVersion, null);
   assert.equal(result.conflicts.length, 1);
+});
+
+test("preflight exit code keeps ambiguous and unverified results non-successful", () => {
+  assert.equal(
+    preflightExitCode({
+      skill: { resolution: { status: "ambiguous" } },
+      app: { status: "observed" },
+    }),
+    2,
+  );
+  assert.equal(
+    preflightExitCode({
+      skill: { resolution: { status: "unverified" } },
+      app: { status: "observed" },
+    }),
+    3,
+  );
+  assert.equal(
+    preflightExitCode({
+      skill: { resolution: { status: "bounded-clear" } },
+      app: { status: "unverified" },
+    }),
+    3,
+  );
+});
+
+test("preflight exits successfully only when bounded checks are conclusive", () => {
+  assert.equal(
+    preflightExitCode({
+      skill: { resolution: { status: "bounded-clear" } },
+      app: { status: "observed" },
+    }),
+    0,
+  );
 });

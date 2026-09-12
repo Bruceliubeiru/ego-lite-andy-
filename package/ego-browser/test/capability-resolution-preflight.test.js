@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   evaluateSkillResolution,
+  inspectInstalledApp,
   parseSkillMetadata,
   preflightExitCode,
 } from "../../../scripts/capability-resolution-preflight.mjs";
@@ -118,6 +119,24 @@ test("missing canonical path does not promote a shadow copy to negative evidence
   assert.equal(result.effectiveVersion, null);
   assert.equal(result.candidateVersion, null);
   assert.equal(result.conflicts.length, 1);
+});
+
+test("unreadable app path remains unverified instead of becoming evidence of absence", () => {
+  const error = new Error("permission denied");
+  error.code = "EACCES";
+  const result = inspectInstalledApp(
+    ["/Applications/ego lite.app/Contents/Info.plist"],
+    {
+      lstatSync() {
+        throw error;
+      },
+    },
+  );
+
+  assert.equal(result.status, "unverified");
+  assert.equal(result.installations.length, 1);
+  assert.equal(result.installations[0].error, "EACCES");
+  assert.match(result.reason, /acquisition failure/i);
 });
 
 test("preflight exit code keeps ambiguous and unverified results non-successful", () => {

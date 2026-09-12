@@ -79,6 +79,9 @@ export function evaluateSkillResolution(observations) {
   const presentShadows = observations.filter(
     (item) => item.role === 'shadow-candidate' && item.exists === true,
   );
+  const unreadableShadows = observations.filter(
+    (item) => item.role === 'shadow-candidate' && item.exists === null,
+  );
 
   if (!canonical || canonical.exists !== true) {
     return {
@@ -87,6 +90,20 @@ export function evaluateSkillResolution(observations) {
       candidateVersion: null,
       reason: 'canonical skill path was not readable',
       conflicts: presentShadows.map((item) => item.path),
+    };
+  }
+
+  if (unreadableShadows.length > 0) {
+    return {
+      status: 'unverified',
+      effectiveVersion: null,
+      candidateVersion: canonical.version,
+      reason:
+        'one or more known shadow paths could not be inspected; acquisition failure is not evidence that a shadow copy is absent',
+      conflicts: unreadableShadows.map((item) => ({
+        path: item.path,
+        error: item.error ?? null,
+      })),
     };
   }
 

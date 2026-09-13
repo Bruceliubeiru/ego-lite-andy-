@@ -211,12 +211,12 @@ test("app identity reads use the validated plist realpath rather than the mutabl
         return resolved;
       },
     },
-    (filePath, key) => {
+    (filePath) => {
       readPaths.push(filePath);
-      return key === "CFBundleShortVersionString" ? "2.0.0" : "200";
+      return { shortVersion: "2.0.0", build: "200" };
     },
   );
 
   assert.equal(result.status, "observed");
-  assert.deepEqual(readPaths, [resolved, resolved]);
+  assert.deepEqual(readPaths, [resolved]);
 });

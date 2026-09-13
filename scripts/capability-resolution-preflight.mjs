@@ -95,20 +95,6 @@ export function evaluateSkillResolution(observations) {
     };
   }
 
-  if (unreadableShadows.length > 0) {
-    return {
-      status: 'unverified',
-      effectiveVersion: null,
-      candidateVersion: canonical.version,
-      reason:
-        'one or more known shadow paths could not be inspected; acquisition failure is not evidence that a shadow copy is absent',
-      conflicts: unreadableShadows.map((item) => ({
-        path: item.path,
-        error: item.error ?? null,
-      })),
-    };
-  }
-
   const conflicts = presentShadows.filter((item) => {
     if (item.realpath && canonical.realpath && item.realpath === canonical.realpath) return false;
     if (item.digest && canonical.digest) return item.digest !== canonical.digest;
@@ -127,6 +113,20 @@ export function evaluateSkillResolution(observations) {
         version: item.version ?? null,
         digest: item.digest ?? null,
         realpath: item.realpath ?? null,
+      })),
+    };
+  }
+
+  if (unreadableShadows.length > 0) {
+    return {
+      status: 'unverified',
+      effectiveVersion: null,
+      candidateVersion: canonical.version,
+      reason:
+        'one or more known shadow paths could not be inspected; acquisition failure is not evidence that a shadow copy is absent',
+      conflicts: unreadableShadows.map((item) => ({
+        path: item.path,
+        error: item.error ?? null,
       })),
     };
   }

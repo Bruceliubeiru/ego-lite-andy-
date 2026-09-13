@@ -33,22 +33,20 @@ For this bridge, that means:
 
 This is a compatibility and least-authority guardrail. It is **not** a reason to add write-capable Ego tools.
 
-## Current plan gate: Plus private custom MCP / Tunnel remains unconfirmed
+## Current plan gate: Plus private custom MCP / Tunnel is closed by published guidance
 
-As of 2026-09-03, OpenAI's first-party guidance is internally inconsistent for ChatGPT Plus. The dedicated Developer Mode guide explicitly lists **Pro, Plus, Business, Enterprise, and Education** accounts as eligible on the web and describes Developer Mode as full MCP client support for read and write tools.
+As of 2026-09-14, OpenAI's current plan-specific Help Center guidance says **Pro** users can connect MCPs with read/fetch permissions in developer mode, while **Full MCP** is available to Business and Enterprise/Edu. The same current article does not grant ChatGPT Plus an equivalent custom MCP developer-mode entitlement.
 
-However, the narrower plan-specific FAQ in the current Help Center article says **Pro users can connect MCPs with read/fetch permissions in developer mode** and that **Full MCP is only available to Business and Enterprise/Edu users currently**. Because the exact capability being gated here is Plus private custom MCP / Secure MCP Tunnel use comparable to Pro, this narrower plan-specific statement is more probative than the generic eligibility line, while the conflicting Developer Mode guide prevents a categorical "Plus unsupported" conclusion.
+For the exact secondary compatibility signal watched by this repository — **Plus gaining private custom MCP developer-mode read/fetch or Secure MCP Tunnel access comparable to current Pro support** — treat the published-documentation gate as **closed / not currently supported by published plan guidance**. This is a statement about the current documented entitlement, not proof that every Plus account UI is incapable of exposing an experimental feature.
 
-Therefore treat the public-documentation state as **inconsistent / unconfirmed**, not open. Do not advance the private custom MCP or Tunnel E2E gate from documentation alone.
-
-Secure MCP Tunnel permissions also remain separate from ChatGPT Developer Mode eligibility. A working Platform tunnel does not by itself prove that a particular ChatGPT account can attach it.
+Do not advance the private custom MCP or Tunnel E2E gate from generic Apps SDK availability, plugin-directory availability, or Secure MCP Tunnel documentation alone. Secure MCP Tunnel connects private/local MCP servers to **supported OpenAI products**; tunnel availability does not independently establish a ChatGPT Plus entitlement. Tunnel authorization and ChatGPT plan entitlement remain separate checks.
 
 ### Plus validation sequence — only after the entitlement gate is actually proven
 
 The gate becomes open only if either:
 
 1. OpenAI publishes an unambiguous Plus-specific statement that private custom MCP read/fetch and/or Secure MCP Tunnel attachment is supported; or
-2. authenticated target-account evidence shows the target Plus account exposes all required steps: **Developer mode**, custom developer-app creation, intended read/fetch tools, and **Tunnel** selection.
+2. bounded authenticated target-account evidence shows the target Plus account exposes all required steps: **Developer mode**, custom developer-app creation, intended read/fetch tools, and **Tunnel** selection.
 
 Once one of those conditions is met, validate without widening bridge permissions:
 
@@ -60,7 +58,7 @@ Once one of those conditions is met, validate without widening bridge permission
 
 If any account-level UI step is absent, keep the gate closed rather than falling back to a public relay or weakening network boundaries.
 
-The generic Developer Mode guide documents write-capable MCP support, but that does **not** change this bridge's V1 authority: keep it read-only. Permission expansion, browser writes, or credential-capable tools require separate review.
+The generic Developer Mode guide documents write-capable MCP support on supported plans, but that does **not** change this bridge's V1 authority: keep it read-only. Permission expansion, browser writes, or credential-capable tools require separate review.
 
 ## Plugin marketplace is not a plan-gate bypass
 

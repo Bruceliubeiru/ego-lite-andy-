@@ -215,12 +215,27 @@ export function evaluateAppIdentity(observed) {
 
   const readable = observed.filter((item) => item.shortVersion || item.build);
   const unreadable = observed.filter((item) => item.error);
-  const identities = new Set(readable.map((item) => `${item.shortVersion ?? ''}:${item.build ?? ''}`));
+  const incomplete = readable.filter((item) => !item.shortVersion || !item.build);
+  let hasKnownConflict = false;
 
-  if (identities.size > 1) {
+  for (let left = 0; left < readable.length && !hasKnownConflict; left += 1) {
+    for (let right = left + 1; right < readable.length; right += 1) {
+      const a = readable[left];
+      const b = readable[right];
+      const versionConflict =
+        a.shortVersion && b.shortVersion && a.shortVersion !== b.shortVersion;
+      const buildConflict = a.build && b.build && a.build !== b.build;
+      if (versionConflict || buildConflict) {
+        hasKnownConflict = true;
+        break;
+      }
+    }
+  }
+
+  if (hasKnownConflict) {
     return {
       status: 'ambiguous',
-      reason: 'multiple installed ego lite app bundles report different build identities',
+      reason: 'multiple installed ego lite app bundles report conflicting known identity fields',
       installations: observed,
     };
   }
@@ -230,6 +245,15 @@ export function evaluateAppIdentity(observed) {
       status: 'unverified',
       reason:
         'one or more documented app paths could not be inspected; acquisition failure is not evidence that another installation is absent',
+      installations: observed,
+    };
+  }
+
+  if (incomplete.length > 0) {
+    return {
+      status: 'unverified',
+      reason:
+        'one or more readable app bundles have incomplete identity metadata; missing fields are not evidence of a conflicting build identity',
       installations: observed,
     };
   }

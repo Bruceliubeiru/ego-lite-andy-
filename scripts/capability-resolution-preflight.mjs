@@ -393,10 +393,12 @@ export function runPreflight({ homeDir = os.homedir(), cwd = process.cwd(), fsAp
 }
 
 export function preflightExitCode(report) {
-  const statuses = [report?.skill?.resolution?.status, report?.app?.status];
+  const skillStatus = report?.skill?.resolution?.status;
+  const appStatus = report?.app?.status;
+  const statuses = [skillStatus, appStatus];
   if (statuses.includes('ambiguous')) return 2;
-  if (statuses.includes('unverified')) return 3;
-  return 0;
+  if (skillStatus === 'bounded-clear' && appStatus === 'observed') return 0;
+  return 3;
 }
 
 function main() {

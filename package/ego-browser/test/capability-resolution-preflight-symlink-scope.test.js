@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   evaluateSkillResolution,
+  inspectInstalledApp,
   inspectSkillPath,
 } from "../../../scripts/capability-resolution-preflight.mjs";
 
@@ -103,4 +104,23 @@ test("unscoped shadow symlink keeps bounded resolution unverified", () => {
   assert.equal(result.effectiveVersion, null);
   assert.equal(result.candidateVersion, "2.0.0");
   assert.equal(result.conflicts[0].error, "UNSCOPED_SYMLINK_TARGET");
+});
+
+test("unscoped app plist realpath remains unverified without reading outside the app bundle", () => {
+  const result = inspectInstalledApp(
+    ["/Applications/ego lite.app/Contents/Info.plist"],
+    {
+      lstatSync() {
+        return { isSymbolicLink: () => false };
+      },
+      realpathSync() {
+        return "/home/user/.ssh/config";
+      },
+    },
+  );
+
+  assert.equal(result.status, "unverified");
+  assert.equal(result.installations.length, 1);
+  assert.equal(result.installations[0].error, "UNSCOPED_SYMLINK_TARGET");
+  assert.equal(result.installations[0].realpath, "/home/user/.ssh/config");
 });

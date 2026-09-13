@@ -117,43 +117,40 @@ test("documented ego lite app Skill symlink target remains readable", () => {
   assert.equal(observation.version, "2.0.0");
 });
 
-test(
-  "Skill content is read from the validated realpath rather than the mutable alias",
-  () => {
-    const source = [
-      "---",
-      "name: ego-browser",
-      'version: "2.0.0"',
-      "---",
-      "# ego-browser",
-      "",
-    ].join("\n");
-    const alias = "/home/user/.agents/skills/ego-browser/SKILL.md";
-    const resolved =
-      "/Applications/ego lite.app/Contents/Resources/skills/ego-browser/SKILL.md";
-    let readPath = null;
+test("Skill content is read from the validated realpath rather than the mutable alias", () => {
+  const source = [
+    "---",
+    "name: ego-browser",
+    'version: "2.0.0"',
+    "---",
+    "# ego-browser",
+    "",
+  ].join("\n");
+  const alias = "/home/user/.agents/skills/ego-browser/SKILL.md";
+  const resolved =
+    "/Applications/ego lite.app/Contents/Resources/skills/ego-browser/SKILL.md";
+  let readPath = null;
 
-    const observation = inspectSkillPath(
-      { role: "canonical", path: alias, source: "canonical user skill path" },
-      {
-        lstatSync() {
-          return { isSymbolicLink: () => true };
-        },
-        realpathSync() {
-          return resolved;
-        },
-        readFileSync(filePath) {
-          readPath = filePath;
-          return source;
-        },
+  const observation = inspectSkillPath(
+    { role: "canonical", path: alias, source: "canonical user skill path" },
+    {
+      lstatSync() {
+        return { isSymbolicLink: () => true };
       },
-      { allowedSymlinkTargets: ["/Applications/ego lite.app"] },
-    );
+      realpathSync() {
+        return resolved;
+      },
+      readFileSync(filePath) {
+        readPath = filePath;
+        return source;
+      },
+    },
+    { allowedSymlinkTargets: ["/Applications/ego lite.app"] },
+  );
 
-    assert.equal(observation.exists, true);
-    assert.equal(readPath, resolved);
-  },
-);
+  assert.equal(observation.exists, true);
+  assert.equal(readPath, resolved);
+});
 
 test("unscoped shadow symlink keeps bounded resolution unverified", () => {
   const result = evaluateSkillResolution([
@@ -199,30 +196,27 @@ test("unscoped app plist realpath remains unverified without reading outside the
   assert.equal(result.installations[0].realpath, "/home/user/.ssh/config");
 });
 
-test(
-  "app identity reads use the validated plist realpath rather than the mutable alias",
-  () => {
-    const alias = "/Applications/ego lite.app/Contents/Info.plist";
-    const resolved = "/Applications/ego lite.app/Contents/Info.real.plist";
-    const readPaths = [];
+test("app identity reads use the validated plist realpath rather than the mutable alias", () => {
+  const alias = "/Applications/ego lite.app/Contents/Info.plist";
+  const resolved = "/Applications/ego lite.app/Contents/Info.real.plist";
+  const readPaths = [];
 
-    const result = inspectInstalledApp(
-      [alias],
-      {
-        lstatSync() {
-          return { isSymbolicLink: () => true };
-        },
-        realpathSync() {
-          return resolved;
-        },
+  const result = inspectInstalledApp(
+    [alias],
+    {
+      lstatSync() {
+        return { isSymbolicLink: () => true };
       },
-      (filePath, key) => {
-        readPaths.push(filePath);
-        return key === "CFBundleShortVersionString" ? "2.0.0" : "200";
+      realpathSync() {
+        return resolved;
       },
-    );
+    },
+    (filePath, key) => {
+      readPaths.push(filePath);
+      return key === "CFBundleShortVersionString" ? "2.0.0" : "200";
+    },
+  );
 
-    assert.equal(result.status, "observed");
-    assert.deepEqual(readPaths, [resolved, resolved]);
-  },
-);
+  assert.equal(result.status, "observed");
+  assert.deepEqual(readPaths, [resolved, resolved]);
+});

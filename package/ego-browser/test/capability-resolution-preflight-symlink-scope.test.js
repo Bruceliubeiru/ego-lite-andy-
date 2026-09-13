@@ -42,6 +42,42 @@ test("unscoped Skill symlink target is not read", () => {
   assert.equal(observation.realpath, "/home/user/.ssh/id_ed25519");
 });
 
+test("parent symlink escape is not read when SKILL.md itself is a regular file", () => {
+  let readAttempted = false;
+  const observation = inspectSkillPath(
+    {
+      role: "shadow-candidate",
+      path: "/home/user/.claude/skills/ego-browser/SKILL.md",
+      source: "Claude user skill path",
+    },
+    {
+      lstatSync() {
+        return { isSymbolicLink: () => false };
+      },
+      realpathSync() {
+        return "/home/user/private/profile/SKILL.md";
+      },
+      readFileSync() {
+        readAttempted = true;
+        throw new Error("parent-symlink escape must not be read");
+      },
+    },
+    {
+      allowedSymlinkTargets: [
+        "/home/user/.agents/skills/ego-browser/SKILL.md",
+        "/home/user/.claude/skills/ego-browser/SKILL.md",
+        "/Applications/ego lite.app",
+      ],
+    },
+  );
+
+  assert.equal(readAttempted, false);
+  assert.equal(observation.exists, null);
+  assert.equal(observation.symlink, false);
+  assert.equal(observation.error, "UNSCOPED_SYMLINK_TARGET");
+  assert.equal(observation.realpath, "/home/user/private/profile/SKILL.md");
+});
+
 test("documented ego lite app Skill symlink target remains readable", () => {
   const source = [
     "---",

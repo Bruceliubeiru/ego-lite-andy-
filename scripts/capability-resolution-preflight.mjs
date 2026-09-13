@@ -64,11 +64,11 @@ export function inspectSkillPath(
     const realpath = fsApi.realpathSync(candidate.path);
     const symlink = stat.isSymbolicLink();
 
-    if (symlink && !allowedSymlinkTargets.some((allowed) => pathIsWithin(realpath, allowed))) {
+    if (!allowedSymlinkTargets.some((allowed) => pathIsWithin(realpath, allowed))) {
       return {
         ...candidate,
         exists: null,
-        symlink: true,
+        symlink,
         realpath,
         error: 'UNSCOPED_SYMLINK_TARGET',
       };

@@ -286,6 +286,18 @@ export function evaluateAppIdentity(observed) {
     };
   }
 
+  const resolvedInstallations = new Set(
+    readable.map((item) => item.realpath).filter((realpath) => typeof realpath === 'string'),
+  );
+  if (resolvedInstallations.size > 1) {
+    return {
+      status: 'unverified',
+      reason:
+        'multiple app bundles have matching declared identity fields but distinct resolved installation provenance; matching version/build metadata does not establish equivalent executable/runtime identity',
+      installations: observed,
+    };
+  }
+
   return {
     status: readable.length > 0 ? 'observed' : 'unverified',
     reason:

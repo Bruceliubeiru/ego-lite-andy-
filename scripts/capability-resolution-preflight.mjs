@@ -74,7 +74,7 @@ export function inspectSkillPath(
       };
     }
 
-    const text = fsApi.readFileSync(candidate.path, 'utf8');
+    const text = fsApi.readFileSync(realpath, 'utf8');
     const metadata = parseSkillMetadata(text);
     return {
       ...candidate,
@@ -235,7 +235,7 @@ export function evaluateAppIdentity(observed) {
   };
 }
 
-export function inspectInstalledApp(plistPaths, fsApi = fs) {
+export function inspectInstalledApp(plistPaths, fsApi = fs, readPlist = readPlistKey) {
   const observed = [];
   for (const plistPath of plistPaths) {
     try {
@@ -274,8 +274,8 @@ export function inspectInstalledApp(plistPaths, fsApi = fs) {
       observed.push({
         plistPath,
         realpath,
-        shortVersion: readPlistKey(plistPath, 'CFBundleShortVersionString') || null,
-        build: readPlistKey(plistPath, 'CFBundleVersion') || null,
+        shortVersion: readPlist(realpath, 'CFBundleShortVersionString') || null,
+        build: readPlist(realpath, 'CFBundleVersion') || null,
       });
     } catch (error) {
       observed.push({

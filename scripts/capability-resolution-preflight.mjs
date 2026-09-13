@@ -131,6 +131,17 @@ export function evaluateSkillResolution(observations) {
     };
   }
 
+  if (!canonical.version) {
+    return {
+      status: 'unverified',
+      effectiveVersion: null,
+      candidateVersion: null,
+      reason:
+        'canonical Skill content was readable but its declared version metadata was missing; content identity alone does not establish the Skill/API generation',
+      conflicts: [],
+    };
+  }
+
   return {
     status: 'bounded-clear',
     effectiveVersion: null,

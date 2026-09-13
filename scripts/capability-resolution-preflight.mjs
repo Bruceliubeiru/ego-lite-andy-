@@ -116,6 +116,16 @@ export function evaluateSkillResolution(observations) {
     };
   }
 
+  const sameContentDistinctLineages = presentShadows.filter(
+    (item) =>
+      item.realpath &&
+      canonical.realpath &&
+      item.realpath !== canonical.realpath &&
+      item.digest &&
+      canonical.digest &&
+      item.digest === canonical.digest,
+  );
+
   const conflicts = presentShadows.filter((item) => {
     if (item.realpath && canonical.realpath && item.realpath === canonical.realpath) return false;
     if (item.digest && canonical.digest) return item.digest !== canonical.digest;
@@ -148,6 +158,23 @@ export function evaluateSkillResolution(observations) {
       conflicts: unreadableShadows.map((item) => ({
         path: item.path,
         error: item.error ?? null,
+      })),
+    };
+  }
+
+  if (sameContentDistinctLineages.length > 0) {
+    return {
+      status: 'unverified',
+      effectiveVersion: null,
+      candidateVersion: canonical.version,
+      reason:
+        'byte-identical Skill files exist at distinct resolved paths; matching SKILL.md content does not establish equivalent provenance or relative supporting assets',
+      conflicts: [],
+      lineageVariants: sameContentDistinctLineages.map((item) => ({
+        path: item.path,
+        version: item.version ?? null,
+        digest: item.digest ?? null,
+        realpath: item.realpath ?? null,
       })),
     };
   }
@@ -366,6 +393,5 @@ function main() {
   process.exitCode = preflightExitCode(report);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
-  main();
-}
+const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : null;
+if (invokedPath && import.meta.url === invokedPath) main();

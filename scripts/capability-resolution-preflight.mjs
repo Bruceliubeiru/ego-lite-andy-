@@ -49,16 +49,37 @@ export function buildSkillCandidates({ homeDir = os.homedir(), cwd = process.cwd
   ];
 }
 
-export function inspectSkillPath(candidate, fsApi = fs) {
+function pathIsWithin(candidatePath, allowedRoot) {
+  const relative = path.relative(allowedRoot, candidatePath);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+export function inspectSkillPath(
+  candidate,
+  fsApi = fs,
+  { allowedSymlinkTargets = [] } = {},
+) {
   try {
     const stat = fsApi.lstatSync(candidate.path);
     const realpath = fsApi.realpathSync(candidate.path);
+    const symlink = stat.isSymbolicLink();
+
+    if (symlink && !allowedSymlinkTargets.some((allowed) => pathIsWithin(realpath, allowed))) {
+      return {
+        ...candidate,
+        exists: null,
+        symlink: true,
+        realpath,
+        error: 'UNSCOPED_SYMLINK_TARGET',
+      };
+    }
+
     const text = fsApi.readFileSync(candidate.path, 'utf8');
     const metadata = parseSkillMetadata(text);
     return {
       ...candidate,
       exists: true,
-      symlink: stat.isSymbolicLink(),
+      symlink,
       realpath,
       version: metadata.version,
       date: metadata.date,
@@ -159,6 +180,14 @@ export function buildAppCandidates({ homeDir = os.homedir() } = {}) {
   ];
 }
 
+function buildAllowedSkillSymlinkTargets({ homeDir, skillCandidates }) {
+  return [
+    ...skillCandidates.map((candidate) => candidate.path),
+    path.join('/Applications', 'ego lite.app'),
+    path.join(homeDir, 'Applications', 'ego lite.app'),
+  ];
+}
+
 function readPlistKey(plistPath, key) {
   return execFileSync('/usr/bin/plutil', ['-extract', key, 'raw', '-o', '-', plistPath], {
     encoding: 'utf8',
@@ -238,8 +267,13 @@ export function inspectInstalledApp(plistPaths, fsApi = fs) {
 }
 
 export function runPreflight({ homeDir = os.homedir(), cwd = process.cwd(), fsApi = fs } = {}) {
-  const skillObservations = buildSkillCandidates({ homeDir, cwd }).map((candidate) =>
-    inspectSkillPath(candidate, fsApi),
+  const skillCandidates = buildSkillCandidates({ homeDir, cwd });
+  const allowedSymlinkTargets = buildAllowedSkillSymlinkTargets({
+    homeDir,
+    skillCandidates,
+  });
+  const skillObservations = skillCandidates.map((candidate) =>
+    inspectSkillPath(candidate, fsApi, { allowedSymlinkTargets }),
   );
   const skillResolution = evaluateSkillResolution(skillObservations);
   const app = inspectInstalledApp(buildAppCandidates({ homeDir }), fsApi);

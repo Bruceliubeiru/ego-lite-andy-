@@ -180,12 +180,11 @@ export function buildAppCandidates({ homeDir = os.homedir() } = {}) {
   ];
 }
 
-function buildAllowedSkillSymlinkTargets({ homeDir, cwd, skillCandidates }) {
+function buildAllowedSkillSymlinkTargets({ homeDir, skillCandidates }) {
   return [
     ...skillCandidates.map((candidate) => candidate.path),
     path.join('/Applications', 'ego lite.app'),
     path.join(homeDir, 'Applications', 'ego lite.app'),
-    path.join(cwd, 'ego lite.app'),
   ];
 }
 
@@ -271,7 +270,6 @@ export function runPreflight({ homeDir = os.homedir(), cwd = process.cwd(), fsAp
   const skillCandidates = buildSkillCandidates({ homeDir, cwd });
   const allowedSymlinkTargets = buildAllowedSkillSymlinkTargets({
     homeDir,
-    cwd,
     skillCandidates,
   });
   const skillObservations = skillCandidates.map((candidate) =>

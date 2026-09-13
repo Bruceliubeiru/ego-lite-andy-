@@ -249,15 +249,38 @@ export function inspectInstalledApp(plistPaths, fsApi = fs) {
       continue;
     }
 
+    let realpath;
+    try {
+      realpath = fsApi.realpathSync(plistPath);
+    } catch (error) {
+      observed.push({
+        plistPath,
+        error: error?.code || error?.message || String(error),
+      });
+      continue;
+    }
+
+    const appRoot = path.dirname(path.dirname(plistPath));
+    if (!pathIsWithin(realpath, appRoot)) {
+      observed.push({
+        plistPath,
+        realpath,
+        error: 'UNSCOPED_SYMLINK_TARGET',
+      });
+      continue;
+    }
+
     try {
       observed.push({
         plistPath,
+        realpath,
         shortVersion: readPlistKey(plistPath, 'CFBundleShortVersionString') || null,
         build: readPlistKey(plistPath, 'CFBundleVersion') || null,
       });
     } catch (error) {
       observed.push({
         plistPath,
+        realpath,
         error: error?.code || error?.message || String(error),
       });
     }

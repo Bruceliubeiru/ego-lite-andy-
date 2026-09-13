@@ -200,6 +200,32 @@ test("unreadable app path remains unverified instead of becoming evidence of abs
   assert.match(result.reason, /acquisition failure/i);
 });
 
+test("app version and build come from one plist acquisition", () => {
+  const plistPath = "/Applications/ego lite.app/Contents/Info.plist";
+  const acquisitions = [];
+  const result = inspectInstalledApp(
+    [plistPath],
+    {
+      lstatSync() {
+        return { isSymbolicLink: () => false };
+      },
+      realpathSync(value) {
+        return value;
+      },
+    },
+    (resolvedPath) => {
+      acquisitions.push(resolvedPath);
+      return { shortVersion: "2.0.0", build: "200" };
+    },
+  );
+
+  assert.equal(acquisitions.length, 1);
+  assert.equal(acquisitions[0], plistPath);
+  assert.equal(result.status, "observed");
+  assert.equal(result.installations[0].shortVersion, "2.0.0");
+  assert.equal(result.installations[0].build, "200");
+});
+
 test("readable app identity plus unreadable known path remains unverified", () => {
   const result = evaluateAppIdentity([
     {

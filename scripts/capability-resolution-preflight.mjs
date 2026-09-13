@@ -188,11 +188,20 @@ function buildAllowedSkillSymlinkTargets({ homeDir, skillCandidates }) {
   ];
 }
 
-function readPlistKey(plistPath, key) {
-  return execFileSync('/usr/bin/plutil', ['-extract', key, 'raw', '-o', '-', plistPath], {
+function readPlistIdentity(plistPath) {
+  const payload = execFileSync('/usr/bin/plutil', ['-convert', 'json', '-o', '-', plistPath], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
+  });
+  const plist = JSON.parse(payload);
+  return {
+    shortVersion:
+      typeof plist.CFBundleShortVersionString === 'string'
+        ? plist.CFBundleShortVersionString.trim() || null
+        : null,
+    build:
+      typeof plist.CFBundleVersion === 'string' ? plist.CFBundleVersion.trim() || null : null,
+  };
 }
 
 export function evaluateAppIdentity(observed) {
@@ -235,7 +244,7 @@ export function evaluateAppIdentity(observed) {
   };
 }
 
-export function inspectInstalledApp(plistPaths, fsApi = fs, readPlist = readPlistKey) {
+export function inspectInstalledApp(plistPaths, fsApi = fs, readIdentity = readPlistIdentity) {
   const observed = [];
   for (const plistPath of plistPaths) {
     try {
@@ -271,11 +280,12 @@ export function inspectInstalledApp(plistPaths, fsApi = fs, readPlist = readPlis
     }
 
     try {
+      const identity = readIdentity(realpath);
       observed.push({
         plistPath,
         realpath,
-        shortVersion: readPlist(realpath, 'CFBundleShortVersionString') || null,
-        build: readPlist(realpath, 'CFBundleVersion') || null,
+        shortVersion: identity?.shortVersion ?? null,
+        build: identity?.build ?? null,
       });
     } catch (error) {
       observed.push({

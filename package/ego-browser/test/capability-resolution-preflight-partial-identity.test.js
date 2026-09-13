@@ -33,6 +33,22 @@ test("a single readable app with incomplete identity remains unverified", () => 
   assert.equal(result.status, "unverified");
 });
 
+test("a successfully inspected app with no identity fields is not mislabeled acquisition failure", () => {
+  const result = evaluateAppIdentity([
+    {
+      plistPath: "/Applications/ego lite.app/Contents/Info.plist",
+      realpath: "/Applications/ego lite.app/Contents/Info.plist",
+      shortVersion: null,
+      build: null,
+    },
+  ]);
+
+  assert.equal(result.status, "unverified");
+  assert.match(result.reason, /successfully inspected/i);
+  assert.match(result.reason, /incomplete identity metadata/i);
+  assert.doesNotMatch(result.reason, /could not be inspected/i);
+});
+
 test("positive app identity conflict remains ambiguous despite missing fields", () => {
   const result = evaluateAppIdentity([
     {

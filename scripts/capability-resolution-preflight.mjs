@@ -213,9 +213,10 @@ export function evaluateAppIdentity(observed) {
     };
   }
 
-  const readable = observed.filter((item) => item.shortVersion || item.build);
+  const inspected = observed.filter((item) => !item.error);
+  const readable = inspected.filter((item) => item.shortVersion || item.build);
   const unreadable = observed.filter((item) => item.error);
-  const incomplete = readable.filter((item) => !item.shortVersion || !item.build);
+  const incomplete = inspected.filter((item) => !item.shortVersion || !item.build);
   let hasKnownConflict = false;
 
   for (let left = 0; left < readable.length && !hasKnownConflict; left += 1) {
@@ -253,7 +254,7 @@ export function evaluateAppIdentity(observed) {
     return {
       status: 'unverified',
       reason:
-        'one or more readable app bundles have incomplete identity metadata; missing fields are not evidence of a conflicting build identity',
+        'one or more successfully inspected app bundles have incomplete identity metadata; missing fields are not evidence of a conflicting build identity',
       installations: observed,
     };
   }

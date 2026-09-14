@@ -39,10 +39,15 @@ function baseEnvelope(limitations) {
 }
 
 test('Evidence Envelope rejects structured limitation payloads', () => {
-  const errors = validateEvidenceEnvelope(baseEnvelope([{ code: 'opaque-provider-detail' }]));
+  const errors = validateEvidenceEnvelope(
+    baseEnvelope([{ code: 'opaque-provider-detail' }]),
+  );
   assert.ok(errors.includes('evidence[0].limitations[0] must be a string'));
 });
 
 test('Evidence Envelope accepts string limitations', () => {
-  assert.deepEqual(validateEvidenceEnvelope(baseEnvelope(['bounded source limitation'])), []);
+  assert.deepEqual(
+    validateEvidenceEnvelope(baseEnvelope(['bounded source limitation'])),
+    [],
+  );
 });

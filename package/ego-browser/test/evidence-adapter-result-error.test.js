@@ -29,7 +29,10 @@ test("structured provider result error cannot be normalized into evidence", () =
     () =>
       normalizeEvidenceObservation(
         validConnectorObservation({
-          result_error: { code: "PROVIDER_ERROR", message: "read failed after transport success" },
+          result_error: {
+            code: "PROVIDER_ERROR",
+            message: "read failed after transport success",
+          },
         }),
       ),
     /success observation cannot contain result_error/,
@@ -37,7 +40,9 @@ test("structured provider result error cannot be normalized into evidence", () =
 });
 
 test("blank result_error marker does not fabricate a provider failure", () => {
-  const result = normalizeEvidenceObservation(validConnectorObservation({ result_error: "" }));
+  const result = normalizeEvidenceObservation(
+    validConnectorObservation({ result_error: "" }),
+  );
   assert.ok(result.evidence);
   assert.equal(result.limitation, null);
 });

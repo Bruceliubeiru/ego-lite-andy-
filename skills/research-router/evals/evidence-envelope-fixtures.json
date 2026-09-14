@@ -117,9 +117,7 @@
           {"evidence_id":"e2","direction":"contradict","pointer":"source B","lineage_id":"b","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"source B"},"limitations":[]}
         ],
         "conflicts": [{"evidence_ids":["e1","e2"],"issue":"Material disagreement","state":"unresolved"}],
-        "confidence": {"level":"high","reason":"Incorrectly overconfident."},
-        "decision_impact":"High",
-        "next_action":"none"
+        "confidence": {"level":"high","reason":"Incorrectly overconfident."},"decision_impact":"High","next_action":"none"
       }
     },
     {
@@ -207,6 +205,15 @@
       "envelope": {
         "version":"1.0","claim_id":"bad-10","claim_kind":"provider_specific_kind","claim":"Unknown claim kinds must not blur the distinction between observed facts, inference, causal claims, estimates, and recommendations.","scope":{},"status":"Needs verification",
         "evidence":[],"conflicts":[],"confidence":{"level":"low","reason":"Unknown claim kind must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
+    },
+    {
+      "name": "structured-provenance-source-identity",
+      "expect_error": "evidence[0].provenance.source_identity must be a non-empty string",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-11","claim_kind":"observed_fact","claim":"Structured provenance identities must not masquerade as a verified source identity.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":"e1","direction":"context","pointer":"source A","lineage_id":"a","source_class":"first_party_authenticated","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":{"page":"source A"}},"limitations":[]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Opaque provenance identity cannot be compared or independently rechecked."},"decision_impact":"High","next_action":"verify"
       }
     }
   ],

@@ -52,9 +52,16 @@ function envelopeWithConflict(evidenceIds) {
 
 test("one evidence item repeated twice cannot manufacture a conflict", () => {
   const errors = validateEvidenceEnvelope(envelopeWithConflict(["e1", "e1"]));
-  assert.ok(errors.includes("conflicts[0].evidence_ids must contain at least two distinct evidence IDs"));
+  assert.ok(
+    errors.includes(
+      "conflicts[0].evidence_ids must contain at least two distinct evidence IDs",
+    ),
+  );
 });
 
 test("two distinct evidence items remain a valid conflict basis", () => {
-  assert.deepEqual(validateEvidenceEnvelope(envelopeWithConflict(["e1", "e2"])), []);
+  assert.deepEqual(
+    validateEvidenceEnvelope(envelopeWithConflict(["e1", "e2"])),
+    [],
+  );
 });

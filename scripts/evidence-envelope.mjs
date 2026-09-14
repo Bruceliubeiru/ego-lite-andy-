@@ -27,6 +27,7 @@ const EVIDENCE_REQUIRED = [
 
 const CLAIM_KINDS = new Set(['observed_fact', 'inference', 'causal', 'estimate', 'recommendation']);
 const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verification', 'Conflicted']);
+const EVIDENCE_DIRECTIONS = new Set(['support', 'contradict', 'context']);
 const CONFLICT_STATES = new Set(['unresolved', 'resolved', 'not_material']);
 const PROVENANCE_QUALITIES = new Set(['verified', 'partial', 'unknown', 'not_applicable']);
 
@@ -95,6 +96,9 @@ export function validateEvidenceEnvelope(envelope) {
       errors.push(`${prefix}.lineage_id must be a non-empty string`);
     }
 
+    if (!EVIDENCE_DIRECTIONS.has(item.direction)) {
+      errors.push(`${prefix}.direction has unsupported value: ${item.direction}`);
+    }
     if (item.direction === 'support') supportingEvidence += 1;
 
     if (!item.provenance || typeof item.provenance !== 'object' || Array.isArray(item.provenance)) {

@@ -65,3 +65,20 @@ test("two distinct evidence items remain a valid conflict basis", () => {
     [],
   );
 });
+
+test("resolved conflict requires a textual resolution basis", () => {
+  const envelope = envelopeWithConflict(["e1", "e2"]);
+  envelope.status = "High probability";
+  envelope.conflicts[0] = {
+    ...envelope.conflicts[0],
+    state: "resolved",
+    resolution_basis: { code: "provider-specific-resolution" },
+  };
+
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(
+    errors.includes(
+      "conflicts[0] resolved conflict requires a non-empty string resolution_basis",
+    ),
+  );
+});

@@ -148,8 +148,8 @@ export function validateEvidenceEnvelope(envelope) {
       errors.push(`${prefix}.state has unsupported value: ${conflict.state}`);
     }
     if (conflict.state === 'unresolved') unresolvedConflicts += 1;
-    if (conflict.state === 'resolved' && !conflict.resolution_basis) {
-      errors.push(`${prefix} resolved conflict requires resolution_basis`);
+    if (conflict.state === 'resolved' && !isNonEmptyString(conflict.resolution_basis)) {
+      errors.push(`${prefix} resolved conflict requires a non-empty string resolution_basis`);
     }
   });
 

@@ -35,6 +35,10 @@ function pushMissing(errors, object, fields, prefix) {
   }
 }
 
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 /**
  * Validate the small set of Evidence Engine semantic invariants that can be
  * checked mechanically without pretending to judge whether external evidence
@@ -57,7 +61,6 @@ export function validateEvidenceEnvelope(envelope) {
   if (errors.length) return errors;
 
   const evidenceIds = new Set();
-  const lineages = new Set();
   let supportingEvidence = 0;
 
   envelope.evidence.forEach((item, index) => {
@@ -68,15 +71,19 @@ export function validateEvidenceEnvelope(envelope) {
     }
 
     pushMissing(errors, item, EVIDENCE_REQUIRED, prefix);
-    if (!item.evidence_id) return;
 
-    if (evidenceIds.has(item.evidence_id)) {
+    if (!isNonEmptyString(item.evidence_id)) {
+      errors.push(`${prefix}.evidence_id must be a non-empty string`);
+    } else if (evidenceIds.has(item.evidence_id)) {
       errors.push(`duplicate evidence_id: ${item.evidence_id}`);
     } else {
       evidenceIds.add(item.evidence_id);
     }
 
-    if (item.lineage_id) lineages.add(item.lineage_id);
+    if (!isNonEmptyString(item.lineage_id)) {
+      errors.push(`${prefix}.lineage_id must be a non-empty string`);
+    }
+
     if (item.direction === 'support') supportingEvidence += 1;
 
     if (!item.provenance || typeof item.provenance !== 'object' || Array.isArray(item.provenance)) {
@@ -170,7 +177,7 @@ export function countIndependentEvidenceLineages(envelope, direction = null) {
   const lineages = new Set();
   for (const item of envelope?.evidence ?? []) {
     if (direction && item.direction !== direction) continue;
-    if (item.lineage_id) lineages.add(item.lineage_id);
+    if (isNonEmptyString(item.lineage_id)) lineages.add(item.lineage_id);
   }
   return lineages.size;
 }

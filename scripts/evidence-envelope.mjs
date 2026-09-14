@@ -28,6 +28,26 @@ const EVIDENCE_REQUIRED = [
 const CLAIM_KINDS = new Set(['observed_fact', 'inference', 'causal', 'estimate', 'recommendation']);
 const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verification', 'Conflicted']);
 const EVIDENCE_DIRECTIONS = new Set(['support', 'contradict', 'context']);
+const SOURCE_CLASSES = new Set([
+  'first_party_public',
+  'first_party_authenticated',
+  'user_supplied',
+  'connector_or_api',
+  'independent_authoritative',
+  'secondary',
+  'community',
+  'search_snippet',
+]);
+const EVIDENCE_AUTHORITIES = new Set([
+  'primary',
+  'authoritative_secondary',
+  'secondary',
+  'community',
+  'navigation_only',
+]);
+const EVIDENCE_SPECIFICITIES = new Set(['exact', 'scoped', 'broad', 'unknown']);
+const EVIDENCE_FRESHNESS = new Set(['current', 'dated', 'stale_or_unknown']);
+const DECISION_IMPACTS = new Set(['High', 'Medium', 'Low']);
 const CONFLICT_STATES = new Set(['unresolved', 'resolved', 'not_material']);
 const PROVENANCE_QUALITIES = new Set(['verified', 'partial', 'unknown', 'not_applicable']);
 const PROVENANCE_ENUMS = {
@@ -74,6 +94,9 @@ export function validateEvidenceEnvelope(envelope) {
   if (!CLAIM_STATUSES.has(envelope.status)) {
     errors.push(`status has unsupported value: ${envelope.status}`);
   }
+  if (!DECISION_IMPACTS.has(envelope.decision_impact)) {
+    errors.push(`decision_impact has unsupported value: ${envelope.decision_impact}`);
+  }
   if (!envelope.scope || typeof envelope.scope !== 'object' || Array.isArray(envelope.scope)) {
     errors.push('scope must be an object');
   }
@@ -119,6 +142,18 @@ export function validateEvidenceEnvelope(envelope) {
       errors.push(`${prefix}.direction has unsupported value: ${item.direction}`);
     }
     if (item.direction === 'support') supportingEvidence += 1;
+
+    const boundedAssessmentFields = [
+      ['source_class', SOURCE_CLASSES],
+      ['authority', EVIDENCE_AUTHORITIES],
+      ['specificity', EVIDENCE_SPECIFICITIES],
+      ['freshness', EVIDENCE_FRESHNESS],
+    ];
+    for (const [field, allowedValues] of boundedAssessmentFields) {
+      if (!allowedValues.has(item[field])) {
+        errors.push(`${prefix}.${field} has unsupported value: ${item[field]}`);
+      }
+    }
 
     if (!item.provenance || typeof item.provenance !== 'object' || Array.isArray(item.provenance)) {
       errors.push(`${prefix}.provenance must be an object`);

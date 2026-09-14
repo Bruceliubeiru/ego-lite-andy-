@@ -152,6 +152,15 @@
         "evidence":[{"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":"a","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]}],
         "conflicts":[],"confidence":{"level":"medium","reason":"Invalid conflict state."},"decision_impact":"High","next_action":"verify"
       }
+    },
+    {
+      "name": "structured-limitation-item",
+      "expect_error": "evidence[0].limitations[0] must be a string",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-5","claim_kind":"observed_fact","claim":"Structured limitation payloads must not enter Evidence Envelope evidence.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":"e1","direction":"context","pointer":"source A","lineage_id":"a","source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[{"code":"opaque-provider-detail"}]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Invalid limitation shape."},"decision_impact":"Low","next_action":"verify"
+      }
     }
   ],
   "projection": {

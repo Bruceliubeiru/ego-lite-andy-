@@ -8,7 +8,8 @@ function confirmedEnvelopeWithConflictState(state) {
     version: "1.0",
     claim_id: "conflict-state-validation",
     claim_kind: "observed_fact",
-    claim: "A confirmed claim must not bypass material-conflict semantics through an unknown state.",
+    claim:
+      "A confirmed claim must not bypass material-conflict semantics through an unknown state.",
     scope: {},
     status: "Confirmed",
     evidence: [
@@ -50,16 +51,19 @@ function confirmedEnvelopeWithConflictState(state) {
   };
 }
 
-test("unknown conflict state fails closed instead of bypassing Confirmed conflict checks", () => {
-  const errors = validateEvidenceEnvelope(
-    confirmedEnvelopeWithConflictState("provider_specific_state"),
-  );
-  assert.ok(
-    errors.includes(
-      "conflicts[0].state has unsupported value: provider_specific_state",
-    ),
-  );
-});
+test(
+  "unknown conflict state fails closed instead of bypassing Confirmed conflict checks",
+  () => {
+    const errors = validateEvidenceEnvelope(
+      confirmedEnvelopeWithConflictState("provider_specific_state"),
+    );
+    assert.ok(
+      errors.includes(
+        "conflicts[0].state has unsupported value: provider_specific_state",
+      ),
+    );
+  },
+);
 
 test("known unresolved conflict still blocks Confirmed status", () => {
   const errors = validateEvidenceEnvelope(

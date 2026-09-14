@@ -46,3 +46,22 @@ test("blank result_error marker does not fabricate a provider failure", () => {
   assert.ok(result.evidence);
   assert.equal(result.limitation, null);
 });
+
+test("structured limitation payload cannot enter Evidence Envelope evidence", () => {
+  assert.throws(
+    () =>
+      normalizeEvidenceObservation(
+        validConnectorObservation({
+          limitations: [{ code: "PARTIAL", detail: "provider payload" }],
+        }),
+      ),
+    /limitations\[0\] must be a non-empty string/,
+  );
+});
+
+test("limitations must be an array when provided", () => {
+  assert.throws(
+    () => normalizeEvidenceObservation(validConnectorObservation({ limitations: "partial" })),
+    /limitations must be an array when provided/,
+  );
+});

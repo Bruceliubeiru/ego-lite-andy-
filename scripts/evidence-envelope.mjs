@@ -30,6 +30,7 @@ const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verifica
 const EVIDENCE_DIRECTIONS = new Set(['support', 'contradict', 'context']);
 const CONFLICT_STATES = new Set(['unresolved', 'resolved', 'not_material']);
 const PROVENANCE_QUALITIES = new Set(['verified', 'partial', 'unknown', 'not_applicable']);
+const CONFIDENCE_LEVELS = new Set(['high', 'medium', 'low', 'blocked']);
 
 function hasOwn(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
@@ -70,6 +71,16 @@ export function validateEvidenceEnvelope(envelope) {
   }
   if (!Array.isArray(envelope.evidence)) errors.push('evidence must be an array');
   if (!Array.isArray(envelope.conflicts)) errors.push('conflicts must be an array');
+  if (!envelope.confidence || typeof envelope.confidence !== 'object' || Array.isArray(envelope.confidence)) {
+    errors.push('confidence must be an object');
+  } else {
+    if (!CONFIDENCE_LEVELS.has(envelope.confidence.level)) {
+      errors.push(`confidence.level has unsupported value: ${envelope.confidence.level}`);
+    }
+    if (!isNonEmptyString(envelope.confidence.reason)) {
+      errors.push('confidence.reason must be a non-empty string');
+    }
+  }
   if (errors.length) return errors;
 
   const evidenceIds = new Set();

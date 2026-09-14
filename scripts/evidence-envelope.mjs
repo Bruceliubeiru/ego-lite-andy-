@@ -100,8 +100,8 @@ export function validateEvidenceEnvelope(envelope) {
       errors.push(`${prefix}.provenance must be an object`);
     } else {
       if (!item.provenance.quality) errors.push(`${prefix}.provenance missing required field: quality`);
-      if (!item.provenance.source_identity) {
-        errors.push(`${prefix}.provenance missing required field: source_identity`);
+      if (!isNonEmptyString(item.provenance.source_identity)) {
+        errors.push(`${prefix}.provenance.source_identity must be a non-empty string`);
       }
     }
 

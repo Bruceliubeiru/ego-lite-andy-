@@ -88,7 +88,15 @@ export function validateEvidenceEnvelope(envelope) {
       }
     }
 
-    if (!Array.isArray(item.limitations)) errors.push(`${prefix}.limitations must be an array`);
+    if (!Array.isArray(item.limitations)) {
+      errors.push(`${prefix}.limitations must be an array`);
+    } else {
+      item.limitations.forEach((limitation, limitationIndex) => {
+        if (typeof limitation !== 'string') {
+          errors.push(`${prefix}.limitations[${limitationIndex}] must be a string`);
+        }
+      });
+    }
   });
 
   let unresolvedConflicts = 0;

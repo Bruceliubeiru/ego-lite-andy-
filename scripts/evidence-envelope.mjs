@@ -111,6 +111,9 @@ export function validateEvidenceEnvelope(envelope) {
     if (!isNonEmptyString(envelope.confidence.reason)) {
       errors.push('confidence.reason must be a non-empty string');
     }
+    if (envelope.status === 'Confirmed' && envelope.confidence.level === 'blocked') {
+      errors.push('Confirmed claim cannot have blocked confidence');
+    }
   }
   if (errors.length) return errors;
 

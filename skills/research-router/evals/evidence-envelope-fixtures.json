@@ -161,6 +161,24 @@
         "evidence":[{"evidence_id":"e1","direction":"context","pointer":"source A","lineage_id":"a","source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[{"code":"opaque-provider-detail"}]}],
         "conflicts":[],"confidence":{"level":"low","reason":"Invalid limitation shape."},"decision_impact":"Low","next_action":"verify"
       }
+    },
+    {
+      "name": "structured-evidence-id",
+      "expect_error": "evidence[0].evidence_id must be a non-empty string",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-6","claim_kind":"observed_fact","claim":"Evidence identity must not be represented by an opaque structured value.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":{"opaque":"e1"},"direction":"support","pointer":"source A","lineage_id":"a","source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Invalid evidence identity."},"decision_impact":"Low","next_action":"verify"
+      }
+    },
+    {
+      "name": "structured-lineage-id",
+      "expect_error": "evidence[0].lineage_id must be a non-empty string",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-7","claim_kind":"observed_fact","claim":"Lineage identity must not be represented by an opaque structured value.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":{"opaque":"same-source"},"source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Invalid lineage identity."},"decision_impact":"Low","next_action":"verify"
+      }
     }
   ],
   "projection": {
@@ -179,7 +197,8 @@
       "version":"1.0","claim_id":"lineage-1","claim_kind":"observed_fact","claim":"Repeated summaries do not create independent verification.","scope":{},"status":"High probability",
       "evidence":[
         {"evidence_id":"e1","direction":"support","pointer":"original page","lineage_id":"same-source","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"original page"},"limitations":[]},
-        {"evidence_id":"e2","direction":"support","pointer":"summary of original page","lineage_id":"same-source","source_class":"secondary","authority":"secondary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"summary"},"limitations":["Derived from the same underlying source."]}
+        {"evidence_id":"e2","direction":"support","pointer":"summary of original page","lineage_id":"same-source","source_class":"secondary","authority":"secondary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"summary"},"limitations":["Derived from the same underlying source."]},
+        {"evidence_id":"e3","direction":"support","pointer":"malformed lineage observation","lineage_id":{"opaque":"same-source"},"source_class":"secondary","authority":"secondary","specificity":"unknown","freshness":"stale_or_unknown","provenance":{"quality":"unknown","source_identity":"malformed lineage observation"},"limitations":["Malformed lineage IDs must not manufacture an independent lineage."]}
       ],
       "conflicts":[],"confidence":{"level":"medium","reason":"Only one independent evidence lineage."},"decision_impact":"Medium","next_action":"challenge"
     }

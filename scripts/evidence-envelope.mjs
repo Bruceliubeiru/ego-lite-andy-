@@ -88,6 +88,8 @@ export function validateEvidenceEnvelope(envelope) {
   if (errors.length) return errors;
 
   if (envelope.version !== '1.0') errors.push(`unsupported envelope version: ${envelope.version}`);
+  if (!isNonEmptyString(envelope.claim)) errors.push('claim must be a non-empty string');
+  if (!isNonEmptyString(envelope.next_action)) errors.push('next_action must be a non-empty string');
   if (!CLAIM_KINDS.has(envelope.claim_kind)) {
     errors.push(`claim_kind has unsupported value: ${envelope.claim_kind}`);
   }

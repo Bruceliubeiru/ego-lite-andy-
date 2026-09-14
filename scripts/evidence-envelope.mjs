@@ -88,6 +88,7 @@ export function validateEvidenceEnvelope(envelope) {
   if (errors.length) return errors;
 
   if (envelope.version !== '1.0') errors.push(`unsupported envelope version: ${envelope.version}`);
+  if (!isNonEmptyString(envelope.claim_id)) errors.push('claim_id must be a non-empty string');
   if (!isNonEmptyString(envelope.claim)) errors.push('claim must be a non-empty string');
   if (!isNonEmptyString(envelope.next_action)) errors.push('next_action must be a non-empty string');
   if (!CLAIM_KINDS.has(envelope.claim_kind)) {
@@ -220,7 +221,7 @@ export function validateEvidenceEnvelope(envelope) {
       }
     }
 
-    if (!conflict.issue) errors.push(`${prefix} missing issue`);
+    if (!isNonEmptyString(conflict.issue)) errors.push(`${prefix}.issue must be a non-empty string`);
     if (!CONFLICT_STATES.has(conflict.state)) {
       errors.push(`${prefix}.state has unsupported value: ${conflict.state}`);
     }

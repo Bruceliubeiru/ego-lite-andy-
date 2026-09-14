@@ -25,6 +25,7 @@ const EVIDENCE_REQUIRED = [
   'limitations',
 ];
 
+const CLAIM_KINDS = new Set(['observed_fact', 'inference', 'causal', 'estimate', 'recommendation']);
 const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verification', 'Conflicted']);
 const CONFLICT_STATES = new Set(['unresolved', 'resolved', 'not_material']);
 
@@ -59,6 +60,9 @@ export function validateEvidenceEnvelope(envelope) {
   if (errors.length) return errors;
 
   if (envelope.version !== '1.0') errors.push(`unsupported envelope version: ${envelope.version}`);
+  if (!CLAIM_KINDS.has(envelope.claim_kind)) {
+    errors.push(`claim_kind has unsupported value: ${envelope.claim_kind}`);
+  }
   if (!CLAIM_STATUSES.has(envelope.status)) {
     errors.push(`status has unsupported value: ${envelope.status}`);
   }

@@ -192,6 +192,14 @@
         "conflicts":[{"evidence_ids":["e1","e2"],"issue":"Material disagreement","state":"provider_specific_state"}],
         "confidence":{"level":"high","reason":"Invalid conflict state must fail closed."},"decision_impact":"High","next_action":"verify"
       }
+    },
+    {
+      "name": "unsupported-claim-status",
+      "expect_error": "status has unsupported value: provider_specific_status",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-9","claim_kind":"observed_fact","claim":"Unknown claim states must not bypass the Evidence Engine decision state machine.","scope":{},"status":"provider_specific_status",
+        "evidence":[],"conflicts":[],"confidence":{"level":"low","reason":"Unknown status must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
     }
   ],
   "projection": {

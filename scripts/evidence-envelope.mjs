@@ -134,6 +134,10 @@ export function validateEvidenceEnvelope(envelope) {
       evidenceIds.add(item.evidence_id);
     }
 
+    if (!isNonEmptyString(item.pointer)) {
+      errors.push(`${prefix}.pointer must be a non-empty string`);
+    }
+
     if (!isNonEmptyString(item.lineage_id)) {
       errors.push(`${prefix}.lineage_id must be a non-empty string`);
     }

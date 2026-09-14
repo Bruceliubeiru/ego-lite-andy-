@@ -21,7 +21,10 @@ function makeEnvelope() {
         authority: "secondary",
         specificity: "broad",
         freshness: "dated",
-        provenance: { quality: "verified", source_identity: "source A" },
+        provenance: {
+          quality: "verified",
+          source_identity: "source A",
+        },
         limitations: [],
       },
       {
@@ -33,7 +36,10 @@ function makeEnvelope() {
         authority: "secondary",
         specificity: "broad",
         freshness: "dated",
-        provenance: { quality: "verified", source_identity: "source B" },
+        provenance: {
+          quality: "verified",
+          source_identity: "source B",
+        },
         limitations: [],
       },
     ],
@@ -44,7 +50,10 @@ function makeEnvelope() {
         state: "unresolved",
       },
     ],
-    confidence: { level: "low", reason: "Regression fixture." },
+    confidence: {
+      level: "low",
+      reason: "Regression fixture.",
+    },
     decision_impact: "Medium",
     next_action: "verify",
   };
@@ -54,15 +63,21 @@ test("Evidence Envelope rejects a structured claim identity", () => {
   const envelope = makeEnvelope();
   envelope.claim_id = { opaque: "claim-1" };
 
-  assert.ok(validateEvidenceEnvelope(envelope).includes("claim_id must be a non-empty string"));
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(
+    errors.includes("claim_id must be a non-empty string"),
+    `expected claim identity error, got: ${errors.join("; ")}`,
+  );
 });
 
 test("Evidence Envelope rejects a structured conflict issue", () => {
   const envelope = makeEnvelope();
   envelope.conflicts[0].issue = { opaque: "material disagreement" };
 
+  const errors = validateEvidenceEnvelope(envelope);
   assert.ok(
-    validateEvidenceEnvelope(envelope).includes("conflicts[0].issue must be a non-empty string"),
+    errors.includes("conflicts[0].issue must be a non-empty string"),
+    `expected conflict issue error, got: ${errors.join("; ")}`,
   );
 });
 

@@ -25,6 +25,8 @@ const EVIDENCE_REQUIRED = [
   'limitations',
 ];
 
+const CONFLICT_STATES = new Set(['unresolved', 'resolved', 'not_material']);
+
 function hasOwn(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
 }
@@ -129,7 +131,9 @@ export function validateEvidenceEnvelope(envelope) {
     }
 
     if (!conflict.issue) errors.push(`${prefix} missing issue`);
-    if (!conflict.state) errors.push(`${prefix} missing state`);
+    if (!CONFLICT_STATES.has(conflict.state)) {
+      errors.push(`${prefix}.state has unsupported value: ${conflict.state}`);
+    }
     if (conflict.state === 'unresolved') unresolvedConflicts += 1;
     if (conflict.state === 'resolved' && !conflict.resolution_basis) {
       errors.push(`${prefix} resolved conflict requires resolution_basis`);

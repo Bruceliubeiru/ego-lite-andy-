@@ -94,3 +94,15 @@ test("unsupported evidence direction fails closed", () => {
     ),
   );
 });
+
+test("unsupported confidence level fails closed", () => {
+  const envelope = envelopeWithConflict(["e1", "e2"]);
+  envelope.confidence.level = "provider_specific_confidence";
+
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(
+    errors.includes(
+      "confidence.level has unsupported value: provider_specific_confidence",
+    ),
+  );
+});

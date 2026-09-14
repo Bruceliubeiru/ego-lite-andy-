@@ -118,6 +118,7 @@ export function validateEvidenceEnvelope(envelope) {
   if (errors.length) return errors;
 
   const evidenceIds = new Set();
+  const contradictingEvidenceIds = new Set();
   let supportingEvidence = 0;
 
   envelope.evidence.forEach((item, index) => {
@@ -149,6 +150,9 @@ export function validateEvidenceEnvelope(envelope) {
       errors.push(`${prefix}.direction has unsupported value: ${item.direction}`);
     }
     if (item.direction === 'support') supportingEvidence += 1;
+    if (item.direction === 'contradict' && isNonEmptyString(item.evidence_id)) {
+      contradictingEvidenceIds.add(item.evidence_id);
+    }
 
     const boundedAssessmentFields = [
       ['source_class', SOURCE_CLASSES],
@@ -191,6 +195,7 @@ export function validateEvidenceEnvelope(envelope) {
     }
   });
 
+  const dispositionedContradictions = new Set();
   let unresolvedConflicts = 0;
   envelope.conflicts.forEach((conflict, index) => {
     const prefix = `conflicts[${index}]`;
@@ -221,6 +226,11 @@ export function validateEvidenceEnvelope(envelope) {
     if (conflict.state === 'resolved' && !isNonEmptyString(conflict.resolution_basis)) {
       errors.push(`${prefix} resolved conflict requires a non-empty string resolution_basis`);
     }
+    if (conflict.state === 'resolved' || conflict.state === 'not_material') {
+      for (const evidenceId of conflict.evidence_ids ?? []) {
+        if (contradictingEvidenceIds.has(evidenceId)) dispositionedContradictions.add(evidenceId);
+      }
+    }
   });
 
   // These are intentionally narrow consistency checks. They do not infer
@@ -228,6 +238,11 @@ export function validateEvidenceEnvelope(envelope) {
   if (envelope.status === 'Confirmed') {
     if (supportingEvidence === 0) errors.push('Confirmed claim requires at least one supporting evidence item');
     if (unresolvedConflicts > 0) errors.push('Confirmed claim cannot retain an unresolved material conflict');
+    for (const evidenceId of contradictingEvidenceIds) {
+      if (!dispositionedContradictions.has(evidenceId)) {
+        errors.push(`Confirmed claim has undispositioned contradictory evidence: ${evidenceId}`);
+      }
+    }
   }
 
   if (envelope.status === 'Conflicted' && unresolvedConflicts === 0) {

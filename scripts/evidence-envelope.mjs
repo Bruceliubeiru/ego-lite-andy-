@@ -110,6 +110,10 @@ export function validateEvidenceEnvelope(envelope) {
     if (!Array.isArray(conflict.evidence_ids) || conflict.evidence_ids.length < 2) {
       errors.push(`${prefix}.evidence_ids must contain at least two evidence IDs`);
     } else {
+      const distinctEvidenceIds = new Set(conflict.evidence_ids);
+      if (distinctEvidenceIds.size < 2) {
+        errors.push(`${prefix}.evidence_ids must contain at least two distinct evidence IDs`);
+      }
       for (const evidenceId of conflict.evidence_ids) {
         if (!evidenceIds.has(evidenceId)) {
           errors.push(`${prefix} references unknown evidence_id: ${evidenceId}`);

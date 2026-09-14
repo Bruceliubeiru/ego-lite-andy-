@@ -114,3 +114,23 @@ test("malformed scope fails closed", () => {
   const errors = validateEvidenceEnvelope(envelope);
   assert.ok(errors.includes("scope must be an object"));
 });
+
+test("unsupported provenance states fail closed", () => {
+  const cases = [
+    ["auth_state", "logged_in"],
+    ["challenge_state", "captcha"],
+    ["provider_execution", "transport_success"],
+  ];
+
+  for (const [field, value] of cases) {
+    const envelope = envelopeWithConflict(["e1", "e2"]);
+    envelope.evidence[0].provenance[field] = value;
+
+    const errors = validateEvidenceEnvelope(envelope);
+    assert.ok(
+      errors.includes(
+        `evidence[0].provenance.${field} has unsupported value: ${value}`,
+      ),
+    );
+  }
+});

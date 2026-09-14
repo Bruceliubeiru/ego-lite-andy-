@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validateEvidenceEnvelope } from '../../../scripts/evidence-envelope.mjs';
+import {
+  validateEvidenceEnvelope,
+} from '../../../scripts/evidence-envelope.mjs';
 
 function baseEnvelope(limitations) {
   return {

@@ -69,6 +69,9 @@ export function validateEvidenceEnvelope(envelope) {
   if (!CLAIM_STATUSES.has(envelope.status)) {
     errors.push(`status has unsupported value: ${envelope.status}`);
   }
+  if (!envelope.scope || typeof envelope.scope !== 'object' || Array.isArray(envelope.scope)) {
+    errors.push('scope must be an object');
+  }
   if (!Array.isArray(envelope.evidence)) errors.push('evidence must be an array');
   if (!Array.isArray(envelope.conflicts)) errors.push('conflicts must be an array');
   if (!envelope.confidence || typeof envelope.confidence !== 'object' || Array.isArray(envelope.confidence)) {

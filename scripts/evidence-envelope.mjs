@@ -28,6 +28,7 @@ const EVIDENCE_REQUIRED = [
 const CLAIM_KINDS = new Set(['observed_fact', 'inference', 'causal', 'estimate', 'recommendation']);
 const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verification', 'Conflicted']);
 const CONFLICT_STATES = new Set(['unresolved', 'resolved', 'not_material']);
+const PROVENANCE_QUALITIES = new Set(['verified', 'partial', 'unknown', 'not_applicable']);
 
 function hasOwn(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
@@ -99,7 +100,11 @@ export function validateEvidenceEnvelope(envelope) {
     if (!item.provenance || typeof item.provenance !== 'object' || Array.isArray(item.provenance)) {
       errors.push(`${prefix}.provenance must be an object`);
     } else {
-      if (!item.provenance.quality) errors.push(`${prefix}.provenance missing required field: quality`);
+      if (!hasOwn(item.provenance, 'quality')) {
+        errors.push(`${prefix}.provenance missing required field: quality`);
+      } else if (!PROVENANCE_QUALITIES.has(item.provenance.quality)) {
+        errors.push(`${prefix}.provenance.quality has unsupported value: ${item.provenance.quality}`);
+      }
       if (!isNonEmptyString(item.provenance.source_identity)) {
         errors.push(`${prefix}.provenance.source_identity must be a non-empty string`);
       }

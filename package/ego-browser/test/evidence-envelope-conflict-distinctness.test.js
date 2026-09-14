@@ -82,3 +82,15 @@ test("resolved conflict requires a textual resolution basis", () => {
     ),
   );
 });
+
+test("unsupported evidence direction fails closed", () => {
+  const envelope = envelopeWithConflict(["e1", "e2"]);
+  envelope.evidence[0].direction = "provider_specific_direction";
+
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(
+    errors.includes(
+      "evidence[0].direction has unsupported value: provider_specific_direction",
+    ),
+  );
+});

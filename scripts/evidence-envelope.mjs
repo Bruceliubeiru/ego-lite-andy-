@@ -30,6 +30,11 @@ const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verifica
 const EVIDENCE_DIRECTIONS = new Set(['support', 'contradict', 'context']);
 const CONFLICT_STATES = new Set(['unresolved', 'resolved', 'not_material']);
 const PROVENANCE_QUALITIES = new Set(['verified', 'partial', 'unknown', 'not_applicable']);
+const PROVENANCE_ENUMS = {
+  auth_state: new Set(['confirmed', 'not_authenticated', 'blocked', 'unknown', 'not_applicable']),
+  challenge_state: new Set(['none', 'present', 'resolved_by_user', 'unknown', 'not_applicable']),
+  provider_execution: new Set(['read_executed', 'configured_only', 'skipped', 'failed', 'not_applicable']),
+};
 const CONFIDENCE_LEVELS = new Set(['high', 'medium', 'low', 'blocked']);
 
 function hasOwn(object, key) {
@@ -125,6 +130,11 @@ export function validateEvidenceEnvelope(envelope) {
       }
       if (!isNonEmptyString(item.provenance.source_identity)) {
         errors.push(`${prefix}.provenance.source_identity must be a non-empty string`);
+      }
+      for (const [field, allowedValues] of Object.entries(PROVENANCE_ENUMS)) {
+        if (hasOwn(item.provenance, field) && !allowedValues.has(item.provenance[field])) {
+          errors.push(`${prefix}.provenance.${field} has unsupported value: ${item.provenance[field]}`);
+        }
       }
     }
 

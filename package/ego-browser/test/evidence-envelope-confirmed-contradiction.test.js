@@ -68,12 +68,32 @@ test("Confirmed claims allow contradictory evidence after an explicit resolved d
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
 });
 
-test("Confirmed claims allow contradictory evidence explicitly judged not material", () => {
+test("not-material conflict dispositions require an explicit rationale", () => {
   const envelope = makeConfirmedEnvelope([
     {
       evidence_ids: ["support-1", "contradict-1"],
       issue: "The contradictory source is outside the decision-relevant scope.",
       state: "not_material",
+    },
+  ]);
+
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(
+    errors.includes(
+      "conflicts[0] not_material conflict requires a non-empty string resolution_basis",
+    ),
+    `expected not-material rationale error, got: ${errors.join("; ")}`,
+  );
+});
+
+test("Confirmed claims allow contradictory evidence explicitly judged not material with rationale", () => {
+  const envelope = makeConfirmedEnvelope([
+    {
+      evidence_ids: ["support-1", "contradict-1"],
+      issue: "The contradictory source is outside the decision-relevant scope.",
+      state: "not_material",
+      resolution_basis:
+        "The contradictory source applies to a different plan and cannot change this scoped claim.",
     },
   ]);
 

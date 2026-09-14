@@ -68,6 +68,12 @@ function optionalBoolean(value, label) {
   return value;
 }
 
+function optionalStringArray(value, label) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new Error(`${label} must be an array when provided`);
+  return value.map((item, index) => requiredString(item, `${label}[${index}]`));
+}
+
 function boundedProvenanceString(value, field, enforceEnvelopeEnum = false) {
   if (value === undefined || value === null || value === '') return null;
   if (typeof value !== 'string' || value.trim() === '') {
@@ -204,7 +210,7 @@ export function normalizeEvidenceObservation(observation) {
     }
   }
 
-  const limitations = Array.isArray(observation.limitations) ? [...observation.limitations] : [];
+  const limitations = optionalStringArray(observation.limitations, 'limitations');
   if (resultEmpty && !enumerationComplete && !limitations.includes(UNPROVEN_EMPTY_RESULT_LIMITATION)) {
     limitations.push(UNPROVEN_EMPTY_RESULT_LIMITATION);
   }

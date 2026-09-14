@@ -25,6 +25,7 @@ const EVIDENCE_REQUIRED = [
   'limitations',
 ];
 
+const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verification', 'Conflicted']);
 const CONFLICT_STATES = new Set(['unresolved', 'resolved', 'not_material']);
 
 function hasOwn(object, key) {
@@ -58,6 +59,9 @@ export function validateEvidenceEnvelope(envelope) {
   if (errors.length) return errors;
 
   if (envelope.version !== '1.0') errors.push(`unsupported envelope version: ${envelope.version}`);
+  if (!CLAIM_STATUSES.has(envelope.status)) {
+    errors.push(`status has unsupported value: ${envelope.status}`);
+  }
   if (!Array.isArray(envelope.evidence)) errors.push('evidence must be an array');
   if (!Array.isArray(envelope.conflicts)) errors.push('conflicts must be an array');
   if (errors.length) return errors;

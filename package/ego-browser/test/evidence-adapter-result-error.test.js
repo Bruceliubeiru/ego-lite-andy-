@@ -61,7 +61,10 @@ test("structured limitation payload cannot enter Evidence Envelope evidence", ()
 
 test("limitations must be an array when provided", () => {
   assert.throws(
-    () => normalizeEvidenceObservation(validConnectorObservation({ limitations: "partial" })),
+    () =>
+      normalizeEvidenceObservation(
+        validConnectorObservation({ limitations: "partial" }),
+      ),
     /limitations must be an array when provided/,
   );
 });

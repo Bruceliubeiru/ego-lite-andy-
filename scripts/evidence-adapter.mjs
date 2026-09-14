@@ -134,11 +134,15 @@ export function normalizeEvidenceObservation(observation) {
   }
 
   // A provider/runtime may surface transport-level success while also returning
-  // an application/tool error. Preserve that contradiction as an acquisition
-  // failure signal instead of turning it into evidence. Emitters should map an
-  // explicit current-call error into result_error; absence of this field is not
-  // treated as proof that no hidden error exists.
-  if (typeof observation.result_error === 'string' && observation.result_error.trim() !== '') {
+  // an application/tool error. Preserve any explicit current-call error signal
+  // as an acquisition failure signal instead of turning it into evidence. Error
+  // payloads are not assumed to be strings; structured provider errors must fail
+  // closed too. Absence of this field is not proof that no hidden error exists.
+  if (
+    observation.result_error !== undefined &&
+    observation.result_error !== null &&
+    !(typeof observation.result_error === 'string' && observation.result_error.trim() === '')
+  ) {
     throw new Error('success observation cannot contain result_error');
   }
 

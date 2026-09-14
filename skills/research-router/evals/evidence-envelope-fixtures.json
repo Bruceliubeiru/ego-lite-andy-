@@ -200,6 +200,14 @@
         "version":"1.0","claim_id":"bad-9","claim_kind":"observed_fact","claim":"Unknown claim states must not bypass the Evidence Engine decision state machine.","scope":{},"status":"provider_specific_status",
         "evidence":[],"conflicts":[],"confidence":{"level":"low","reason":"Unknown status must fail closed."},"decision_impact":"High","next_action":"verify"
       }
+    },
+    {
+      "name": "unsupported-claim-kind",
+      "expect_error": "claim_kind has unsupported value: provider_specific_kind",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-10","claim_kind":"provider_specific_kind","claim":"Unknown claim kinds must not blur the distinction between observed facts, inference, causal claims, estimates, and recommendations.","scope":{},"status":"Needs verification",
+        "evidence":[],"conflicts":[],"confidence":{"level":"low","reason":"Unknown claim kind must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
     }
   ],
   "projection": {

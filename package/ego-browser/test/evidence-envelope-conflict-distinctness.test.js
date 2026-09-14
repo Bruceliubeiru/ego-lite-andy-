@@ -134,3 +134,30 @@ test("unsupported provenance states fail closed", () => {
     );
   }
 });
+
+test("unsupported evidence assessment states fail closed", () => {
+  const cases = [
+    ["source_class", "provider_specific_source"],
+    ["authority", "trusted"],
+    ["specificity", "very_exact"],
+    ["freshness", "live"],
+  ];
+
+  for (const [field, value] of cases) {
+    const envelope = envelopeWithConflict(["e1", "e2"]);
+    envelope.evidence[0][field] = value;
+
+    const errors = validateEvidenceEnvelope(envelope);
+    assert.ok(
+      errors.includes(`evidence[0].${field} has unsupported value: ${value}`),
+    );
+  }
+});
+
+test("unsupported decision impact fails closed", () => {
+  const envelope = envelopeWithConflict(["e1", "e2"]);
+  envelope.decision_impact = "Critical";
+
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(errors.includes("decision_impact has unsupported value: Critical"));
+});

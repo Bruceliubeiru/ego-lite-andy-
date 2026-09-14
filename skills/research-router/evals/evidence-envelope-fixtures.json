@@ -179,6 +179,19 @@
         "evidence":[{"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":{"opaque":"same-source"},"source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]}],
         "conflicts":[],"confidence":{"level":"low","reason":"Invalid lineage identity."},"decision_impact":"Low","next_action":"verify"
       }
+    },
+    {
+      "name": "unsupported-conflict-state",
+      "expect_error": "conflicts[0].state has unsupported value: provider_specific_state",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-8","claim_kind":"observed_fact","claim":"Unknown conflict states must not bypass material-conflict semantics.","scope":{},"status":"Confirmed",
+        "evidence":[
+          {"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":"a","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]},
+          {"evidence_id":"e2","direction":"contradict","pointer":"source B","lineage_id":"b","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"source B"},"limitations":[]}
+        ],
+        "conflicts":[{"evidence_ids":["e1","e2"],"issue":"Material disagreement","state":"provider_specific_state"}],
+        "confidence":{"level":"high","reason":"Invalid conflict state must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
     }
   ],
   "projection": {

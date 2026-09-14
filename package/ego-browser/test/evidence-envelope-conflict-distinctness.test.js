@@ -115,6 +115,19 @@ test("unsupported confidence level fails closed", () => {
   );
 });
 
+test("confirmed claim cannot hide a blocked confidence state", () => {
+  const envelope = envelopeWithConflict(["e1", "e2"]);
+  envelope.status = "Confirmed";
+  envelope.conflicts[0].state = "not_material";
+  envelope.confidence = {
+    level: "blocked",
+    reason: "A material verification path is blocked.",
+  };
+
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(errors.includes("Confirmed claim cannot have blocked confidence"));
+});
+
 test("malformed scope fails closed", () => {
   const envelope = envelopeWithConflict(["e1", "e2"]);
   envelope.scope = ["global"];

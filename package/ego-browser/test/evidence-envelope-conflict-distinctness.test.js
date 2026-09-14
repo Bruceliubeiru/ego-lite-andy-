@@ -106,3 +106,11 @@ test("unsupported confidence level fails closed", () => {
     ),
   );
 });
+
+test("malformed scope fails closed", () => {
+  const envelope = envelopeWithConflict(["e1", "e2"]);
+  envelope.scope = ["global"];
+
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(errors.includes("scope must be an object"));
+});

@@ -215,6 +215,15 @@
         "evidence":[{"evidence_id":"e1","direction":"context","pointer":"source A","lineage_id":"a","source_class":"first_party_authenticated","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":{"page":"source A"}},"limitations":[]}],
         "conflicts":[],"confidence":{"level":"low","reason":"Opaque provenance identity cannot be compared or independently rechecked."},"decision_impact":"High","next_action":"verify"
       }
+    },
+    {
+      "name": "unsupported-provenance-quality",
+      "expect_error": "evidence[0].provenance.quality has unsupported value: provider_specific_quality",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-12","claim_kind":"observed_fact","claim":"Unknown provenance quality must not masquerade as a recognized verification state.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":"e1","direction":"context","pointer":"source A","lineage_id":"a","source_class":"first_party_authenticated","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"provider_specific_quality","source_identity":"source A"},"limitations":[]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Unknown provenance quality must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
     }
   ],
   "projection": {

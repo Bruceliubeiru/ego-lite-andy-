@@ -95,6 +95,14 @@ test("unsupported evidence direction fails closed", () => {
   );
 });
 
+test("malformed evidence pointer fails closed", () => {
+  const envelope = envelopeWithConflict(["e1", "e2"]);
+  envelope.evidence[0].pointer = { url: "https://example.com/source" };
+
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(errors.includes("evidence[0].pointer must be a non-empty string"));
+});
+
 test("unsupported confidence level fails closed", () => {
   const envelope = envelopeWithConflict(["e1", "e2"]);
   envelope.confidence.level = "provider_specific_confidence";

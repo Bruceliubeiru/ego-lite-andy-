@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "purpose": "Regression cases for choosing and re-planning the next BruceAI research action by expected decision value rather than queue order, ease, repeated evidence, or a stale precomputed plan.",
   "cases": [
     {
@@ -9,7 +9,36 @@
         "Verify the decision-sensitive claim first.",
         "Do not treat the Impact label alone as sufficient priority.",
         "Set the background claim to none when resolving it no longer changes the decision or next verification step."
-      ]
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "decision-sensitive-claim",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "background-claim",
+            "decision_relevance": "none",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "decision-sensitive-claim"
+        }
+      }
     },
     {
       "id": "new-lineage-vs-repeated-summary",
@@ -18,7 +47,36 @@
         "Prefer the bounded first-party read when it can materially reduce uncertainty.",
         "Do not increase confidence or verification priority by multiplying summaries from one lineage.",
         "Count the repeated summaries as one underlying evidence lineage."
-      ]
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "repeat-summary",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "bounded-first-party-read",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "medium",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "bounded-first-party-read"
+        }
+      }
     },
     {
       "id": "cheap-safe-read-vs-expensive-broad-research",
@@ -27,7 +85,36 @@
         "Choose the narrow sufficient read first.",
         "Do not fan out research merely because more sources are available.",
         "Stop after the bounded read if the decision becomes sufficiently supported and no material conflict remains."
-      ]
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "narrow-read",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "broad-sweep",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "broad",
+            "cost": "high",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "narrow-read"
+        }
+      }
     },
     {
       "id": "verification-vs-risky-state-change",
@@ -36,7 +123,27 @@
         "Do not perform the state-changing action merely for verification.",
         "Preserve the residual uncertainty and make the conclusion conditional when needed.",
         "Treat safety and reversibility as a veto over information gain."
-      ]
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "state-changing-verification",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "state_change"
+          }
+        ],
+        "expected": {
+          "mode": "stop",
+          "action_id": null
+        }
+      }
     },
     {
       "id": "first-next-action-vs-counterexample",
@@ -45,7 +152,36 @@
         "Challenge the proposed action before execution.",
         "Reject or downgrade an action whose provenance or scope cannot resolve the target claim.",
         "Choose the best alternative action that directly addresses the material scope."
-      ]
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "cheap-wrong-scope",
+            "decision_relevance": "decisive",
+            "scope_fit": "wrong",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "exact-scope-alternative",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "medium",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "exact-scope-alternative"
+        }
+      }
     },
     {
       "id": "research-more-vs-stop",
@@ -54,7 +190,27 @@
         "Stop researching and set the relevant Next action values to none.",
         "Do not equate stopping with certainty; preserve residual uncertainty in the evidence handoff.",
         "Avoid spending tokens on facts that cannot alter the decision."
-      ]
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": false
+        },
+        "candidates": [
+          {
+            "id": "more-research",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "stop",
+          "action_id": null
+        }
+      }
     },
     {
       "id": "precomputed-batch-vs-observe-and-replan",
@@ -63,7 +219,36 @@
         "Update the affected claims immediately after A before executing later dependent research actions.",
         "Recompute the next action from the new evidence state instead of blindly continuing the original queue.",
         "Stop and skip B and C when the stopping rule is now met, while preserving any residual uncertainty that remains."
-      ]
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": false
+        },
+        "candidates": [
+          {
+            "id": "stale-b",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "stale-c",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "stop",
+          "action_id": null
+        }
+      }
     },
     {
       "id": "intermediate-result-changes-verification-path",
@@ -72,7 +257,47 @@
         "Do not execute the conditional second action before observing and incorporating the first result.",
         "Re-diagnose scope/conflict and select the next verification from the updated claim state.",
         "Allow parallel reads only when each remains useful under every plausible outcome of the others and none depends on an intermediate result."
-      ]
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "branching-first-read",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "exception-followup",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only",
+            "blocked_on_observation": true
+          },
+          {
+            "id": "generic-followup",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only",
+            "blocked_on_observation": true
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "branching-first-read"
+        }
+      }
     }
   ]
 }

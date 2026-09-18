@@ -1,8 +1,12 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import { selectNextResearchAction } from './research-control.mjs';
 
 const fixturesPath = 'skills/research-router/evals/research-trajectory-fixtures.json';
 const data = JSON.parse(fs.readFileSync(fixturesPath, 'utf8'));
+const verificationPlannerData = JSON.parse(
+  fs.readFileSync('skills/research-router/evals/verification-planner-cases.json', 'utf8'),
+);
 const battleReplayData = JSON.parse(
   fs.readFileSync('skills/research-router/evals/battle-replay-cases.json', 'utf8'),
 );
@@ -259,6 +263,24 @@ for (const requiredId of requiredBattleReplays.keys()) {
 
 if (groundedReplayCount < 6) {
   throw new Error('research trajectory gate must include at least six cases grounded in standing veto tests');
+}
+
+
+const machinePlannerCases = (verificationPlannerData.cases ?? []).filter((c) => c.machine);
+if (machinePlannerCases.length < 8) {
+  throw new Error('verification planner must keep at least eight executable control cases');
+}
+for (const c of machinePlannerCases) {
+  const actual = selectNextResearchAction({
+    state: c.machine.state,
+    candidates: c.machine.candidates,
+  });
+  assert.equal(actual.mode, c.machine.expected.mode, `${c.id}: control mode changed unexpectedly`);
+  assert.equal(
+    actual.action_id,
+    c.machine.expected.action_id,
+    `${c.id}: selected next action changed unexpectedly`,
+  );
 }
 
 console.log(

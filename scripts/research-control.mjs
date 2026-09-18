@@ -23,6 +23,20 @@ function compareRank(a, b) {
   return 0;
 }
 
+export function updateResearchCoverage({ completed = [], action, outcome } = {}) {
+  const next = new Set(Array.isArray(completed) ? completed : []);
+  if (
+    action?.coverage_key &&
+    typeof action.coverage_key === 'string' &&
+    action.coverage_key.trim() &&
+    outcome?.status === 'completed' &&
+    outcome?.material_state_observed === true
+  ) {
+    next.add(action.coverage_key.trim());
+  }
+  return [...next];
+}
+
 export function selectNextResearchAction({ state, candidates = [] }) {
   if (state?.decision_sensitive === false) {
     return { mode: 'stop', action_id: null, reason: 'decision-no-longer-sensitive' };
@@ -34,6 +48,14 @@ export function selectNextResearchAction({ state, candidates = [] }) {
     if (action.scope_fit === 'wrong') return false;
     if (action.blocked_on_observation === true) return false;
     if (action.risk !== 'read_only') return false;
+    if (
+      action.coverage_key &&
+      Array.isArray(state?.completed_coverage_keys) &&
+      state.completed_coverage_keys.includes(action.coverage_key) &&
+      action.reopened_by_material_evidence !== true
+    ) {
+      return false;
+    }
     return true;
   });
 

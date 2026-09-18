@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import { selectNextResearchAction } from './research-control.mjs';
+import { selectNextResearchAction, updateResearchCoverage } from './research-control.mjs';
 
 const fixturesPath = 'skills/research-router/evals/research-trajectory-fixtures.json';
 const data = JSON.parse(fs.readFileSync(fixturesPath, 'utf8'));
@@ -267,9 +267,37 @@ if (groundedReplayCount < 6) {
 
 
 const machinePlannerCases = (verificationPlannerData.cases ?? []).filter((c) => c.machine);
-if (machinePlannerCases.length < 8) {
-  throw new Error('verification planner must keep at least eight executable control cases');
+if (machinePlannerCases.length < 10) {
+  throw new Error('verification planner must keep at least ten executable control cases');
 }
+assert.deepEqual(
+  updateResearchCoverage({
+    completed: [],
+    action: { coverage_key: 'official-policy:plan-scope' },
+    outcome: { status: 'completed', material_state_observed: true },
+  }),
+  ['official-policy:plan-scope'],
+  'successful bounded material coverage should be remembered for the current run',
+);
+assert.deepEqual(
+  updateResearchCoverage({
+    completed: [],
+    action: { coverage_key: 'official-policy:plan-scope' },
+    outcome: { status: 'failed', material_state_observed: false },
+  }),
+  [],
+  'acquisition failure must not be recorded as completed coverage',
+);
+assert.deepEqual(
+  updateResearchCoverage({
+    completed: [],
+    action: { coverage_key: 'official-policy:plan-scope' },
+    outcome: { status: 'completed', material_state_observed: false },
+  }),
+  [],
+  'partial or non-material reads must not be recorded as completed coverage',
+);
+
 for (const c of machinePlannerCases) {
   const actual = selectNextResearchAction({
     state: c.machine.state,

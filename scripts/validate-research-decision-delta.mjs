@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { hasDecisionDelta, selectNextResearchAction } from './research-control.mjs';
+import { evaluateDecisionDelta, hasDecisionDelta, selectNextResearchAction } from './research-control.mjs';
 
 assert.equal(hasDecisionDelta({ expected_delta: 'resolve_conflict' }), true);
 assert.equal(hasDecisionDelta({ expected_delta: 'collect_more_information' }), false);
@@ -11,4 +11,29 @@ assert.equal(selectNextResearchAction({ state: { decision_sensitive: true, requi
 assert.equal(selectNextResearchAction({ state: { decision_sensitive: true, require_expected_delta: true }, candidates: [generic] }).mode, 'stop');
 assert.equal(selectNextResearchAction({ state: { decision_sensitive: true }, candidates: [generic] }).action_id, 'another-source');
 
-console.log('research decision-delta gate passed');
+assert.deepEqual(
+  evaluateDecisionDelta({ action: useful, before: { scope_status: 'unknown' }, after: { scope_status: 'resolved' }, observation: { status: 'completed' } }),
+  { realized: true, reason: 'expected-decision-delta-realized' },
+);
+assert.deepEqual(
+  evaluateDecisionDelta({ action: useful, before: { scope_status: 'unknown' }, after: { scope_status: 'unknown' }, observation: { status: 'completed' } }),
+  { realized: false, reason: 'no-material-decision-delta' },
+);
+assert.deepEqual(
+  evaluateDecisionDelta({ action: useful, before: { scope_status: 'unknown' }, after: { scope_status: 'resolved' }, observation: { status: 'failed' } }),
+  { realized: false, reason: 'acquisition-not-completed' },
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'resolve_conflict' }, before: { claim_status: 'Conflicted' }, after: { claim_status: 'Confirmed' }, observation: { status: 'completed' } }).realized,
+  true,
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: 2 }, after: { independent_lineage_count: 2 }, observation: { status: 'completed' } }).realized,
+  false,
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'test_causal_hypothesis' }, before: { causal_hypothesis_status: 'untested' }, after: { causal_hypothesis_status: 'falsified' }, observation: { status: 'completed' } }).realized,
+  true,
+);
+
+console.log('research decision-delta control passed');

@@ -2,7 +2,7 @@
 name: research-router
 description: Default web research router and evidence layer. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. When downstream strategy, decision, innovation, challenge, planning, or other reasoning depends materially on external facts, build a compact Evidence Pack first so those skills reason from verified evidence instead of inventing premises. Support the simple BruceAI A/B evolution mode by comparing the current validated baseline against one isolated candidate and promoting only proven improvements. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
 metadata:
-  version: "1.4.1"
+  version: "1.4.2"
   date: "2026-09-18"
 ---
 
@@ -52,6 +52,12 @@ For consequential multi-step research, do not let queue order or an extra planne
 The control order is intentionally lexicographic rather than a fabricated numeric score: decision relevance first, then exact material scope, independent evidence gain, boundedness, and lower cost. Reject wrong-scope actions, actions waiting on an unobserved intermediate result, and state-changing actions used only for verification. If the decision is no longer sensitive, or no safe decision-relevant read remains, stop and preserve residual uncertainty rather than expanding the search.
 
 This selector is a convergence aid, not a truth engine. The Evidence Engine still determines claim state, lineage, scope, provenance, and conflict semantics; the selector only chooses the next safe read from already-classified candidates. Re-plan after every material observation instead of executing a stale precomputed batch.
+
+Use **compact coverage memory** for long consequential runs. When a bounded read successfully observes the material state for a stable research surface, record a privacy-safe semantic `coverage_key` for the current run. Do not revisit that surface merely because it is easy or familiar. A timeout, challenge, partial visibility, acquisition failure, or non-material read does **not** complete coverage.
+
+A covered surface may be reopened only when newer material evidence changes the relevant claim state or scope enough to make the read decision-relevant again. Do not use arbitrary retry counts or elapsed time as proof of reopening. Coverage memory is run/freshness-window scoped by default; it is not durable evidence that a surface remains current later.
+
+Coverage keys are control metadata, not provenance containers. Keep them coarse and semantic (for example `official-policy:effective-date`), and never embed account IDs, profile names, session identifiers, tokens, cookies, opaque user identifiers, or unrelated browsing state in them.
 
 Do not expose the Envelope to the user by default. Project it into the compact Claim Ledger or final answer only when that improves coordination, auditability, or decision quality. Evidence Engine v1 does **not** add another collaboration hard gate; the existing Evidence, Conflict, and Execution gates remain the veto surface.
 

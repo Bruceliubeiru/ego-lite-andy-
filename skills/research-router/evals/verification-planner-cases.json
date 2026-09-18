@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "purpose": "Regression cases for choosing and re-planning the next BruceAI research action by expected decision value rather than queue order, ease, repeated evidence, or a stale precomputed plan.",
   "cases": [
     {
@@ -296,6 +296,83 @@
         "expected": {
           "mode": "execute",
           "action_id": "branching-first-read"
+        }
+      }
+    },
+    {
+      "id": "covered-surface-vs-new-verification-surface",
+      "scenario": "A bounded exact-scope read already completed for one research surface in the current run. The planner proposes repeating that same surface and also a different bounded surface that can still change the decision.",
+      "expected": [
+        "Do not revisit the already covered surface merely because it remains easy or familiar.",
+        "Prefer the still-uncovered decision-relevant verification surface.",
+        "Do not mark timeout, partial visibility, or acquisition failure as completed coverage."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true,
+          "completed_coverage_keys": [
+            "official-policy:plan-scope"
+          ]
+        },
+        "candidates": [
+          {
+            "id": "repeat-plan-scope",
+            "coverage_key": "official-policy:plan-scope",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "verify-effective-date",
+            "coverage_key": "official-policy:effective-date",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "medium",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "verify-effective-date"
+        }
+      }
+    },
+    {
+      "id": "new-material-evidence-reopens-covered-surface",
+      "scenario": "A previously covered research surface receives newer canonical evidence that materially changes the relevant claim revision, so the same bounded surface may now be useful again.",
+      "expected": [
+        "Allow the surface to be revisited only when material new evidence explicitly reopens it.",
+        "Keep reopening tied to the changed evidence state rather than arbitrary retry counts or elapsed time.",
+        "Keep coverage memory run-scoped and do not use it as long-term freshness proof."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true,
+          "completed_coverage_keys": [
+            "official-policy:plan-scope"
+          ]
+        },
+        "candidates": [
+          {
+            "id": "recheck-reopened-plan-scope",
+            "coverage_key": "official-policy:plan-scope",
+            "reopened_by_material_evidence": true,
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "recheck-reopened-plan-scope"
         }
       }
     }

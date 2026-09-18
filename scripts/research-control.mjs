@@ -31,6 +31,10 @@ function compareRank(a, b) {
   return 0;
 }
 
+function isKnownValue(value) {
+  return value !== undefined && value !== null;
+}
+
 export function hasDecisionDelta(action) {
   return typeof action?.expected_delta === 'string' && EXPECTED_DELTAS.has(action.expected_delta);
 }
@@ -41,11 +45,19 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
 
   const changed = {
     resolve_scope: before?.scope_status !== after?.scope_status && after?.scope_status === 'resolved',
-    resolve_conflict: before?.claim_status === 'Conflicted' && after?.claim_status !== 'Conflicted',
+    resolve_conflict:
+      before?.claim_status === 'Conflicted' &&
+      isKnownValue(after?.claim_status) &&
+      after.claim_status !== 'Conflicted',
     establish_provenance: before?.provenance_established !== true && after?.provenance_established === true,
     add_independent_lineage: Number(after?.independent_lineage_count ?? 0) > Number(before?.independent_lineage_count ?? 0),
-    test_causal_hypothesis: before?.causal_hypothesis_status !== after?.causal_hypothesis_status && ['supported', 'falsified'].includes(after?.causal_hypothesis_status),
-    change_decision: before?.decision !== after?.decision,
+    test_causal_hypothesis:
+      before?.causal_hypothesis_status !== after?.causal_hypothesis_status &&
+      ['supported', 'falsified'].includes(after?.causal_hypothesis_status),
+    change_decision:
+      isKnownValue(before?.decision) &&
+      isKnownValue(after?.decision) &&
+      before.decision !== after.decision,
   };
 
   return {

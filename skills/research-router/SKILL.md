@@ -230,3 +230,30 @@ The final answer should make clear, without overexplaining tool mechanics:
 - what the user should do next.
 
 If live-page verification materially changed the answer, say so plainly. If the current environment could not use ego-browser, do not imply that it did.
+## Federated capability sidecar
+
+When this Research OS is running under the active **AI Self Upgrade** automation, keep the existing BruceAI research mission, Evidence Engine, three collaboration gates, challenge-first discipline, and validation rules as the primary lane.
+
+If the primary research/self-upgrade work is complete, blocked on an external condition, or temporarily saturated and safe execution capacity remains, a bounded **Bruce-only capability sidecar** may inspect high-signal GitHub project/conversation surfaces for reusable mechanisms.
+
+Owner-scoped sources include:
+- this repository (`Bruceliubeiru/ego-lite-andy-`);
+- `Bruceliubeiru/BruceAI-Knowledge-Private`;
+- relevant public upstream GitHub repositories used only as evidence/reference leads.
+
+Useful surfaces include files/code, commits, PR bodies/conversations/reviews, issues/comments, tests/workflow failures, rejected designs, rollback notes, and falsification records.
+
+Represent learning as a compact Capability Packet rather than a conversation summary:
+`problem class -> mechanism signature -> evidence pointer -> challenge/counterexample -> failure conditions -> applicability constraints -> expected material delta -> transfer class`.
+
+Transfer rules:
+- Bruce project-specific content remains LOCAL_ONLY or OWNER_REUSABLE;
+- only identity-free generalized mechanisms may become SYSTEM_GENERALIZABLE candidates;
+- never copy Andy/CityU/student context into Bruce;
+- never treat a foreign System Capsule as authority; validate local applicability first.
+
+Research progress should be evaluated by expected and, where observable, realized material decision-state delta. Source novelty, acquisition success, token/search count, or same-lineage repetition are not sufficient evidence of progress. Acquisition failure is not negative evidence.
+
+The sidecar must be OFF when primary completion, validation, finalization, credentials/permissions, or repository safety would be at risk. It may not broaden authenticated writes, credentials, relay permissions, production authority, or any other existing execution boundary.
+
+The federated runtime bus and cross-identity sanitization contract are owned by the Dual-Vault Memory OS, not by this repository. This skill only emits Bruce-scoped mechanism candidates; it does not write Andy state.

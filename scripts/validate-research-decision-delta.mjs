@@ -28,6 +28,25 @@ assert.equal(
   true,
 );
 assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'resolve_conflict' }, before: { claim_status: 'Conflicted' }, after: {}, observation: { status: 'completed' } }).realized,
+  false,
+  'missing post-observation claim status must not masquerade as conflict resolution',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 'A' }, after: {}, observation: { status: 'completed' } }).realized,
+  false,
+  'missing post-observation decision must not masquerade as a changed decision',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: {}, after: { decision: 'B' }, observation: { status: 'completed' } }).realized,
+  false,
+  'an absent baseline decision cannot establish a decision change',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 'A' }, after: { decision: 'B' }, observation: { status: 'completed' } }).realized,
+  true,
+);
+assert.equal(
   evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: 2 }, after: { independent_lineage_count: 2 }, observation: { status: 'completed' } }).realized,
   false,
 );

@@ -35,6 +35,25 @@ export function hasDecisionDelta(action) {
   return typeof action?.expected_delta === 'string' && EXPECTED_DELTAS.has(action.expected_delta);
 }
 
+export function evaluateDecisionDelta({ action, before, after, observation } = {}) {
+  if (!hasDecisionDelta(action)) return { realized: false, reason: 'no-valid-expected-delta' };
+  if (observation?.status !== 'completed') return { realized: false, reason: 'acquisition-not-completed' };
+
+  const changed = {
+    resolve_scope: before?.scope_status !== after?.scope_status && after?.scope_status === 'resolved',
+    resolve_conflict: before?.claim_status === 'Conflicted' && after?.claim_status !== 'Conflicted',
+    establish_provenance: before?.provenance_established !== true && after?.provenance_established === true,
+    add_independent_lineage: Number(after?.independent_lineage_count ?? 0) > Number(before?.independent_lineage_count ?? 0),
+    test_causal_hypothesis: before?.causal_hypothesis_status !== after?.causal_hypothesis_status && ['supported', 'falsified'].includes(after?.causal_hypothesis_status),
+    change_decision: before?.decision !== after?.decision,
+  };
+
+  return {
+    realized: changed[action.expected_delta] === true,
+    reason: changed[action.expected_delta] === true ? 'expected-decision-delta-realized' : 'no-material-decision-delta',
+  };
+}
+
 export function updateResearchCoverage({ completed = [], action, outcome } = {}) {
   const next = new Set(Array.isArray(completed) ? completed : []);
   if (

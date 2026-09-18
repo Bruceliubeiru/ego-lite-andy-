@@ -3,6 +3,14 @@ const SCOPE_FIT = { wrong: 0, partial: 1, exact: 2 };
 const NOVELTY = { none: 0, same_lineage: 1, independent: 2 };
 const BREADTH = { broad: 0, bounded: 1 };
 const COST = { high: 0, medium: 1, low: 2 };
+const EXPECTED_DELTAS = new Set([
+  'resolve_scope',
+  'resolve_conflict',
+  'establish_provenance',
+  'add_independent_lineage',
+  'test_causal_hypothesis',
+  'change_decision',
+]);
 
 function rank(action) {
   return [
@@ -21,6 +29,10 @@ function compareRank(a, b) {
     if (ar[i] !== br[i]) return br[i] - ar[i];
   }
   return 0;
+}
+
+export function hasDecisionDelta(action) {
+  return typeof action?.expected_delta === 'string' && EXPECTED_DELTAS.has(action.expected_delta);
 }
 
 export function updateResearchCoverage({ completed = [], action, outcome } = {}) {
@@ -48,6 +60,7 @@ export function selectNextResearchAction({ state, candidates = [] }) {
     if (action.scope_fit === 'wrong') return false;
     if (action.blocked_on_observation === true) return false;
     if (action.risk !== 'read_only') return false;
+    if (state?.require_expected_delta === true && !hasDecisionDelta(action)) return false;
     if (
       action.coverage_key &&
       Array.isArray(state?.completed_coverage_keys) &&

@@ -1,0 +1,117 @@
+{
+  "version": "1.5.11",
+  "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
+  "cases": [
+    {
+      "id": "scope-specific-evidence-vs-broader-rule",
+      "scenario": "A broad current first-party policy appears to conflict with current exact-scope evidence for the account, plan, region, period, product/runtime version, or execution environment being researched.",
+      "expected": [
+        "Keep both pieces of evidence in the same claim envelope with their different scope and provenance rather than averaging them.",
+        "Use the strongest exact-scope evidence for the user's actual state and the broader policy for the general rule unless stronger evidence resolves the mismatch.",
+        "Treat platform-family compatibility as a broad scope, not a universal environment guarantee: a statement such as 'runs on macOS' does not by itself prove that every macOS version, architecture, hardware generation, or app build can launch or behave equivalently. Conversely, a bounded failure report on one environment is scoped counterevidence, not proof that the whole platform family is unsupported. Upstream citrolabs/ego-lite#387 reports app 0.5.0.28 failing to run on macOS 12.7.6, with a second user reporting the same symptom; retain that evidence at its reported environment scope unless stronger verification broadens it.",
+        "If the conflict remains material, keep the claim Conflicted or conditional instead of silently upgrading certainty."
+      ]
+    },
+    {
+      "id": "stale-state-vs-newer-material-evidence",
+      "scenario": "A long-running issue, dashboard, cached page, prior provider read, or earlier research summary records an older state, while a newer bounded observation from the same material scope records a state change that can alter the current decision.",
+      "expected": [
+        "Treat observation time and effective state time as material provenance when the claim is about current state; do not let an older summary or initial issue body silently override newer state-changing evidence.",
+        "When sources describe successive states rather than the same moment, preserve both in temporal order instead of manufacturing a factual conflict.",
+        "Before acting on a consequential current-state claim, consume the newest relevant state-changing evidence available within the bounded target scope and invalidate stale next actions when that evidence changes the decision.",
+        "Do not infer that a newer source is more authoritative merely because it is newer; freshness only resolves temporal state when provenance and scope are sufficient for the claim being evaluated."
+      ]
+    },
+    {
+      "id": "same-content-vs-wrong-provenance-boundary",
+      "scenario": "A browser/network result contains the expected URL, payload, text, or control, but the originating window, page, document, frame, CDP session, task space, profile, account, or saved semantic ref cannot be tied to the target research context. This includes partial snapshots or later agent rounds where an older ref may be reused for a sibling or replacement node even without a top-level navigation.",
+      "expected": [
+        "Do not accept matching content, visible focus, or a still-resolving ref alone as proof that the evidence came from the target context or node.",
+        "For multi-window or multi-Space browser state, bind consequential observations and target-changing actions to the exact originating window/Space/page when that identity can change the conclusion, then verify the target-local postcondition after the action. UI focus or the visually foreground window is not sufficient provenance when the runtime may route through stale/global active-target state. Upstream citrolabs/ego-lite#210, #267, and #390 are independent wrong-target reports across profile switching, DevTools, and Space selection; treat them as evidence for the shared target-identity boundary, not as proof that every build or action is affected.",
+        "For evidence obtained through a saved browser ref, treat frame identity, document identity, and node identity as one provenance chain when those boundaries can change the conclusion; reacquire a fresh scoped snapshot/ref after a document or frame replacement, and when the exact released runtime cannot guarantee ref identity across partial snapshots or agent rounds.",
+        "Record provenance as partial or unknown and seek a bounded page-local, frame-local, or session-bound verification path rather than widening browser permissions or reading unrelated profile state.",
+        "Bind provenance guarantees to the exact executing component versions rather than to a repository tag or upstream-main status alone: citrolabs/ego-lite v2.0.0, released 2026-09-10, ships the ego-browser skill artifact and includes the ref/frame provenance fixes from #375, #377, and #378, but that tag does not by itself prove which separately downloaded ego lite browser app build is executing or that older skill installations preserve the same guarantees. When a claim depends on both browser-side and skill-side behavior, verify or retain the effective version provenance for both components; otherwise keep the guarantee partial or unknown.",
+        "Treat download locators, release labels, and versioned URLs as acquisition/release provenance unless immutability is independently established; a version string or stable-looking path does not by itself bind exact bytes. When binary identity can change the capability conclusion, prefer the installed component's own version/build identity and, where available, a cryptographic digest or other content-addressed identifier for the artifact. GitHub currently reports the citrolabs/ego-lite v2.0.0 release as `immutable:false` while exposing a SHA-256 digest for `ego-browser-v2.0.0.zip`, demonstrating that release versioning and byte identity are distinct provenance dimensions. Upstream citrolabs/ego-lite#58 separately documents the mutable CDN path used for the macOS app. Do not collect unrelated local files or credentials merely to strengthen artifact provenance.",
+        "When a platform approves, snapshots, or resolves a tool/Skill contract separately from the installed or live artifact, bind capability claims to the effective approved and actually resolved contract for the target workspace, host, or session. A newer live tool definition, completed upgrade, CLI help path, or installed plugin is not proof that the target host executes it: local precedence, disabled-Skill settings, stale migration copies, or another same-name Skill can shadow the packaged Skill. Preserve the source object's exact kind (for example issue, pull request, release, discussion, or documentation page) when that kind changes authority, lifecycle, or status semantics; a repository-number locator alone is not enough. Upstream pull request citrolabs/ego-lite#391 documents GitHub Copilot and DeepSeek Harness only passing acceptance after isolating personal same-name Skill conflicts, while issue #393 independently reports upgrade leftovers in host/project Skill directories silently overriding ego-browser v2.0.0 with v1.2.6 despite CLI guidance pointing at the newer path. Verify the actually resolved Skill/API version after migration rather than inferring it from installation success or documented location. Treat blocked/pending acceptance paths as acquisition limitations rather than negative capability evidence.",
+        "If attribution cannot be established and it can change the conclusion, leave the claim Needs verification."
+      ]
+    },
+    {
+      "id": "acquisition-failure-vs-negative-fact",
+      "scenario": "Evidence acquisition fails, exposes only a bounded visibility surface, or returns a successful-but-empty enumeration whose completeness is not independently established for the material claim scope. Causes include an automation challenge, profile-import failure, script/evaluator failure, stale execution context, timeout, unsupported authentication path, a foreground browser surface that omits still-existing background Task Spaces or sessions, or a provider command that reports success with an empty collection even though the underlying population may not have been exhaustively enumerated. Upstream citrolabs/ego-lite#347 reports Dock activation sometimes showing a fresh regular Space while prior Agent Task Spaces remain alive and visible through the Spaces overview; #360 reports `import list` returning `success:true` with `profiles:[]` despite real Chrome profiles existing on disk.",
+      "expected": [
+        "Represent the acquisition, visibility, or enumeration limitation explicitly; do not convert it into evidence that the account, content, entitlement, task space, session, profile, or state is absent.",
+        "Treat absence from the current foreground tab/window/Space or from a successful empty list as local-to-that-observation-surface unless a bounded authoritative enumeration proves completeness for the material scope.",
+        "A successful empty read may remain context evidence that the bounded query executed, but direct support or contradiction based on absence requires independently established exhaustive enumeration whose account, region, plan, population, time window, and other material scope dimensions match the claim being evaluated.",
+        "An exhaustive enumeration of the wrong scope is not negative evidence for the target scope; preserve the mismatch explicitly and re-plan toward one bounded exact-scope verification if available.",
+        "Use an independent bounded read path, such as a task-space listing or appropriate first-party state enumeration, when it can prove the same fact without expanding sensitive permissions or taking control from another owner.",
+        "Do not create, reclaim, close, or mutate Spaces merely to test whether hidden/background state exists.",
+        "If no equivalent safe path exists, keep the claim Needs verification or blocked rather than asserting a negative fact."
+      ]
+    },
+    {
+      "id": "duplicate-discovery-vs-independent-verification",
+      "scenario": "Several agents, snippets, summaries, mirrors, or tool outputs ultimately derive from the same underlying page, document, API response, or browser observation.",
+      "expected": [
+        "Assign the same evidence lineage to derivative discoveries of the same underlying source.",
+        "Do not increase confidence merely because the same lineage appears multiple times.",
+        "Seek a genuinely independent or more specific source only when it can materially change the claim state."
+      ]
+    },
+    {
+      "id": "degraded-fallback-vs-equivalent-proof",
+      "scenario": "A preferred evidence path fails and a fallback returns only partial or different evidence, such as DOM state instead of visual proof, a local canvas read instead of a full screenshot, or a generic policy instead of authenticated state.",
+      "expected": [
+        "Record the fallback's actual provenance, scope, and limitations rather than treating it as automatically equivalent to the failed path.",
+        "Only promote the claim if the fallback independently proves the material fact at the required scope.",
+        "Otherwise keep confidence lower or the claim Needs verification even if the fallback itself executed successfully."
+      ]
+    },
+    {
+      "id": "fact-vs-inference-vs-causal-claim",
+      "scenario": "Observed evidence establishes a page state, metric, test result, or runtime failure, while downstream reasoning wants to infer a broader explanation, cause, regression attribution, estimate, or recommendation from it.",
+      "expected": [
+        "Keep observed_fact, inference, causal, estimate, and recommendation as distinct claim kinds.",
+        "Do not let downstream reasoning silently transform an observed fact into a confirmed causal claim. A failing test proves that the tested state failed under its recorded scope; it does not by itself prove that the candidate change caused the failure.",
+        "For change-attribution claims, compare a bounded unchanged baseline and candidate under materially equivalent environment, inputs, runtime, and artifact provenance when feasible. If the same failure reproduces on the unchanged base, treat that as counterevidence to a candidate-caused regression rather than hiding the failing test. Upstream pull request citrolabs/ego-lite#391 reports 17/69 real-browser E2E failures for a plugin-only change, then reproduces the primary failures on the target base with an identical built SDK SHA-256, supporting inherited-baseline failure rather than regression attribution to the plugin patch.",
+        "Challenge material causal or inferential claims with an alternative explanation or counterexample before high-confidence use."
+      ]
+    },
+    {
+      "id": "apparent-conflict-vs-scope-mismatch",
+      "scenario": "Two authoritative sources appear to disagree, but one applies to a generic population while the other applies to a narrower account, region, cohort, plan, product variant, or jurisdiction.",
+      "expected": [
+        "Diagnose scope before declaring a factual contradiction.",
+        "Allow both claims to remain true at their own scopes when the evidence supports that interpretation.",
+        "If the user decision depends on the narrower scope, verify that scope rather than collecting more generic sources."
+      ]
+    },
+    {
+      "id": "apparent-conflict-vs-definition-mismatch",
+      "scenario": "Two dashboards or documents report different values for what appears to be the same metric, but the denominator, unit, population, time grain, or calculation definition may differ.",
+      "expected": [
+        "Check definitions, units, denominators, and time grain before treating the values as contradictory.",
+        "Prefer a bounded definition or methodology read over adding a third summary source.",
+        "Keep the claim Conflicted if the definitions cannot be reconciled and the difference can change the decision."
+      ]
+    },
+    {
+      "id": "conflict-resolution-vs-majority-vote",
+      "scenario": "Three secondary summaries derived from one underlying report agree with each other while one current first-party exact-scope observation points the other way.",
+      "expected": [
+        "Collapse the derivative summaries into one evidence lineage rather than treating them as three votes.",
+        "Compare authority, specificity, freshness, and provenance instead of resolving the conflict by source count.",
+        "Select a discriminating verification only if the conflict remains material after lineage and scope normalization."
+      ]
+    },
+    {
+      "id": "causal-conflict-vs-nondiscriminating-evidence",
+      "scenario": "Two rival causal explanations both predict the already-observed metric pattern, and additional proposed research would collect more evidence that both explanations also predict.",
+      "expected": [
+        "Keep the causal claim unresolved rather than treating compatible evidence as discriminating proof.",
+        "Seek a safe bounded observation whose expected result differs under the rival explanations.",
+        "If no decision-relevant discriminating read is available, preserve causal uncertainty and stop rather than expanding research indefinitely."
+      ]
+    }
+  ]
+}

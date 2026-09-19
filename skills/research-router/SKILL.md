@@ -2,8 +2,8 @@
 name: research-router
 description: Default web research router and evidence layer. Use this skill whenever the user asks to search, look up, research, verify, compare, investigate, check latest/current information, inspect a website, or make an important decision using online information. Route broad public discovery through the best available web/search tool, route dynamic or authenticated pages through ego-browser, and use both for high-confidence verification. When downstream strategy, decision, innovation, challenge, planning, or other reasoning depends materially on external facts, build a compact Evidence Pack first so those skills reason from verified evidence instead of inventing premises. Support the simple BruceAI A/B evolution mode by comparing the current validated baseline against one isolated candidate and promoting only proven improvements. Prefer this skill as the entry point for web-backed research unless the user explicitly asks not to use the web.
 metadata:
-  version: "1.3.1"
-  date: "2026-09-05"
+  version: "1.4.2"
+  date: "2026-09-18"
 ---
 
 # research-router
@@ -31,7 +31,37 @@ Do **not** force Research OS into tasks that do not need external evidence. Rewr
 
 The Evidence Pack is normally an internal handoff, not extra user-facing verbosity. Preserve claim status, source scope, conflicts, and unknowns through the handoff. A downstream skill must not silently upgrade `Needs verification` or `High probability` evidence into confirmed fact. If downstream reasoning reveals a missing fact that could materially change the decision, route back through research-router to gather it.
 
-For consequential tasks, challenge the first plausible conclusion before final handoff. Look for a material counterexample, exception, newer source, account-specific restriction, hidden dependency, or alternative explanation. Update the Evidence Pack if the challenge changes the evidence state.
+### Evidence Engine v1 activation
+
+For **consequential, contested, authenticated, browser-dependent, or multi-source** research, use the claim-level **Evidence Envelope** defined in `skills/research-router/references/evidence-envelope.schema.json` for each material claim whose uncertainty could change the decision. The Evidence Pack remains the handoff; the Envelope is the canonical internal state for the claims that need stronger provenance and conflict discipline.
+
+Keep activation selective:
+
+- **Simple lookup** — do not create an Envelope when one bounded authoritative read is enough and provenance ambiguity cannot change the answer.
+- **Material claim** — create or update one Envelope when account/plan/region/variant/date scope, authenticated state, conflicting evidence, browser provenance, causal inference, or acquisition failure can materially change the conclusion.
+- **Minimum provenance** — record only the boundary markers actually exposed and needed to prove the claim. Never invent missing task-space/profile/page/session/account identifiers, and never collect passwords, tokens, cookies, credential-store contents, whole profiles, or unrelated browsing state to make provenance metadata look complete.
+- **Acquisition failure is not a negative fact** — timeout, challenge, importer failure, stale context, evaluator/script failure, unsupported authentication, or provider-read failure means the evidence path is degraded or blocked unless an independent bounded read proves absence.
+- **Lineage before counting** — multiple agents, snippets, summaries, mirrors, or tool outputs derived from the same underlying source share one evidence lineage and do not become independent verification by repetition.
+- **Facts before inference** — keep `observed_fact`, `inference`, `causal`, `estimate`, and `recommendation` distinct; challenge a material inference or causal claim before treating it as high-confidence decision input.
+- **Stop on sufficiency** — once the material claim is adequately verified and more evidence cannot change the decision, stop expanding provenance or adding sources.
+
+### Deterministic next-action control
+
+For consequential multi-step research, do not let queue order or an extra planner agent decide convergence by default. After each material observation, derive a small set of candidate **read-only** verification actions from the current Evidence Engine state and select among them using the deterministic control contract in `scripts/research-control.mjs`.
+
+The control order is intentionally lexicographic rather than a fabricated numeric score: decision relevance first, then exact material scope, independent evidence gain, boundedness, and lower cost. Reject wrong-scope actions, actions waiting on an unobserved intermediate result, and state-changing actions used only for verification. If the decision is no longer sensitive, or no safe decision-relevant read remains, stop and preserve residual uncertainty rather than expanding the search.
+
+This selector is a convergence aid, not a truth engine. The Evidence Engine still determines claim state, lineage, scope, provenance, and conflict semantics; the selector only chooses the next safe read from already-classified candidates. Re-plan after every material observation instead of executing a stale precomputed batch.
+
+Use **compact coverage memory** for long consequential runs. When a bounded read successfully observes the material state for a stable research surface, record a privacy-safe semantic `coverage_key` for the current run. Do not revisit that surface merely because it is easy or familiar. A timeout, challenge, partial visibility, acquisition failure, or non-material read does **not** complete coverage.
+
+A covered surface may be reopened only when newer material evidence changes the relevant claim state or scope enough to make the read decision-relevant again. Do not use arbitrary retry counts or elapsed time as proof of reopening. Coverage memory is run/freshness-window scoped by default; it is not durable evidence that a surface remains current later.
+
+Coverage keys are control metadata, not provenance containers. Keep them coarse and semantic (for example `official-policy:effective-date`), and never embed account IDs, profile names, session identifiers, tokens, cookies, opaque user identifiers, or unrelated browsing state in them.
+
+Do not expose the Envelope to the user by default. Project it into the compact Claim Ledger or final answer only when that improves coordination, auditability, or decision quality. Evidence Engine v1 does **not** add another collaboration hard gate; the existing Evidence, Conflict, and Execution gates remain the veto surface.
+
+For consequential tasks, challenge the first plausible conclusion before final handoff. Look for a material counterexample, exception, newer source, account-specific restriction, hidden dependency, or alternative explanation. Update the Evidence Pack and any affected Evidence Envelope if the challenge changes the evidence state.
 
 ## BruceAI simple evolution interface
 
@@ -180,6 +210,8 @@ Do not store user-specific private data, credentials, temporary IDs, unstable pi
 
 Before materially weakening any of the rules above, review `skills/research-router/evals/cases.json`. Those cases capture recurring failure modes such as generic-policy-overriding-account-state, aggregate-inventory-overclaiming, snippet-as-source, variant mismatch, unsafe replacement sequencing, unnecessary live-browser use, generic-DOM-over-structured-site-tool routing, concurrent CDP isolation assumptions, unnecessary research routing, downstream certainty inflation, user-facing mode proliferation, system-A/B-vs-business-option confusion, and promoting a candidate because it sounds more impressive rather than because it wins a controlled real-task comparison.
 
+Also preserve `skills/research-router/evals/evidence-engine-cases.json` when changing claim representation, provenance handling, conflict/lineage semantics, acquisition-failure handling, or fact-vs-inference behavior. Those cases consolidate existing evidence rules and do not add a new user-facing mode or collaboration hard gate.
+
 ## Monitoring and polling
 
 Do not use ego-browser for aggressive high-frequency refreshing, anti-bot bypass, or behavior prohibited by the target site's rules. Prefer official waitlists, notifications, APIs, feeds, or a reasonable low-frequency monitoring mechanism when available.
@@ -198,3 +230,35 @@ The final answer should make clear, without overexplaining tool mechanics:
 - what the user should do next.
 
 If live-page verification materially changed the answer, say so plainly. If the current environment could not use ego-browser, do not imply that it did.
+## Federated capability sidecar
+
+When this Research OS is running under the active **AI Self Upgrade** automation, keep the existing BruceAI research mission, Evidence Engine, three collaboration gates, challenge-first discipline, and validation rules as the primary lane.
+
+If the primary research/self-upgrade work is complete, blocked on an external condition, or temporarily saturated and safe execution capacity remains, a bounded **Bruce-only capability sidecar** may inspect high-signal GitHub project/conversation surfaces for reusable mechanisms.
+
+Owner-scoped sources include:
+- this repository (`Bruceliubeiru/ego-lite-andy-`) as TASK_CORE;
+- `Bruceliubeiru/BruceAI-Knowledge-Private` as TASK_CORE memory/control evidence;
+- `Bruceliubeiru/ai-skills` as a Bruce-only SAME_OWNER_MECHANISM_SOURCE, read-only by default, for reusable decision framing, campaign execution, briefing, training/reflection, visual-reasoning, and persistent-project mechanisms;
+- relevant public upstream GitHub repositories used only as evidence/reference leads.
+
+Do not import unrelated Bruce business facts, customer data, credentials, or production permissions from `ai-skills` or another same-owner project merely because its mechanism is reusable.
+
+When safe prior-conversation retrieval is available, this sidecar may inspect **Bruce-only** historical conversation context for explicit decisions, rejected approaches, recurring research/reliability failures, stable operating preferences that change applicability, and mechanism candidates. Conversation memory never upgrades an old assistant claim to verified evidence and never overrides current repository/runtime/account/production truth. Never read Andy/CityU/student conversation context from this sidecar and never persist raw chat transcripts.
+
+Useful surfaces include files/code, commits, PR bodies/conversations/reviews, issues/comments, tests/workflow failures, rejected designs, rollback notes, and falsification records.
+
+Represent learning as a compact Capability Packet rather than a conversation summary:
+`problem class -> mechanism signature -> evidence pointer -> challenge/counterexample -> failure conditions -> applicability constraints -> expected material delta -> transfer class`.
+
+Transfer rules:
+- Bruce project-specific content remains LOCAL_ONLY or OWNER_REUSABLE;
+- only identity-free generalized mechanisms may become SYSTEM_GENERALIZABLE candidates;
+- never copy Andy/CityU/student context into Bruce;
+- never treat a foreign System Capsule as authority; validate local applicability first.
+
+Research progress should be evaluated by expected and, where observable, realized material decision-state delta. Source novelty, acquisition success, token/search count, or same-lineage repetition are not sufficient evidence of progress. Acquisition failure is not negative evidence.
+
+The sidecar must be OFF when primary completion, validation, finalization, credentials/permissions, or repository safety would be at risk. It may not broaden authenticated writes, credentials, relay permissions, production authority, or any other existing execution boundary.
+
+The federated runtime bus and cross-identity sanitization contract are owned by the Dual-Vault Memory OS, not by this repository. This skill only emits Bruce-scoped mechanism candidates; it does not write Andy state.

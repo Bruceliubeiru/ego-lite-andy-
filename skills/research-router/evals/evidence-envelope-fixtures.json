@@ -1,0 +1,251 @@
+{
+  "version": "1.0.0",
+  "purpose": "Executable semantic fixtures for Evidence Envelope v1. These test internal consistency only; they do not attempt to judge whether external evidence is factually true.",
+  "valid": [
+    {
+      "name": "confirmed-single-authoritative-source",
+      "envelope": {
+        "version": "1.0",
+        "claim_id": "claim-1",
+        "claim_kind": "observed_fact",
+        "claim": "The released runtime documents macOS as supported.",
+        "scope": {"runtime_version": "1.2.3"},
+        "status": "Confirmed",
+        "evidence": [
+          {
+            "evidence_id": "e1",
+            "direction": "support",
+            "pointer": "upstream release README",
+            "lineage_id": "upstream-readme-1.2.3",
+            "source_class": "first_party_public",
+            "authority": "primary",
+            "specificity": "exact",
+            "freshness": "current",
+            "provenance": {
+              "quality": "verified",
+              "source_identity": "upstream release README",
+              "auth_state": "not_applicable",
+              "challenge_state": "not_applicable",
+              "provider_execution": "not_applicable"
+            },
+            "limitations": []
+          }
+        ],
+        "conflicts": [],
+        "confidence": {"level": "high", "reason": "Exact released first-party source."},
+        "decision_impact": "High",
+        "next_action": "none"
+      }
+    },
+    {
+      "name": "needs-verification-after-blocked-acquisition",
+      "envelope": {
+        "version": "1.0",
+        "claim_id": "claim-2",
+        "claim_kind": "observed_fact",
+        "claim": "Target account has the requested private capability.",
+        "scope": {"account": "target account", "plan": "Plus"},
+        "status": "Needs verification",
+        "evidence": [],
+        "conflicts": [],
+        "confidence": {"level": "blocked", "reason": "Authenticated evidence acquisition was blocked."},
+        "decision_impact": "High",
+        "next_action": "verify"
+      }
+    },
+    {
+      "name": "conflicted-exact-vs-broad-scope",
+      "envelope": {
+        "version": "1.0",
+        "claim_id": "claim-3",
+        "claim_kind": "observed_fact",
+        "claim": "Target account can use capability X.",
+        "scope": {"account": "target account", "plan": "Plus"},
+        "status": "Conflicted",
+        "evidence": [
+          {
+            "evidence_id": "e1",
+            "direction": "support",
+            "pointer": "authenticated account page",
+            "lineage_id": "account-page",
+            "source_class": "first_party_authenticated",
+            "authority": "primary",
+            "specificity": "exact",
+            "freshness": "current",
+            "provenance": {"quality": "verified", "source_identity": "account page", "auth_state": "confirmed"},
+            "limitations": []
+          },
+          {
+            "evidence_id": "e2",
+            "direction": "contradict",
+            "pointer": "current public plan documentation",
+            "lineage_id": "public-plan-doc",
+            "source_class": "first_party_public",
+            "authority": "primary",
+            "specificity": "broad",
+            "freshness": "current",
+            "provenance": {"quality": "verified", "source_identity": "public plan documentation"},
+            "limitations": ["Broader than the exact target account scope."]
+          }
+        ],
+        "conflicts": [
+          {
+            "evidence_ids": ["e1", "e2"],
+            "issue": "Exact account state and broad current plan documentation disagree.",
+            "state": "unresolved"
+          }
+        ],
+        "confidence": {"level": "medium", "reason": "Both sources are current but differ in scope."},
+        "decision_impact": "High",
+        "next_action": "verify"
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "confirmed-with-unresolved-conflict",
+      "expect_error": "Confirmed claim cannot retain an unresolved material conflict",
+      "envelope": {
+        "version": "1.0",
+        "claim_id": "bad-1",
+        "claim_kind": "observed_fact",
+        "claim": "Claim incorrectly marked confirmed.",
+        "scope": {},
+        "status": "Confirmed",
+        "evidence": [
+          {"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":"a","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]},
+          {"evidence_id":"e2","direction":"contradict","pointer":"source B","lineage_id":"b","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"source B"},"limitations":[]}
+        ],
+        "conflicts": [{"evidence_ids":["e1","e2"],"issue":"Material disagreement","state":"unresolved"}],
+        "confidence": {"level":"high","reason":"Incorrectly overconfident."},"decision_impact":"High","next_action":"none"
+      }
+    },
+    {
+      "name": "conflict-references-missing-evidence",
+      "expect_error": "references unknown evidence_id: missing",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-2","claim_kind":"observed_fact","claim":"Broken reference.","scope":{},"status":"Conflicted",
+        "evidence":[{"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":"a","source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]}],
+        "conflicts":[{"evidence_ids":["e1","missing"],"issue":"Broken reference","state":"unresolved"}],
+        "confidence":{"level":"low","reason":"Broken state."},"decision_impact":"Medium","next_action":"verify"
+      }
+    },
+    {
+      "name": "duplicate-evidence-id",
+      "expect_error": "duplicate evidence_id: e1",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-3","claim_kind":"observed_fact","claim":"Duplicate evidence identity.","scope":{},"status":"Needs verification",
+        "evidence":[
+          {"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":"a","source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]},
+          {"evidence_id":"e1","direction":"support","pointer":"source B","lineage_id":"b","source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source B"},"limitations":[]}
+        ],
+        "conflicts":[],"confidence":{"level":"low","reason":"Invalid identity state."},"decision_impact":"Low","next_action":"verify"
+      }
+    },
+    {
+      "name": "conflicted-without-unresolved-conflict",
+      "expect_error": "Conflicted claim requires at least one unresolved conflict",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-4","claim_kind":"observed_fact","claim":"Status and conflict state disagree.","scope":{},"status":"Conflicted",
+        "evidence":[{"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":"a","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]}],
+        "conflicts":[],"confidence":{"level":"medium","reason":"Invalid conflict state."},"decision_impact":"High","next_action":"verify"
+      }
+    },
+    {
+      "name": "structured-limitation-item",
+      "expect_error": "evidence[0].limitations[0] must be a string",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-5","claim_kind":"observed_fact","claim":"Structured limitation payloads must not enter Evidence Envelope evidence.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":"e1","direction":"context","pointer":"source A","lineage_id":"a","source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[{"code":"opaque-provider-detail"}]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Invalid limitation shape."},"decision_impact":"Low","next_action":"verify"
+      }
+    },
+    {
+      "name": "structured-evidence-id",
+      "expect_error": "evidence[0].evidence_id must be a non-empty string",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-6","claim_kind":"observed_fact","claim":"Evidence identity must not be represented by an opaque structured value.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":{"opaque":"e1"},"direction":"support","pointer":"source A","lineage_id":"a","source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Invalid evidence identity."},"decision_impact":"Low","next_action":"verify"
+      }
+    },
+    {
+      "name": "structured-lineage-id",
+      "expect_error": "evidence[0].lineage_id must be a non-empty string",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-7","claim_kind":"observed_fact","claim":"Lineage identity must not be represented by an opaque structured value.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":{"opaque":"same-source"},"source_class":"secondary","authority":"secondary","specificity":"broad","freshness":"dated","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Invalid lineage identity."},"decision_impact":"Low","next_action":"verify"
+      }
+    },
+    {
+      "name": "unsupported-conflict-state",
+      "expect_error": "conflicts[0].state has unsupported value: provider_specific_state",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-8","claim_kind":"observed_fact","claim":"Unknown conflict states must not bypass material-conflict semantics.","scope":{},"status":"Confirmed",
+        "evidence":[
+          {"evidence_id":"e1","direction":"support","pointer":"source A","lineage_id":"a","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"source A"},"limitations":[]},
+          {"evidence_id":"e2","direction":"contradict","pointer":"source B","lineage_id":"b","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"source B"},"limitations":[]}
+        ],
+        "conflicts":[{"evidence_ids":["e1","e2"],"issue":"Material disagreement","state":"provider_specific_state"}],
+        "confidence":{"level":"high","reason":"Invalid conflict state must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
+    },
+    {
+      "name": "unsupported-claim-status",
+      "expect_error": "status has unsupported value: provider_specific_status",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-9","claim_kind":"observed_fact","claim":"Unknown claim states must not bypass the Evidence Engine decision state machine.","scope":{},"status":"provider_specific_status",
+        "evidence":[],"conflicts":[],"confidence":{"level":"low","reason":"Unknown status must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
+    },
+    {
+      "name": "unsupported-claim-kind",
+      "expect_error": "claim_kind has unsupported value: provider_specific_kind",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-10","claim_kind":"provider_specific_kind","claim":"Unknown claim kinds must not blur the distinction between observed facts, inference, causal claims, estimates, and recommendations.","scope":{},"status":"Needs verification",
+        "evidence":[],"conflicts":[],"confidence":{"level":"low","reason":"Unknown claim kind must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
+    },
+    {
+      "name": "structured-provenance-source-identity",
+      "expect_error": "evidence[0].provenance.source_identity must be a non-empty string",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-11","claim_kind":"observed_fact","claim":"Structured provenance identities must not masquerade as a verified source identity.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":"e1","direction":"context","pointer":"source A","lineage_id":"a","source_class":"first_party_authenticated","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":{"page":"source A"}},"limitations":[]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Opaque provenance identity cannot be compared or independently rechecked."},"decision_impact":"High","next_action":"verify"
+      }
+    },
+    {
+      "name": "unsupported-provenance-quality",
+      "expect_error": "evidence[0].provenance.quality has unsupported value: provider_specific_quality",
+      "envelope": {
+        "version":"1.0","claim_id":"bad-12","claim_kind":"observed_fact","claim":"Unknown provenance quality must not masquerade as a recognized verification state.","scope":{},"status":"Needs verification",
+        "evidence":[{"evidence_id":"e1","direction":"context","pointer":"source A","lineage_id":"a","source_class":"first_party_authenticated","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"provider_specific_quality","source_identity":"source A"},"limitations":[]}],
+        "conflicts":[],"confidence":{"level":"low","reason":"Unknown provenance quality must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
+    }
+  ],
+  "projection": {
+    "fixture": "confirmed-single-authoritative-source",
+    "expected": {
+      "Claim": "The released runtime documents macOS as supported.",
+      "Evidence": "upstream release README",
+      "Status": "Confirmed",
+      "Impact": "High",
+      "Next action": "none"
+    }
+  },
+  "lineage": {
+    "expected_support_count": 1,
+    "envelope": {
+      "version":"1.0","claim_id":"lineage-1","claim_kind":"observed_fact","claim":"Repeated summaries do not create independent verification.","scope":{},"status":"High probability",
+      "evidence":[
+        {"evidence_id":"e1","direction":"support","pointer":"original page","lineage_id":"same-source","source_class":"first_party_public","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"original page"},"limitations":[]},
+        {"evidence_id":"e2","direction":"support","pointer":"summary of original page","lineage_id":"same-source","source_class":"secondary","authority":"secondary","specificity":"exact","freshness":"current","provenance":{"quality":"verified","source_identity":"summary"},"limitations":["Derived from the same underlying source."]},
+        {"evidence_id":"e3","direction":"support","pointer":"malformed lineage observation","lineage_id":{"opaque":"same-source"},"source_class":"secondary","authority":"secondary","specificity":"unknown","freshness":"stale_or_unknown","provenance":{"quality":"unknown","source_identity":"malformed lineage observation"},"limitations":["Malformed lineage IDs must not manufacture an independent lineage."]}
+      ],
+      "conflicts":[],"confidence":{"level":"medium","reason":"Only one independent evidence lineage."},"decision_impact":"Medium","next_action":"challenge"
+    }
+  }
+}

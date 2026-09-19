@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "purpose": "Focused Evidence Adapter consistency fixtures. A transport/provider call that is labelled success but also exposes an explicit current-call result error must not become evidence.",
+  "valid": [
+    {
+      "name": "executed connector success without explicit result error",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "evidence_id": "e-provider-ok",
+        "direction": "context",
+        "pointer": "connector://provider/read/ok",
+        "lineage_id": "connector-read:ok",
+        "source_identity": "provider read",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "provider_execution": "read_executed"},
+        "limitations": []
+      },
+      "expect_evidence": true,
+      "expected_source_class": "connector_or_api"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "transport success cannot hide application tool error",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_error": "unknown MCP tool",
+        "evidence_id": "bad-provider-error",
+        "direction": "support",
+        "pointer": "connector://provider/tool/unknown",
+        "lineage_id": "connector-read:unknown-tool",
+        "source_identity": "provider tool call",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {"quality": "partial", "provider_execution": "read_executed"}
+      },
+      "error_contains": "success observation cannot contain result_error"
+    }
+  ]
+}

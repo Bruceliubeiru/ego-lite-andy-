@@ -1,0 +1,133 @@
+{
+  "version": "1.0",
+  "purpose": "Executable fixtures ensuring the Evidence Adapter cannot emit authority, specificity, freshness, or provenance enum values that are invalid under Evidence Envelope v1.",
+  "valid": [
+    {
+      "name": "schema-aligned enum values remain valid",
+      "observation": {
+        "adapter": "public_page",
+        "outcome": "success",
+        "evidence_id": "e-schema-enums-valid",
+        "direction": "support",
+        "pointer": "https://example.com/current-policy",
+        "lineage_id": "url:https://example.com/current-policy",
+        "source_identity": "Example current policy",
+        "authority": "primary",
+        "specificity": "scoped",
+        "freshness": "current",
+        "provenance": {
+          "quality": "verified",
+          "auth_state": "not_applicable",
+          "challenge_state": "none"
+        },
+        "limitations": []
+      },
+      "expect_evidence": true,
+      "expected_source_class": "first_party_public"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "unsupported authority cannot leave adapter",
+      "observation": {
+        "adapter": "public_page",
+        "outcome": "success",
+        "evidence_id": "bad-authority-enum",
+        "direction": "support",
+        "pointer": "https://example.com/policy",
+        "lineage_id": "url:https://example.com/policy",
+        "source_identity": "Example policy",
+        "authority": "official_primary",
+        "specificity": "scoped",
+        "freshness": "current",
+        "provenance": {"quality": "verified"}
+      },
+      "error_contains": "authority has unsupported value"
+    },
+    {
+      "name": "unsupported specificity cannot leave adapter",
+      "observation": {
+        "adapter": "secondary_source",
+        "outcome": "success",
+        "evidence_id": "bad-specificity-enum",
+        "direction": "context",
+        "pointer": "https://example.net/report",
+        "lineage_id": "url:https://example.net/report",
+        "source_identity": "Example report",
+        "authority": "secondary",
+        "specificity": "account_exact",
+        "freshness": "dated",
+        "provenance": {"quality": "partial"}
+      },
+      "error_contains": "specificity has unsupported value"
+    },
+    {
+      "name": "unsupported freshness cannot leave adapter",
+      "observation": {
+        "adapter": "community_source",
+        "outcome": "success",
+        "evidence_id": "bad-freshness-enum",
+        "direction": "context",
+        "pointer": "https://community.example/post",
+        "lineage_id": "url:https://community.example/post",
+        "source_identity": "Community post",
+        "authority": "community",
+        "specificity": "broad",
+        "freshness": "live",
+        "provenance": {"quality": "partial"}
+      },
+      "error_contains": "freshness has unsupported value"
+    },
+    {
+      "name": "unsupported provenance quality cannot leave adapter",
+      "observation": {
+        "adapter": "public_page",
+        "outcome": "success",
+        "evidence_id": "bad-quality-enum",
+        "direction": "support",
+        "pointer": "https://example.com/policy",
+        "lineage_id": "url:https://example.com/policy",
+        "source_identity": "Example policy",
+        "authority": "primary",
+        "specificity": "scoped",
+        "freshness": "current",
+        "provenance": {"quality": "trusted"}
+      },
+      "error_contains": "provenance.quality has unsupported value"
+    },
+    {
+      "name": "unsupported auth state cannot leave adapter",
+      "observation": {
+        "adapter": "public_page",
+        "outcome": "success",
+        "evidence_id": "bad-auth-state-enum",
+        "direction": "context",
+        "pointer": "https://example.com/help",
+        "lineage_id": "url:https://example.com/help",
+        "source_identity": "Example help page",
+        "authority": "primary",
+        "specificity": "broad",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "auth_state": "logged_in"}
+      },
+      "error_contains": "provenance.auth_state has unsupported value"
+    },
+    {
+      "name": "unsupported challenge state cannot leave adapter",
+      "observation": {
+        "adapter": "public_page",
+        "outcome": "success",
+        "evidence_id": "bad-challenge-state-enum",
+        "direction": "context",
+        "pointer": "https://example.com/help",
+        "lineage_id": "url:https://example.com/help",
+        "source_identity": "Example help page",
+        "authority": "primary",
+        "specificity": "broad",
+        "freshness": "current",
+        "provenance": {"quality": "verified", "challenge_state": "captcha"}
+      },
+      "error_contains": "provenance.challenge_state has unsupported value"
+    }
+  ]
+}

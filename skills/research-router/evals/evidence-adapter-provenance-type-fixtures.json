@@ -1,0 +1,96 @@
+{
+  "version": "1.0",
+  "purpose": "Executable fixtures ensuring bounded provenance fields remain scalar string markers rather than containers for arbitrary nested browser, account, credential, or page state.",
+  "valid": [
+    {
+      "name": "scalar provenance markers remain valid",
+      "observation": {
+        "adapter": "authenticated_page",
+        "outcome": "success",
+        "evidence_id": "e-scalar-provenance",
+        "direction": "support",
+        "pointer": "ego://settings/account",
+        "lineage_id": "account-page:target-account",
+        "source_identity": "authenticated account settings",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {
+          "quality": "verified",
+          "auth_state": "confirmed",
+          "account_marker": "target-account",
+          "page_url": "https://example.com/settings",
+          "session_marker": "session-7"
+        },
+        "limitations": []
+      },
+      "expect_evidence": true,
+      "expected_source_class": "first_party_authenticated"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "account marker cannot carry nested account state",
+      "observation": {
+        "adapter": "authenticated_page",
+        "outcome": "success",
+        "evidence_id": "bad-nested-account",
+        "direction": "support",
+        "pointer": "ego://settings/account",
+        "lineage_id": "account-page:nested",
+        "source_identity": "authenticated account settings",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {
+          "quality": "verified",
+          "auth_state": "confirmed",
+          "account_marker": {
+            "label": "target-account",
+            "cookie": "must-not-flow",
+            "access_token": "must-not-flow"
+          }
+        }
+      },
+      "error_contains": "provenance.account_marker must be a non-empty string marker"
+    },
+    {
+      "name": "failed acquisition cannot preserve nested page payload",
+      "observation": {
+        "adapter": "authenticated_page",
+        "outcome": "blocked",
+        "pointer": "https://example.com/account",
+        "failure_reason": "challenge blocked verification",
+        "provenance": {
+          "page_url": {
+            "url": "https://example.com/account",
+            "cookies": ["must-not-flow"]
+          },
+          "challenge_state": "automation_challenge"
+        }
+      },
+      "error_contains": "provenance.page_url must be a non-empty string marker"
+    },
+    {
+      "name": "session marker cannot be an array of runtime state",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "evidence_id": "bad-session-array",
+        "direction": "context",
+        "pointer": "connector://provider/query",
+        "lineage_id": "connector-query:session-array",
+        "source_identity": "provider API read",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {
+          "quality": "verified",
+          "provider_execution": "read_executed",
+          "session_marker": ["session-1", "session-2"]
+        }
+      },
+      "error_contains": "provenance.session_marker must be a non-empty string marker"
+    }
+  ]
+}

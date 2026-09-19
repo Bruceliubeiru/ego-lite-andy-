@@ -1,0 +1,400 @@
+{
+  "version": "1.3.1",
+  "purpose": "Regression cases for choosing and re-planning the next BruceAI research action by expected decision value rather than queue order, ease, repeated evidence, or a stale precomputed plan.",
+  "cases": [
+    {
+      "id": "high-impact-vs-decision-sensitive",
+      "scenario": "Two unresolved claims are both labeled High impact. One can still flip the recommendation; the other is important background but the recommendation is unchanged either way.",
+      "expected": [
+        "Verify the decision-sensitive claim first.",
+        "Do not treat the Impact label alone as sufficient priority.",
+        "Set the background claim to none when resolving it no longer changes the decision or next verification step."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "decision-sensitive-claim",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "background-claim",
+            "decision_relevance": "none",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "decision-sensitive-claim"
+        }
+      }
+    },
+    {
+      "id": "new-lineage-vs-repeated-summary",
+      "scenario": "A cheap search can produce several more summaries of the same underlying source, while a bounded first-party read can add an independent and more specific evidence lineage for the material claim.",
+      "expected": [
+        "Prefer the bounded first-party read when it can materially reduce uncertainty.",
+        "Do not increase confidence or verification priority by multiplying summaries from one lineage.",
+        "Count the repeated summaries as one underlying evidence lineage."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "repeat-summary",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "bounded-first-party-read",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "medium",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "bounded-first-party-read"
+        }
+      }
+    },
+    {
+      "id": "cheap-safe-read-vs-expensive-broad-research",
+      "scenario": "A narrow structured first-party read and a broad multi-query research sweep can both resolve the same material uncertainty, but the narrow read is current, sufficient, read-only, and much cheaper.",
+      "expected": [
+        "Choose the narrow sufficient read first.",
+        "Do not fan out research merely because more sources are available.",
+        "Stop after the bounded read if the decision becomes sufficiently supported and no material conflict remains."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "narrow-read",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "broad-sweep",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "broad",
+            "cost": "high",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "narrow-read"
+        }
+      }
+    },
+    {
+      "id": "verification-vs-risky-state-change",
+      "scenario": "The only way to reduce a remaining uncertainty further would be to submit a form, change account state, release a scarce reservation, expand permissions, or perform another externally consequential action not delegated by the user.",
+      "expected": [
+        "Do not perform the state-changing action merely for verification.",
+        "Preserve the residual uncertainty and make the conclusion conditional when needed.",
+        "Treat safety and reversibility as a veto over information gain."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "state-changing-verification",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "state_change"
+          }
+        ],
+        "expected": {
+          "mode": "stop",
+          "action_id": null
+        }
+      }
+    },
+    {
+      "id": "first-next-action-vs-counterexample",
+      "scenario": "The first proposed next action looks useful, but a counterexample shows it observes the wrong account, region, variant, or too-narrow visibility surface and therefore cannot resolve the material claim.",
+      "expected": [
+        "Challenge the proposed action before execution.",
+        "Reject or downgrade an action whose provenance or scope cannot resolve the target claim.",
+        "Choose the best alternative action that directly addresses the material scope."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "cheap-wrong-scope",
+            "decision_relevance": "decisive",
+            "scope_fit": "wrong",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "exact-scope-alternative",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "medium",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "exact-scope-alternative"
+        }
+      }
+    },
+    {
+      "id": "research-more-vs-stop",
+      "scenario": "Several low-impact uncertainties remain, but none can change the recommendation, all available additional reads are duplicate-lineage or disproportionate in cost, and the material decision is already adequately supported.",
+      "expected": [
+        "Stop researching and set the relevant Next action values to none.",
+        "Do not equate stopping with certainty; preserve residual uncertainty in the evidence handoff.",
+        "Avoid spending tokens on facts that cannot alter the decision."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": false
+        },
+        "candidates": [
+          {
+            "id": "more-research",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "stop",
+          "action_id": null
+        }
+      }
+    },
+    {
+      "id": "precomputed-batch-vs-observe-and-replan",
+      "scenario": "A planner initially chooses three sequential verification actions A, B, and C. Action A returns decisive scoped evidence that confirms the recommendation and makes B and C unable to change the decision, but they were part of the original research queue.",
+      "expected": [
+        "Update the affected claims immediately after A before executing later dependent research actions.",
+        "Recompute the next action from the new evidence state instead of blindly continuing the original queue.",
+        "Stop and skip B and C when the stopping rule is now met, while preserving any residual uncertainty that remains."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": false
+        },
+        "candidates": [
+          {
+            "id": "stale-b",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "stale-c",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "stop",
+          "action_id": null
+        }
+      }
+    },
+    {
+      "id": "intermediate-result-changes-verification-path",
+      "scenario": "The first verification action can return either an account-specific exception or the generic rule. If it returns the exception, the next useful read is an effective-date/account check; if it returns the generic rule, the next useful read is a different plan-scope check. A preplanned second action would only be correct for one branch.",
+      "expected": [
+        "Do not execute the conditional second action before observing and incorporating the first result.",
+        "Re-diagnose scope/conflict and select the next verification from the updated claim state.",
+        "Allow parallel reads only when each remains useful under every plausible outcome of the others and none depends on an intermediate result."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true
+        },
+        "candidates": [
+          {
+            "id": "branching-first-read",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "exception-followup",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only",
+            "blocked_on_observation": true
+          },
+          {
+            "id": "generic-followup",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "independent",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only",
+            "blocked_on_observation": true
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "branching-first-read"
+        }
+      }
+    },
+    {
+      "id": "covered-surface-vs-new-verification-surface",
+      "scenario": "A bounded exact-scope read already completed for one research surface in the current run. The planner proposes repeating that same surface and also a different bounded surface that can still change the decision.",
+      "expected": [
+        "Do not revisit the already covered surface merely because it remains easy or familiar.",
+        "Prefer the still-uncovered decision-relevant verification surface.",
+        "Do not mark timeout, partial visibility, or acquisition failure as completed coverage."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true,
+          "completed_coverage_keys": [
+            "official-policy:plan-scope"
+          ]
+        },
+        "candidates": [
+          {
+            "id": "repeat-plan-scope",
+            "coverage_key": "official-policy:plan-scope",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          },
+          {
+            "id": "verify-effective-date",
+            "coverage_key": "official-policy:effective-date",
+            "decision_relevance": "material",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "medium",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "verify-effective-date"
+        }
+      }
+    },
+    {
+      "id": "new-material-evidence-reopens-covered-surface",
+      "scenario": "A previously covered research surface receives newer canonical evidence that materially changes the relevant claim revision, so the same bounded surface may now be useful again.",
+      "expected": [
+        "Allow the surface to be revisited only when material new evidence explicitly reopens it.",
+        "Keep reopening tied to the changed evidence state rather than arbitrary retry counts or elapsed time.",
+        "Keep coverage memory run-scoped and do not use it as long-term freshness proof."
+      ],
+      "machine": {
+        "state": {
+          "decision_sensitive": true,
+          "completed_coverage_keys": [
+            "official-policy:plan-scope"
+          ],
+          "material_reopen_evidence": [
+            {
+              "coverage_key": "official-policy:plan-scope",
+              "material_state_observed": true,
+              "action": {
+                "expected_delta": "resolve_scope",
+                "coverage_key": "official-policy:plan-scope"
+              },
+              "before": {
+                "revision": 4,
+                "scope_status": "partial"
+              },
+              "after": {
+                "revision": 5,
+                "scope_status": "resolved"
+              },
+              "observation": {
+                "status": "completed"
+              }
+            }
+          ]
+        },
+        "candidates": [
+          {
+            "id": "recheck-reopened-plan-scope",
+            "coverage_key": "official-policy:plan-scope",
+            "decision_relevance": "decisive",
+            "scope_fit": "exact",
+            "evidence_novelty": "same_lineage",
+            "breadth": "bounded",
+            "cost": "low",
+            "risk": "read_only"
+          }
+        ],
+        "expected": {
+          "mode": "execute",
+          "action_id": "recheck-reopened-plan-scope"
+        }
+      }
+    }
+  ]
+}

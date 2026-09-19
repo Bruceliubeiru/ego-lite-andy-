@@ -1,0 +1,124 @@
+{
+  "version": "1.9.1",
+  "purpose": "Regression gates for Ego/browser runtime reliability and token-efficient recovery behavior.",
+  "cases": [
+    {
+      "id": "browser-helper-time-unit-vs-runtime-contract",
+      "scenario": "A browser workflow uses a wait/sleep/timeout helper whose unit or signature differs across Ego helper generations, released versions, or neighboring browser frameworks, and an agent is tempted to infer the unit from habit or from a different API.",
+      "expected": [
+        "Do not infer timing units from Playwright, Puppeteer, Cypress, upstream-main examples, or neighboring helpers; verify the exact helper signature for the released or installed runtime before issuing a long wait.",
+        "Prefer state-based waits over long fixed sleeps. When a fixed wait is unavoidable, use a small bounded value whose unit is confirmed for that exact helper and runtime.",
+        "If the runtime contract is ambiguous, fail fast or probe with a harmless short wait rather than risking a multi-minute or multi-hour hang.",
+        "Keep timeout-unit claims scoped to the exact API generation and installed skill contract: citrolabs/ego-lite v2.0.0 introduced the Page API where page.waitForTimeout(4000) is 4000 milliseconds, while the legacy wait(4000) remains a 4000-second wait for compatibility. Do not silently transfer timing semantics between the new Page API, legacy helpers, neighboring frameworks, or older installed skill versions."
+      ]
+    },
+    {
+      "id": "browser-timeout-vs-blind-retry-loop",
+      "scenario": "A read-only browser observation such as screenshot capture repeatedly times out while other read paths remain healthy, and the workflow is tempted to retry the same expensive operation without new evidence that conditions changed.",
+      "expected": [
+        "Do not loop the same expensive timed-out observation without a material state change or a bounded retry budget.",
+        "After one confirmed timeout, prefer a cheaper independent read path or a documented fallback that proves the needed fact, and record that visual verification is degraded rather than pretending the screenshot succeeded.",
+        "Do not promote an unverified workaround merely because it avoids the timeout; keep the fallback scoped to the evidence it can actually prove and preserve version/runtime context.",
+        "Use retries only when there is a concrete reason to expect changed conditions, and cap them so timeout handling cannot dominate token, wall-clock, or browser-resource budgets."
+      ]
+    },
+    {
+      "id": "visual-screenshot-timeout-vs-target-local-fallback",
+      "scenario": "A required visual check on a canvas-like or rich interactive surface is blocked because the screenshot helper times out, and the workflow is tempted either to keep retrying the whole-page capture or to treat a target-local pixel export as a universal replacement for screenshots.",
+      "expected": [
+        "After a confirmed screenshot timeout, do not repeat the same full-page capture without a material state change; choose the narrowest independent read path that can prove the required visual fact.",
+        "For an actual canvas target, a target-local pixel serialization such as canvas.toDataURL may be used only when it is available, bounded to the intended canvas, and not blocked or semantically altered by cross-origin tainting; it is not a universal fallback for arbitrary page visuals.",
+        "Do not upgrade a DOM/state assertion, PDF/screencast output, or target-local pixel export into proof of facts it cannot show. Record visual verification as partial or degraded when the fallback covers less than the original screenshot requirement.",
+        "Prefer target-local or semantic evidence over raw CDP, whole-profile access, coordinate-only actions, or new privileged capabilities; a screenshot failure must not become a reason to widen browser, credential, filesystem, or network scope.",
+        "If no bounded fallback can prove the needed fact, fail closed and preserve the unresolved visual gap rather than manufacturing confidence from a successful but non-equivalent read path."
+      ]
+    },
+    {
+      "id": "browser-navigation-vs-stale-execution-context",
+      "scenario": "A browser workflow reloads or navigates the current page while model-generated JavaScript, element handles, refs, or CDP/session assumptions from the previous document are still in scope, so the page lifecycle can destroy the execution context and make subsequent operations fail, hang, or act on stale state.",
+      "expected": [
+        "Treat a committed reload or navigation as a document/context boundary: do not assume JavaScript execution contexts, DOM handles, semantic refs, or page-state observations from the previous document remain valid afterward.",
+        "Prefer the released runtime's documented high-level navigation/reload helper when it provides the needed behavior and lifecycle wait; do not replace an in-page reload with raw CDP merely by habit.",
+        "After navigation, wait for an observable lifecycle or target postcondition and reacquire the page context, handles/refs, and material account or variant markers before trusting subsequent evidence.",
+        "If raw CDP reload/navigation is necessary, first verify the exact released runtime's target/session scope and do not let the workaround bypass existing CDP isolation, profile-scope, or postcondition gates.",
+        "Do not retry commands against a destroyed or stale context in a loop. Re-establish a fresh context or fail closed and report degraded live-page verification."
+      ]
+    },
+    {
+      "id": "site-learning-absence-vs-workspace-resolution-failure",
+      "scenario": "An Ego browser workflow reports that no site learning pack exists (for example learnContext() returns exists:false or a site tool cannot be found), but the installed runtime may actually contain the pack while its agent-workspace or packaged-skill path resolved incorrectly.",
+      "expected": [
+        "Do not interpret a clean-looking no-learning result as proof that no site pack exists when the exact installed runtime has a known or plausible workspace-resolution failure; distinguish pack absence from pack discovery failure.",
+        "Before abandoning a structured site tool for generic DOM or large snapshots, verify the exact released/installed runtime's resolved learning root or another non-sensitive indicator that the intended pack is discoverable. Keep this check bounded; do not enumerate credentials, unrelated profile state, or the user's filesystem broadly.",
+        "Do not hard-code a version-scoped application-bundle path, mutate a shared/global environment, or write into the installed app bundle as an automatic workaround. Prefer an upstream-supported stable workspace/configuration path when one exists; otherwise fall back to native search/fetch or scoped browser reads and mark site-learning acceleration as unavailable for that run.",
+        "If the pack is present but selectors or structured outputs appear stale, treat tool success and tool correctness separately: cross-check the exact requested fact before relying on the result, rather than assuming a structured tool is authoritative merely because it executed."
+      ]
+    },
+    {
+      "id": "user-visible-symptom-vs-instrumented-runtime-cause",
+      "scenario": "A user or agent observes a browser symptom such as a window disappearing, freezing, resetting, or becoming unavailable, while available instrumentation may distinguish UI/window-state changes from renderer failure, main-process crash, task-space loss, or other lower-level causes.",
+      "expected": [
+        "Do not convert a user-visible symptom into a specific runtime cause without matching evidence. For example, a disappearing window does not by itself prove a process crash, renderer crash, task-space deletion, or SIGSEGV.",
+        "Keep observation layers separate: record what the user saw, what the browser/runtime APIs reported, and what process/crash instrumentation actually measured. Treat agreement across layers as stronger evidence and disagreement as a conflict to investigate rather than something to average away.",
+        "When safe non-sensitive instrumentation is available, prefer bounded checks such as process identity/liveness, newly created crash reports, task-space/page presence, or window visibility/state before assigning a failure class. Do not broaden into credential, profile, or unrelated filesystem inspection merely to strengthen attribution.",
+        "Do not reuse older crashes, logs, or nearby incidents as proof that the current reproduction has the same cause unless the new run reproduces the relevant instrumented signature. Preserve correlation as a hypothesis, not a confirmed cause.",
+        "If the exact cause remains unresolved, report the narrowest confirmed symptom and the strongest ruled-in/ruled-out evidence instead of inventing a root cause; route architecture or remediation changes through review when they depend on an unproven causal attribution."
+      ]
+    },
+    {
+      "id": "observation-breadth-vs-proof-need",
+      "scenario": "A rich SPA or very large page can be inspected with a full-page semantic snapshot, but the research task already has a known target, bounded region, or structured read path and the broader observation may traverse or serialize far more state than is needed, increasing timeout and token risk.",
+      "expected": [
+        "Match observation breadth to the proof requirement. When the target or relevant region is already known, prefer a bounded first-party/site-specific tool, scoped semantic snapshot, stable selector, or target-local read before traversing the entire page.",
+        "Do not turn this into a blanket ban on full-page snapshots: broad observation remains appropriate for genuine discovery when the relevant control, section, or evidence location is unknown.",
+        "Escalate breadth progressively only when narrower reads cannot locate or prove the needed fact, and stop expanding once sufficient evidence is obtained; do not collect extra page state merely because the helper permits it.",
+        "Preserve evidence completeness while optimizing cost: a narrow snapshot must not omit material account, plan, region, date, variant, hidden-state, or conflict context required to answer correctly. If the scope is uncertain, broaden deliberately or cross-check rather than asserting from an incomplete slice.",
+        "A timeout or high token cost from an oversized observation is a signal to reduce scope or change read path, not a reason to widen browser permissions, use privileged CDP, or weaken verification discipline."
+      ]
+    },
+    {
+      "id": "browser-evaluator-null-vs-proven-empty-result",
+      "scenario": "A browser extraction through Ego evaluate()/js() returns null or undefined-looking output even though the JavaScript expression is valid and may contain nested function returns, callbacks, function declarations, or other syntax that a released/runtime-specific evaluator wrapper can transform incorrectly.",
+      "expected": [
+        "Do not treat a silent null from model-generated browser JavaScript as proof that the page has no matching data when the exact runtime has a known or plausible evaluator-transformation failure. Separate page-level emptiness from evaluator-level result loss.",
+        "Before asserting an empty result, retry with one bounded semantically equivalent expression that avoids the suspected transform edge case, or cross-check through an independent structured/DOM read path. Keep the probe read-only and scoped to the same target evidence.",
+        "Do not normalize all nulls into runtime bugs: genuine null/empty page values remain valid. Escalate only when the expression contract predicts a non-null value, a control expression behaves differently, or independent evidence conflicts with the returned null.",
+        "Preserve exact released/installed runtime context when diagnosing evaluator semantics. Do not assume an upstream patch, dev branch behavior, or neighboring helper generation is already present in the user's runtime.",
+        "A workaround for result loss must not expand browser, profile, credential, filesystem, network, or write permissions. If no bounded independent check can distinguish an empty page result from evaluator failure, mark the evidence unresolved rather than inventing absence."
+      ]
+    },
+    {
+      "id": "browser-script-construction-failure-vs-page-evidence",
+      "scenario": "A browser research command fails during Node/module loading, JavaScript parsing, dynamic-string construction, or helper invocation before it can reliably read the intended page fact, and the workflow is tempted to interpret the missing output as evidence that the fact is absent or to escape the failure by widening browser capabilities.",
+      "expected": [
+        "Separate harness/runtime construction failures from page evidence. A module-format error, syntax error, quoting/template-literal failure, or helper-signature mismatch proves nothing about whether the requested page fact exists.",
+        "Verify the exact released or installed runtime contract before correcting the command, including the execution environment, module format, helper signature, and evaluator generation. Do not universalize a version-specific rule such as always using ESM imports when another supported runtime has a different contract.",
+        "Use one bounded corrective probe: simplify the expression, pass dynamic values as serialized data or helper parameters, or switch to the exact runtime-supported module form. Do not keep rebuilding increasingly complex nested strings or retrying an identical parse/module failure.",
+        "Do not introduce raw CDP, reload/navigation, broad filesystem access, credentials, arbitrary network access, or external writes merely to bypass a script-construction error. Any independently necessary fallback must still satisfy the existing navigation, isolation, sensitive-egress, and postcondition gates.",
+        "If the corrected bounded probe cannot establish the intended fact, mark live-page verification unresolved or use an independent read path instead of asserting absence from a command that never produced valid page evidence."
+      ]
+    },
+    {
+      "id": "batch-rendering-vs-resource-budget",
+      "scenario": "A research workflow needs to inspect many URLs or pages and can fan out into multiple rendered tabs or task spaces, but unbounded Chromium concurrency, long-lived tabs, and repeated navigation can accumulate renderer/CDP/DOM memory until browser reliability degrades or the host becomes resource constrained.",
+      "expected": [
+        "Do not translate an upstream anecdotal concurrency number into a universal fixed limit. Choose a bounded rendered-browser concurrency budget based on the actual runtime, host capacity, page weight, and observed stability, and reduce it when timeouts, memory pressure, renderer churn, or browser instability appear.",
+        "Use native search/fetch, connectors, APIs, or other lightweight read paths for discovery and static public evidence when they are sufficient; reserve rendered browser workers for authentication, interaction, JavaScript state, or visual evidence that materially requires them.",
+        "For batch browser work, keep the worker set bounded and reuse or recycle only task spaces/tabs owned by the current workflow. Release disposable owned resources on completion, but never bulk-close pre-existing, user-owned, agentDelegatedToUser, or ambiguously owned tabs/task spaces merely to recover memory.",
+        "Do not require arbitrary recycling intervals such as every N pages unless the exact runtime or observed measurements justify them. Prefer observable resource/liveness signals and phase boundaries over magic constants, and preserve evidence continuity when recycling would invalidate authenticated or page-specific state.",
+        "Resource pressure is not permission to widen filesystem, credential, profile, network, CDP, or destructive browser-global capabilities. If the bounded worker budget cannot complete reliably, degrade concurrency, switch to a cheaper evidence path, or mark the verification incomplete rather than risking host stability or unrelated browser state."
+      ]
+    },
+    {
+      "id": "network-waiter-vs-originating-page-session",
+      "scenario": "A live-browser research workflow waits for a request, response, download, or network-idle condition while multiple tabs/pages/CDP sessions are active, and the runtime may route matching events, Network enable/disable ownership, response-body reads, or cleanup through whichever page/session became active later rather than the session that started the wait.",
+      "expected": [
+        "Do not treat a matching network event or response body as evidence for the intended page unless it can be attributed to the page/session that originated the wait. A URL or payload match alone is insufficient when multiple sessions can emit equivalent traffic.",
+        "Keep waiter lifecycle state bound to its originating page/session: readiness, Network-domain ownership, event matching, response-body retrieval, completion retries, network-idle accounting, and cleanup must not silently follow a later tab selection or globally active CDP target.",
+        "When the exact released/installed runtime has a known or plausible cross-session waiter bug, prefer page-scoped/native helpers or an independent page-local postcondition. If session attribution cannot be verified, mark the network evidence unresolved rather than claiming the intended page made or received the request.",
+        "Do not solve cross-session ambiguity by serializing all browsing globally unless that is the only bounded safe option for the exact runtime. Where concurrency is still useful, isolate or serialize only the affected network-wait critical section and re-verify the intended page/session before trusting the result.",
+        "Do not widen cookie, credential, profile, filesystem, arbitrary network, or external-write access to diagnose or compensate for waiter misrouting. Preserve the distinction between legacy runtime bugs and newer page-scoped implementations; upstream or beta fixes are not proof that the user's released runtime is fixed."
+      ]
+    }
+  ]
+}

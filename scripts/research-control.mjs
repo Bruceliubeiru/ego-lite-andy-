@@ -11,6 +11,9 @@ const EXPECTED_DELTAS = new Set([
   'test_causal_hypothesis',
   'change_decision',
 ]);
+const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verification', 'Conflicted']);
+const SCOPE_STATUSES = new Set(['unknown', 'partial', 'resolved']);
+const CAUSAL_HYPOTHESIS_STATUSES = new Set(['untested', 'supported', 'falsified']);
 
 function rank(action) {
   return [
@@ -35,6 +38,10 @@ function isKnownValue(value) {
   return value !== undefined && value !== null;
 }
 
+function isNonNegativeInteger(value) {
+  return Number.isInteger(value) && value >= 0;
+}
+
 export function hasDecisionDelta(action) {
   return typeof action?.expected_delta === 'string' && EXPECTED_DELTAS.has(action.expected_delta);
 }
@@ -45,27 +52,27 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
 
   const changed = {
     resolve_scope:
-      isKnownValue(before?.scope_status) &&
-      isKnownValue(after?.scope_status) &&
-      before.scope_status !== after.scope_status &&
+      SCOPE_STATUSES.has(before?.scope_status) &&
+      SCOPE_STATUSES.has(after?.scope_status) &&
+      before.scope_status !== 'resolved' &&
       after.scope_status === 'resolved',
     resolve_conflict:
       before?.claim_status === 'Conflicted' &&
-      isKnownValue(after?.claim_status) &&
+      CLAIM_STATUSES.has(after?.claim_status) &&
       after.claim_status !== 'Conflicted',
     establish_provenance:
-      isKnownValue(before?.provenance_established) &&
-      isKnownValue(after?.provenance_established) &&
-      before.provenance_established !== true &&
+      typeof before?.provenance_established === 'boolean' &&
+      typeof after?.provenance_established === 'boolean' &&
+      before.provenance_established === false &&
       after.provenance_established === true,
     add_independent_lineage:
-      isKnownValue(before?.independent_lineage_count) &&
-      isKnownValue(after?.independent_lineage_count) &&
-      Number(after.independent_lineage_count) > Number(before.independent_lineage_count),
+      isNonNegativeInteger(before?.independent_lineage_count) &&
+      isNonNegativeInteger(after?.independent_lineage_count) &&
+      after.independent_lineage_count > before.independent_lineage_count,
     test_causal_hypothesis:
-      isKnownValue(before?.causal_hypothesis_status) &&
-      isKnownValue(after?.causal_hypothesis_status) &&
-      before.causal_hypothesis_status !== after.causal_hypothesis_status &&
+      CAUSAL_HYPOTHESIS_STATUSES.has(before?.causal_hypothesis_status) &&
+      CAUSAL_HYPOTHESIS_STATUSES.has(after?.causal_hypothesis_status) &&
+      before.causal_hypothesis_status === 'untested' &&
       ['supported', 'falsified'].includes(after.causal_hypothesis_status),
     change_decision:
       isKnownValue(before?.decision) &&

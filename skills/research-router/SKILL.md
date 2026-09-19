@@ -57,6 +57,8 @@ Use **compact coverage memory** for long consequential runs. When a bounded read
 
 A covered surface may be reopened only when newer material evidence changes the relevant claim state or scope enough to make the read decision-relevant again. Do not use arbitrary retry counts or elapsed time as proof of reopening. Coverage memory is run/freshness-window scoped by default; it is not durable evidence that a surface remains current later.
 
+Treat material reopening as a **replay-safe transition authorization**, not a durable boolean. Bind the authorization to the canonical coverage surface and a monotonic one-step research-state revision. After a successful bounded read observes that material surface, mark that transition authorization consumed so replaying the same evidence receipt cannot reopen it again. A failed acquisition does not consume the authorization and does not become negative evidence.
+
 Coverage keys are control metadata, not provenance containers. Keep them coarse and semantic (for example `official-policy:effective-date`), and never embed account IDs, profile names, session identifiers, tokens, cookies, opaque user identifiers, or unrelated browsing state in them.
 
 Do not expose the Envelope to the user by default. Project it into the compact Claim Ledger or final answer only when that improves coordination, auditability, or decision quality. Evidence Engine v1 does **not** add another collaboration hard gate; the existing Evidence, Conflict, and Execution gates remain the veto surface.

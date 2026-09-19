@@ -11,6 +11,8 @@ const EXPECTED_DELTAS = new Set([
   'test_causal_hypothesis',
   'change_decision',
 ]);
+const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verification', 'Conflicted']);
+const TERMINAL_CAUSAL_STATUSES = new Set(['supported', 'falsified']);
 
 function rank(action) {
   return [
@@ -31,9 +33,46 @@ function compareRank(a, b) {
   return 0;
 }
 
-function isKnownValue(value) {
-  return value !== undefined && value !== null;
+function isNonEmptyString(value) {
+  return typeof value === 'string' && value.trim().length > 0;
 }
+
+function isNonNegativeInteger(value) {
+  return Number.isSafeInteger(value) && value >= 0;
+}
+
+function isDecisionValue(value) {
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (typeof value === 'number') return Number.isFinite(value);
+  return typeof value === 'boolean';
+}
+
+const DECISION_DELTA_CONTRACTS = {
+  resolve_scope: {
+    complete: ({ before, after }) => isNonEmptyString(before?.scope_status) && isNonEmptyString(after?.scope_status),
+    realized: ({ before, after }) => before.scope_status !== 'resolved' && after.scope_status === 'resolved',
+  },
+  resolve_conflict: {
+    complete: ({ before, after }) => CLAIM_STATUSES.has(before?.claim_status) && CLAIM_STATUSES.has(after?.claim_status),
+    realized: ({ before, after }) => before.claim_status === 'Conflicted' && after.claim_status !== 'Conflicted',
+  },
+  establish_provenance: {
+    complete: ({ before, after }) => typeof before?.provenance_established === 'boolean' && typeof after?.provenance_established === 'boolean',
+    realized: ({ before, after }) => before.provenance_established === false && after.provenance_established === true,
+  },
+  add_independent_lineage: {
+    complete: ({ before, after }) => isNonNegativeInteger(before?.independent_lineage_count) && isNonNegativeInteger(after?.independent_lineage_count),
+    realized: ({ before, after }) => after.independent_lineage_count > before.independent_lineage_count,
+  },
+  test_causal_hypothesis: {
+    complete: ({ before, after }) => isNonEmptyString(before?.causal_hypothesis_status) && TERMINAL_CAUSAL_STATUSES.has(after?.causal_hypothesis_status),
+    realized: ({ before, after }) => before.causal_hypothesis_status !== after.causal_hypothesis_status,
+  },
+  change_decision: {
+    complete: ({ before, after }) => isDecisionValue(before?.decision) && isDecisionValue(after?.decision),
+    realized: ({ before, after }) => before.decision !== after.decision,
+  },
+};
 
 export function hasDecisionDelta(action) {
   return typeof action?.expected_delta === 'string' && EXPECTED_DELTAS.has(action.expected_delta);
@@ -43,26 +82,15 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
   if (!hasDecisionDelta(action)) return { realized: false, reason: 'no-valid-expected-delta' };
   if (observation?.status !== 'completed') return { realized: false, reason: 'acquisition-not-completed' };
 
-  const changed = {
-    resolve_scope: before?.scope_status !== after?.scope_status && after?.scope_status === 'resolved',
-    resolve_conflict:
-      before?.claim_status === 'Conflicted' &&
-      isKnownValue(after?.claim_status) &&
-      after.claim_status !== 'Conflicted',
-    establish_provenance: before?.provenance_established !== true && after?.provenance_established === true,
-    add_independent_lineage: Number(after?.independent_lineage_count ?? 0) > Number(before?.independent_lineage_count ?? 0),
-    test_causal_hypothesis:
-      before?.causal_hypothesis_status !== after?.causal_hypothesis_status &&
-      ['supported', 'falsified'].includes(after?.causal_hypothesis_status),
-    change_decision:
-      isKnownValue(before?.decision) &&
-      isKnownValue(after?.decision) &&
-      before.decision !== after.decision,
-  };
+  const contract = DECISION_DELTA_CONTRACTS[action.expected_delta];
+  if (!contract.complete({ before, after })) {
+    return { realized: false, reason: 'incomplete-or-invalid-delta-state' };
+  }
 
+  const realized = contract.realized({ before, after });
   return {
-    realized: changed[action.expected_delta] === true,
-    reason: changed[action.expected_delta] === true ? 'expected-decision-delta-realized' : 'no-material-decision-delta',
+    realized,
+    reason: realized ? 'expected-decision-delta-realized' : 'no-material-decision-delta',
   };
 }
 

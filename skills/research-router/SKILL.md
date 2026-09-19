@@ -237,9 +237,14 @@ When this Research OS is running under the active **AI Self Upgrade** automation
 If the primary research/self-upgrade work is complete, blocked on an external condition, or temporarily saturated and safe execution capacity remains, a bounded **Bruce-only capability sidecar** may inspect high-signal GitHub project/conversation surfaces for reusable mechanisms.
 
 Owner-scoped sources include:
-- this repository (`Bruceliubeiru/ego-lite-andy-`);
-- `Bruceliubeiru/BruceAI-Knowledge-Private`;
+- this repository (`Bruceliubeiru/ego-lite-andy-`) as TASK_CORE;
+- `Bruceliubeiru/BruceAI-Knowledge-Private` as TASK_CORE memory/control evidence;
+- `Bruceliubeiru/ai-skills` as a Bruce-only SAME_OWNER_MECHANISM_SOURCE, read-only by default, for reusable decision framing, campaign execution, briefing, training/reflection, visual-reasoning, and persistent-project mechanisms;
 - relevant public upstream GitHub repositories used only as evidence/reference leads.
+
+Do not import unrelated Bruce business facts, customer data, credentials, or production permissions from `ai-skills` or another same-owner project merely because its mechanism is reusable.
+
+When safe prior-conversation retrieval is available, this sidecar may inspect **Bruce-only** historical conversation context for explicit decisions, rejected approaches, recurring research/reliability failures, stable operating preferences that change applicability, and mechanism candidates. Conversation memory never upgrades an old assistant claim to verified evidence and never overrides current repository/runtime/account/production truth. Never read Andy/CityU/student conversation context from this sidecar and never persist raw chat transcripts.
 
 Useful surfaces include files/code, commits, PR bodies/conversations/reviews, issues/comments, tests/workflow failures, rejected designs, rollback notes, and falsification records.
 

@@ -44,19 +44,29 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
   if (observation?.status !== 'completed') return { realized: false, reason: 'acquisition-not-completed' };
 
   const changed = {
-    resolve_scope: before?.scope_status !== after?.scope_status && after?.scope_status === 'resolved',
+    resolve_scope:
+      isKnownValue(before?.scope_status) &&
+      isKnownValue(after?.scope_status) &&
+      before.scope_status !== after.scope_status &&
+      after.scope_status === 'resolved',
     resolve_conflict:
       before?.claim_status === 'Conflicted' &&
       isKnownValue(after?.claim_status) &&
       after.claim_status !== 'Conflicted',
-    establish_provenance: before?.provenance_established !== true && after?.provenance_established === true,
+    establish_provenance:
+      isKnownValue(before?.provenance_established) &&
+      isKnownValue(after?.provenance_established) &&
+      before.provenance_established !== true &&
+      after.provenance_established === true,
     add_independent_lineage:
       isKnownValue(before?.independent_lineage_count) &&
       isKnownValue(after?.independent_lineage_count) &&
       Number(after.independent_lineage_count) > Number(before.independent_lineage_count),
     test_causal_hypothesis:
-      before?.causal_hypothesis_status !== after?.causal_hypothesis_status &&
-      ['supported', 'falsified'].includes(after?.causal_hypothesis_status),
+      isKnownValue(before?.causal_hypothesis_status) &&
+      isKnownValue(after?.causal_hypothesis_status) &&
+      before.causal_hypothesis_status !== after.causal_hypothesis_status &&
+      ['supported', 'falsified'].includes(after.causal_hypothesis_status),
     change_decision:
       isKnownValue(before?.decision) &&
       isKnownValue(after?.decision) &&

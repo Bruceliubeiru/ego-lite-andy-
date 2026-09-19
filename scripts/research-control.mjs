@@ -42,6 +42,12 @@ function isNonNegativeInteger(value) {
   return Number.isInteger(value) && value >= 0;
 }
 
+function canonicalCoverageKey(value) {
+  if (typeof value !== 'string') return null;
+  const key = value.trim();
+  return key || null;
+}
+
 export function hasDecisionDelta(action) {
   return typeof action?.expected_delta === 'string' && EXPECTED_DELTAS.has(action.expected_delta);
 }
@@ -87,15 +93,18 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
 }
 
 export function updateResearchCoverage({ completed = [], action, outcome } = {}) {
-  const next = new Set(Array.isArray(completed) ? completed : []);
+  const next = new Set(
+    (Array.isArray(completed) ? completed : [])
+      .map(canonicalCoverageKey)
+      .filter(Boolean),
+  );
+  const coverageKey = canonicalCoverageKey(action?.coverage_key);
   if (
-    action?.coverage_key &&
-    typeof action.coverage_key === 'string' &&
-    action.coverage_key.trim() &&
+    coverageKey &&
     outcome?.status === 'completed' &&
     outcome?.material_state_observed === true
   ) {
-    next.add(action.coverage_key.trim());
+    next.add(coverageKey);
   }
   return [...next];
 }
@@ -105,6 +114,12 @@ export function selectNextResearchAction({ state, candidates = [] }) {
     return { mode: 'stop', action_id: null, reason: 'decision-no-longer-sensitive' };
   }
 
+  const completedCoverageKeys = new Set(
+    (Array.isArray(state?.completed_coverage_keys) ? state.completed_coverage_keys : [])
+      .map(canonicalCoverageKey)
+      .filter(Boolean),
+  );
+
   const eligible = candidates.filter((action) => {
     if (!action || typeof action.id !== 'string' || !action.id.trim()) return false;
     if (action.decision_relevance === 'none') return false;
@@ -112,10 +127,10 @@ export function selectNextResearchAction({ state, candidates = [] }) {
     if (action.blocked_on_observation === true) return false;
     if (action.risk !== 'read_only') return false;
     if (state?.require_expected_delta === true && !hasDecisionDelta(action)) return false;
+    const coverageKey = canonicalCoverageKey(action.coverage_key);
     if (
-      action.coverage_key &&
-      Array.isArray(state?.completed_coverage_keys) &&
-      state.completed_coverage_keys.includes(action.coverage_key) &&
+      coverageKey &&
+      completedCoverageKeys.has(coverageKey) &&
       action.reopened_by_material_evidence !== true
     ) {
       return false;

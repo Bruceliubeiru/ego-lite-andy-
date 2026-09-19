@@ -130,7 +130,7 @@ export function deriveMaterialReopenAuthorizations({ evidence = [], consumed = [
 
   for (const receipt of Array.isArray(evidence) ? evidence : []) {
     const transitionKey = materialTransitionKey(receipt);
-    if (!transitionKey || consumedKeys.has(transitionKey) || receipt?.material_state_observed !== true) continue;
+    if (!transitionKey || receipt?.material_state_observed !== true) continue;
 
     const delta = evaluateDecisionDelta({
       action: receipt?.action,
@@ -151,7 +151,9 @@ export function deriveMaterialReopenAuthorizations({ evidence = [], consumed = [
     }
   }
 
-  return [...authorizations.values()];
+  return [...authorizations.values()].filter(
+    (authorization) => !consumedKeys.has(authorization.transition_key),
+  );
 }
 
 export function deriveMaterialReopenCoverageKeys({ evidence = [], consumed = [] } = {}) {

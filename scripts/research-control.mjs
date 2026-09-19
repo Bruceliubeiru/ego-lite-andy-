@@ -102,6 +102,23 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
   };
 }
 
+export function deriveMaterialReopenCoverageKeys({ evidence = [] } = {}) {
+  const keys = new Set();
+  for (const receipt of Array.isArray(evidence) ? evidence : []) {
+    const coverageKey = canonicalCoverageKey(receipt?.coverage_key);
+    const producingCoverageKey = canonicalCoverageKey(receipt?.action?.coverage_key);
+    if (!coverageKey || coverageKey !== producingCoverageKey || receipt?.material_state_observed !== true) continue;
+    const delta = evaluateDecisionDelta({
+      action: receipt?.action,
+      before: receipt?.before,
+      after: receipt?.after,
+      observation: receipt?.observation,
+    });
+    if (delta.realized) keys.add(coverageKey);
+  }
+  return [...keys];
+}
+
 export function updateResearchCoverage({ completed = [], action, outcome } = {}) {
   const next = new Set(
     (Array.isArray(completed) ? completed : [])
@@ -130,9 +147,7 @@ export function selectNextResearchAction({ state, candidates = [] }) {
       .filter(Boolean),
   );
   const materialReopenCoverageKeys = new Set(
-    (Array.isArray(state?.material_reopen_coverage_keys) ? state.material_reopen_coverage_keys : [])
-      .map(canonicalCoverageKey)
-      .filter(Boolean),
+    deriveMaterialReopenCoverageKeys({ evidence: state?.material_reopen_evidence }),
   );
 
   const eligible = candidates.filter((action) => {

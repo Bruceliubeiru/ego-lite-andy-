@@ -50,7 +50,10 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
       isKnownValue(after?.claim_status) &&
       after.claim_status !== 'Conflicted',
     establish_provenance: before?.provenance_established !== true && after?.provenance_established === true,
-    add_independent_lineage: Number(after?.independent_lineage_count ?? 0) > Number(before?.independent_lineage_count ?? 0),
+    add_independent_lineage:
+      isKnownValue(before?.independent_lineage_count) &&
+      isKnownValue(after?.independent_lineage_count) &&
+      Number(after.independent_lineage_count) > Number(before.independent_lineage_count),
     test_causal_hypothesis:
       before?.causal_hypothesis_status !== after?.causal_hypothesis_status &&
       ['supported', 'falsified'].includes(after?.causal_hypothesis_status),

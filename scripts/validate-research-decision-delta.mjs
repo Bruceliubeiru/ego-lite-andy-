@@ -51,6 +51,20 @@ assert.equal(
   false,
 );
 assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: {}, after: { independent_lineage_count: 1 }, observation: { status: 'completed' } }).realized,
+  false,
+  'missing baseline lineage count must not be treated as zero realized progress',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: 0 }, after: {}, observation: { status: 'completed' } }).realized,
+  false,
+  'missing post-observation lineage count must not establish lineage growth',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: 0 }, after: { independent_lineage_count: 1 }, observation: { status: 'completed' } }).realized,
+  true,
+);
+assert.equal(
   evaluateDecisionDelta({ action: { expected_delta: 'test_causal_hypothesis' }, before: { causal_hypothesis_status: 'untested' }, after: { causal_hypothesis_status: 'falsified' }, observation: { status: 'completed' } }).realized,
   true,
 );

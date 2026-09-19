@@ -23,15 +23,62 @@ assert.deepEqual(
   evaluateDecisionDelta({ action: useful, before: { scope_status: 'unknown' }, after: { scope_status: 'resolved' }, observation: { status: 'failed' } }),
   { realized: false, reason: 'acquisition-not-completed' },
 );
+assert.deepEqual(
+  evaluateDecisionDelta({ action: useful, before: {}, after: { scope_status: 'resolved' }, observation: { status: 'completed' } }),
+  { realized: false, reason: 'incomplete-or-invalid-delta-state' },
+  'a missing scope baseline must not masquerade as scope resolution',
+);
+
 assert.equal(
   evaluateDecisionDelta({ action: { expected_delta: 'resolve_conflict' }, before: { claim_status: 'Conflicted' }, after: { claim_status: 'Confirmed' }, observation: { status: 'completed' } }).realized,
   true,
 );
 assert.equal(
-  evaluateDecisionDelta({ action: { expected_delta: 'resolve_conflict' }, before: { claim_status: 'Conflicted' }, after: {}, observation: { status: 'completed' } }).realized,
-  false,
+  evaluateDecisionDelta({ action: { expected_delta: 'resolve_conflict' }, before: { claim_status: 'Conflicted' }, after: {}, observation: { status: 'completed' } }).reason,
+  'incomplete-or-invalid-delta-state',
   'missing post-observation claim status must not masquerade as conflict resolution',
 );
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'resolve_conflict' }, before: { claim_status: 'Conflicted' }, after: { claim_status: 'provider_custom_state' }, observation: { status: 'completed' } }).reason,
+  'incomplete-or-invalid-delta-state',
+  'unsupported claim state must fail closed',
+);
+
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'establish_provenance' }, before: {}, after: { provenance_established: true }, observation: { status: 'completed' } }).realized,
+  false,
+  'missing provenance baseline must not count as establishment',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'establish_provenance' }, before: { provenance_established: false }, after: { provenance_established: true }, observation: { status: 'completed' } }).realized,
+  true,
+);
+
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: {}, after: { independent_lineage_count: 1 }, observation: { status: 'completed' } }).realized,
+  false,
+  'missing lineage baseline must not count as independent evidence gain',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: '1' }, after: { independent_lineage_count: '2' }, observation: { status: 'completed' } }).realized,
+  false,
+  'string counts must not be coerced into evidence lineage progress',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: 1 }, after: { independent_lineage_count: 2 }, observation: { status: 'completed' } }).realized,
+  true,
+);
+
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'test_causal_hypothesis' }, before: {}, after: { causal_hypothesis_status: 'falsified' }, observation: { status: 'completed' } }).realized,
+  false,
+  'missing causal baseline must not count as a hypothesis test',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'test_causal_hypothesis' }, before: { causal_hypothesis_status: 'untested' }, after: { causal_hypothesis_status: 'falsified' }, observation: { status: 'completed' } }).realized,
+  true,
+);
+
 assert.equal(
   evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 'A' }, after: {}, observation: { status: 'completed' } }).realized,
   false,
@@ -43,15 +90,12 @@ assert.equal(
   'an absent baseline decision cannot establish a decision change',
 );
 assert.equal(
-  evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 'A' }, after: { decision: 'B' }, observation: { status: 'completed' } }).realized,
-  true,
-);
-assert.equal(
-  evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: 2 }, after: { independent_lineage_count: 2 }, observation: { status: 'completed' } }).realized,
+  evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: { choice: 'A' } }, after: { decision: { choice: 'A' } }, observation: { status: 'completed' } }).realized,
   false,
+  'non-scalar decisions are not normalized enough for deterministic delta comparison',
 );
 assert.equal(
-  evaluateDecisionDelta({ action: { expected_delta: 'test_causal_hypothesis' }, before: { causal_hypothesis_status: 'untested' }, after: { causal_hypothesis_status: 'falsified' }, observation: { status: 'completed' } }).realized,
+  evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 'A' }, after: { decision: 'B' }, observation: { status: 'completed' } }).realized,
   true,
 );
 

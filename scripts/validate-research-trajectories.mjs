@@ -311,6 +311,76 @@ for (const c of machinePlannerCases) {
   );
 }
 
+// Metamorphic holdout: derive new executions from every planner fixture instead
+// of adding another hand-authored expected answer. Irrelevant state metadata and
+// ineligible high-ranking distractors must not change the control decision.
+const metamorphicDistractors = [
+  {
+    id: '__metamorphic_state_change__',
+    decision_relevance: 'decisive',
+    scope_fit: 'exact',
+    evidence_novelty: 'independent',
+    breadth: 'bounded',
+    cost: 'low',
+    risk: 'state_change',
+  },
+  {
+    id: '__metamorphic_blocked__',
+    decision_relevance: 'decisive',
+    scope_fit: 'exact',
+    evidence_novelty: 'independent',
+    breadth: 'bounded',
+    cost: 'low',
+    risk: 'read_only',
+    blocked_on_observation: true,
+  },
+];
+
+let metamorphicChecks = 0;
+for (const c of machinePlannerCases) {
+  const baseline = selectNextResearchAction({
+    state: c.machine.state,
+    candidates: c.machine.candidates,
+  });
+
+  const noisyState = {
+    ...c.machine.state,
+    __metamorphic_unused: { fixture: c.id, purpose: 'holdout-noise' },
+  };
+  const annotatedCandidates = c.machine.candidates.map((candidate) => ({
+    ...candidate,
+    __metamorphic_unused: 'ignored',
+  }));
+  const noisyResult = selectNextResearchAction({
+    state: noisyState,
+    candidates: annotatedCandidates,
+  });
+  assert.deepEqual(
+    [noisyResult.mode, noisyResult.action_id],
+    [baseline.mode, baseline.action_id],
+    `${c.id}: irrelevant state/candidate metadata changed the control decision`,
+  );
+  metamorphicChecks += 1;
+
+  for (const distractor of metamorphicDistractors) {
+    for (const candidates of [
+      [distractor, ...c.machine.candidates],
+      [...c.machine.candidates, distractor],
+    ]) {
+      const result = selectNextResearchAction({
+        state: c.machine.state,
+        candidates,
+      });
+      assert.deepEqual(
+        [result.mode, result.action_id],
+        [baseline.mode, baseline.action_id],
+        `${c.id}: ineligible distractor '${distractor.id}' changed the control decision`,
+      );
+      metamorphicChecks += 1;
+    }
+  }
+}
+
 console.log(
-  `research trajectory gate passed: ${data.cases.length} state-transition fixtures (${groundedReplayCount} grounded replays)`,
+  `research trajectory gate passed: ${data.cases.length} state-transition fixtures (${groundedReplayCount} grounded replays), ${metamorphicChecks} metamorphic holdout checks`,
 );

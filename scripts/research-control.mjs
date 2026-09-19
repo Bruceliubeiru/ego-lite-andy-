@@ -3,111 +3,21 @@ const SCOPE_FIT = { wrong: 0, partial: 1, exact: 2 };
 const NOVELTY = { none: 0, same_lineage: 1, independent: 2 };
 const BREADTH = { broad: 0, bounded: 1 };
 const COST = { high: 0, medium: 1, low: 2 };
-const EXPECTED_DELTAS = new Set([
-  'resolve_scope',
-  'resolve_conflict',
-  'establish_provenance',
-  'add_independent_lineage',
-  'test_causal_hypothesis',
-  'change_decision',
-]);
-const CLAIM_STATUSES = new Set(['Confirmed', 'High probability', 'Needs verification', 'Conflicted']);
-const SCOPE_STATUSES = new Set(['unknown', 'partial', 'resolved']);
-const CAUSAL_HYPOTHESIS_STATUSES = new Set(['untested', 'supported', 'falsified']);
-
-function rank(action) {
-  return [DECISION_RELEVANCE[action.decision_relevance], SCOPE_FIT[action.scope_fit], NOVELTY[action.evidence_novelty], BREADTH[action.breadth], COST[action.cost]];
-}
-
-function hasValidRankMetadata(action) {
-  return Object.hasOwn(DECISION_RELEVANCE, action?.decision_relevance) && Object.hasOwn(SCOPE_FIT, action?.scope_fit) && Object.hasOwn(NOVELTY, action?.evidence_novelty) && Object.hasOwn(BREADTH, action?.breadth) && Object.hasOwn(COST, action?.cost);
-}
-
-function compareRank(a, b) {
-  const ar = rank(a); const br = rank(b);
-  for (let i = 0; i < ar.length; i += 1) if (ar[i] !== br[i]) return br[i] - ar[i];
-  return 0;
-}
-
-function isKnownValue(value) { return value !== undefined && value !== null; }
-function isNonNegativeInteger(value) { return Number.isInteger(value) && value >= 0; }
-function canonicalCoverageKey(value) { if (typeof value !== 'string') return null; const key = value.trim(); return key || null; }
-
-function materialTransitionKey(receipt) {
-  const reopenCoverageKey = canonicalCoverageKey(receipt?.reopen_coverage_key);
-  const producingCoverageKey = canonicalCoverageKey(receipt?.action?.coverage_key);
-  const beforeRevision = receipt?.before?.revision;
-  const afterRevision = receipt?.after?.revision;
-  if (!reopenCoverageKey || !producingCoverageKey || reopenCoverageKey === producingCoverageKey || !isNonNegativeInteger(beforeRevision) || !isNonNegativeInteger(afterRevision) || afterRevision !== beforeRevision + 1) return null;
-  return `${reopenCoverageKey}@${beforeRevision}->${afterRevision}`;
-}
-
-export function hasDecisionDelta(action) { return typeof action?.expected_delta === 'string' && EXPECTED_DELTAS.has(action.expected_delta); }
-
-export function evaluateDecisionDelta({ action, before, after, observation } = {}) {
-  if (!hasDecisionDelta(action)) return { realized: false, reason: 'no-valid-expected-delta' };
-  if (observation?.status !== 'completed') return { realized: false, reason: 'acquisition-not-completed' };
-  const changed = {
-    resolve_scope: SCOPE_STATUSES.has(before?.scope_status) && SCOPE_STATUSES.has(after?.scope_status) && before.scope_status !== 'resolved' && after.scope_status === 'resolved',
-    resolve_conflict: before?.claim_status === 'Conflicted' && CLAIM_STATUSES.has(after?.claim_status) && after.claim_status !== 'Conflicted',
-    establish_provenance: typeof before?.provenance_established === 'boolean' && typeof after?.provenance_established === 'boolean' && before.provenance_established === false && after.provenance_established === true,
-    add_independent_lineage: isNonNegativeInteger(before?.independent_lineage_count) && isNonNegativeInteger(after?.independent_lineage_count) && after.independent_lineage_count > before.independent_lineage_count,
-    test_causal_hypothesis: CAUSAL_HYPOTHESIS_STATUSES.has(before?.causal_hypothesis_status) && CAUSAL_HYPOTHESIS_STATUSES.has(after?.causal_hypothesis_status) && before.causal_hypothesis_status === 'untested' && ['supported', 'falsified'].includes(after.causal_hypothesis_status),
-    change_decision: isKnownValue(before?.decision) && isKnownValue(after?.decision) && before.decision !== after.decision,
-  };
-  return { realized: changed[action.expected_delta] === true, reason: changed[action.expected_delta] === true ? 'expected-decision-delta-realized' : 'no-material-decision-delta' };
-}
-
-export function deriveMaterialReopenAuthorizations({ evidence = [], consumed = [] } = {}) {
-  const consumedKeys = new Set((Array.isArray(consumed) ? consumed : []).filter((value) => typeof value === 'string').map((value) => value.trim()).filter(Boolean));
-  const authorizations = new Map();
-  for (const receipt of Array.isArray(evidence) ? evidence : []) {
-    const transitionKey = materialTransitionKey(receipt);
-    if (!transitionKey || receipt?.material_state_observed !== true) continue;
-    const delta = evaluateDecisionDelta({ action: receipt?.action, before: receipt?.before, after: receipt?.after, observation: receipt?.observation });
-    if (!delta.realized) continue;
-    const coverageKey = canonicalCoverageKey(receipt.reopen_coverage_key);
-    const current = authorizations.get(coverageKey);
-    if (!current || receipt.after.revision > current.after_revision) authorizations.set(coverageKey, { coverage_key: coverageKey, transition_key: transitionKey, after_revision: receipt.after.revision });
-  }
-  return [...authorizations.values()].filter((authorization) => !consumedKeys.has(authorization.transition_key));
-}
-
-export function deriveMaterialReopenCoverageKeys({ evidence = [], consumed = [] } = {}) { return deriveMaterialReopenAuthorizations({ evidence, consumed }).map((authorization) => authorization.coverage_key); }
-
-export function updateResearchCoverage({ completed = [], action, outcome } = {}) {
-  const next = new Set((Array.isArray(completed) ? completed : []).map(canonicalCoverageKey).filter(Boolean));
-  const coverageKey = canonicalCoverageKey(action?.coverage_key);
-  if (coverageKey && outcome?.status === 'completed' && outcome?.material_state_observed === true) next.add(coverageKey);
-  return [...next];
-}
-
-export function updateResearchRunState({ state = {}, selection, action, outcome } = {}) {
-  const completedCoverageKeys = updateResearchCoverage({ completed: state?.completed_coverage_keys, action, outcome });
-  const consumed = new Set((Array.isArray(state?.consumed_reopen_transition_keys) ? state.consumed_reopen_transition_keys : []).filter((value) => typeof value === 'string').map((value) => value.trim()).filter(Boolean));
-  const actionCoverageKey = canonicalCoverageKey(action?.coverage_key);
-  const currentAuthorization = actionCoverageKey ? new Map(deriveMaterialReopenAuthorizations({ evidence: state?.material_reopen_evidence, consumed: state?.consumed_reopen_transition_keys }).map((authorization) => [authorization.coverage_key, authorization])).get(actionCoverageKey) : null;
-  if (selection?.mode === 'execute' && selection?.action_id === action?.id && currentAuthorization && selection?.reopen_transition_key === currentAuthorization.transition_key && outcome?.status === 'completed' && outcome?.material_state_observed === true) consumed.add(currentAuthorization.transition_key);
-  return { ...state, completed_coverage_keys: completedCoverageKeys, consumed_reopen_transition_keys: [...consumed] };
-}
-
-export function selectNextResearchAction({ state, candidates = [] }) {
-  if (state?.decision_sensitive === false) return { mode: 'stop', action_id: null, reason: 'decision-no-longer-sensitive' };
-  const completedCoverageKeys = new Set((Array.isArray(state?.completed_coverage_keys) ? state.completed_coverage_keys : []).map(canonicalCoverageKey).filter(Boolean));
-  const materialReopenAuthorizations = new Map(deriveMaterialReopenAuthorizations({ evidence: state?.material_reopen_evidence, consumed: state?.consumed_reopen_transition_keys }).map((authorization) => [authorization.coverage_key, authorization]));
-  const eligible = candidates.filter((action) => {
-    if (!action || typeof action.id !== 'string' || !action.id.trim()) return false;
-    if (!hasValidRankMetadata(action) || action.decision_relevance === 'none' || action.scope_fit === 'wrong' || action.blocked_on_observation === true || action.risk !== 'read_only') return false;
-    if (state?.require_expected_delta === true && !hasDecisionDelta(action)) return false;
-    const coverageKey = canonicalCoverageKey(action.coverage_key);
-    if (coverageKey && completedCoverageKeys.has(coverageKey) && !materialReopenAuthorizations.has(coverageKey)) return false;
-    return true;
-  });
-  if (eligible.length === 0) return { mode: 'stop', action_id: null, reason: 'no-safe-decision-relevant-bounded-action' };
-  const ranked = eligible.map((action, index) => ({ action, index }));
-  ranked.sort((left, right) => compareRank(left.action, right.action) || left.index - right.index);
-  const selected = ranked[0].action;
-  const coverageKey = canonicalCoverageKey(selected.coverage_key);
-  const reopenAuthorization = coverageKey && completedCoverageKeys.has(coverageKey) ? materialReopenAuthorizations.get(coverageKey) : null;
-  return { mode: 'execute', action_id: selected.id, reason: 'highest-decision-value-safe-read', ...(reopenAuthorization ? { reopen_coverage_key: reopenAuthorization.coverage_key, reopen_transition_key: reopenAuthorization.transition_key } : {}) };
-}
+const EXPECTED_DELTAS = new Set(['resolve_scope','resolve_conflict','establish_provenance','add_independent_lineage','test_causal_hypothesis','change_decision']);
+const CLAIM_STATUSES = new Set(['Confirmed','High probability','Needs verification','Conflicted']);
+const SCOPE_STATUSES = new Set(['unknown','partial','resolved']);
+const CAUSAL_HYPOTHESIS_STATUSES = new Set(['untested','supported','falsified']);
+function rank(a){return [DECISION_RELEVANCE[a.decision_relevance],SCOPE_FIT[a.scope_fit],NOVELTY[a.evidence_novelty],BREADTH[a.breadth],COST[a.cost]]}
+function hasValidRankMetadata(a){return Object.hasOwn(DECISION_RELEVANCE,a?.decision_relevance)&&Object.hasOwn(SCOPE_FIT,a?.scope_fit)&&Object.hasOwn(NOVELTY,a?.evidence_novelty)&&Object.hasOwn(BREADTH,a?.breadth)&&Object.hasOwn(COST,a?.cost)}
+function compareRank(a,b){const ar=rank(a),br=rank(b);for(let i=0;i<ar.length;i+=1)if(ar[i]!==br[i])return br[i]-ar[i];return 0}
+function isKnownValue(v){return v!==undefined&&v!==null} function isNonNegativeInteger(v){return Number.isInteger(v)&&v>=0}
+function canonicalCoverageKey(v){if(typeof v!=='string')return null;const k=v.trim();return k||null}
+function reopenCoverageKey(receipt){return canonicalCoverageKey(receipt?.reopen_coverage_key)??canonicalCoverageKey(receipt?.coverage_key)}
+function materialTransitionKey(receipt){const target=reopenCoverageKey(receipt);const source=canonicalCoverageKey(receipt?.action?.coverage_key);const explicit=canonicalCoverageKey(receipt?.reopen_coverage_key);const before=receipt?.before?.revision,after=receipt?.after?.revision;if(!target||!source||(explicit&&target===source)||!isNonNegativeInteger(before)||!isNonNegativeInteger(after)||after!==before+1)return null;return `${target}@${before}->${after}`}
+export function hasDecisionDelta(action){return typeof action?.expected_delta==='string'&&EXPECTED_DELTAS.has(action.expected_delta)}
+export function evaluateDecisionDelta({action,before,after,observation}={}){if(!hasDecisionDelta(action))return{realized:false,reason:'no-valid-expected-delta'};if(observation?.status!=='completed')return{realized:false,reason:'acquisition-not-completed'};const changed={resolve_scope:SCOPE_STATUSES.has(before?.scope_status)&&SCOPE_STATUSES.has(after?.scope_status)&&before.scope_status!=='resolved'&&after.scope_status==='resolved',resolve_conflict:before?.claim_status==='Conflicted'&&CLAIM_STATUSES.has(after?.claim_status)&&after.claim_status!=='Conflicted',establish_provenance:typeof before?.provenance_established==='boolean'&&typeof after?.provenance_established==='boolean'&&before.provenance_established===false&&after.provenance_established===true,add_independent_lineage:isNonNegativeInteger(before?.independent_lineage_count)&&isNonNegativeInteger(after?.independent_lineage_count)&&after.independent_lineage_count>before.independent_lineage_count,test_causal_hypothesis:CAUSAL_HYPOTHESIS_STATUSES.has(before?.causal_hypothesis_status)&&CAUSAL_HYPOTHESIS_STATUSES.has(after?.causal_hypothesis_status)&&before.causal_hypothesis_status==='untested'&&['supported','falsified'].includes(after.causal_hypothesis_status),change_decision:isKnownValue(before?.decision)&&isKnownValue(after?.decision)&&before.decision!==after.decision};return{realized:changed[action.expected_delta]===true,reason:changed[action.expected_delta]===true?'expected-decision-delta-realized':'no-material-decision-delta'}}
+export function deriveMaterialReopenAuthorizations({evidence=[],consumed=[]}={}){const consumedKeys=new Set((Array.isArray(consumed)?consumed:[]).filter(v=>typeof v==='string').map(v=>v.trim()).filter(Boolean));const authorizations=new Map();for(const receipt of Array.isArray(evidence)?evidence:[]){const transitionKey=materialTransitionKey(receipt);if(!transitionKey||receipt?.material_state_observed!==true)continue;const delta=evaluateDecisionDelta({action:receipt?.action,before:receipt?.before,after:receipt?.after,observation:receipt?.observation});if(!delta.realized)continue;const coverageKey=reopenCoverageKey(receipt);const current=authorizations.get(coverageKey);if(!current||receipt.after.revision>current.after_revision)authorizations.set(coverageKey,{coverage_key:coverageKey,transition_key:transitionKey,after_revision:receipt.after.revision})}return[...authorizations.values()].filter(a=>!consumedKeys.has(a.transition_key))}
+export function deriveMaterialReopenCoverageKeys({evidence=[],consumed=[]}={}){return deriveMaterialReopenAuthorizations({evidence,consumed}).map(a=>a.coverage_key)}
+export function updateResearchCoverage({completed=[],action,outcome}={}){const next=new Set((Array.isArray(completed)?completed:[]).map(canonicalCoverageKey).filter(Boolean));const key=canonicalCoverageKey(action?.coverage_key);if(key&&outcome?.status==='completed'&&outcome?.material_state_observed===true)next.add(key);return[...next]}
+export function updateResearchRunState({state={},selection,action,outcome}={}){const completedCoverageKeys=updateResearchCoverage({completed:state?.completed_coverage_keys,action,outcome});const consumed=new Set((Array.isArray(state?.consumed_reopen_transition_keys)?state.consumed_reopen_transition_keys:[]).filter(v=>typeof v==='string').map(v=>v.trim()).filter(Boolean));const actionKey=canonicalCoverageKey(action?.coverage_key);const current=actionKey?new Map(deriveMaterialReopenAuthorizations({evidence:state?.material_reopen_evidence,consumed:state?.consumed_reopen_transition_keys}).map(a=>[a.coverage_key,a])).get(actionKey):null;if(selection?.mode==='execute'&&selection?.action_id===action?.id&&current&&selection?.reopen_transition_key===current.transition_key&&outcome?.status==='completed'&&outcome?.material_state_observed===true)consumed.add(current.transition_key);return{...state,completed_coverage_keys:completedCoverageKeys,consumed_reopen_transition_keys:[...consumed]}}
+export function selectNextResearchAction({state,candidates=[]}){if(state?.decision_sensitive===false)return{mode:'stop',action_id:null,reason:'decision-no-longer-sensitive'};const completed=new Set((Array.isArray(state?.completed_coverage_keys)?state.completed_coverage_keys:[]).map(canonicalCoverageKey).filter(Boolean));const auth=new Map(deriveMaterialReopenAuthorizations({evidence:state?.material_reopen_evidence,consumed:state?.consumed_reopen_transition_keys}).map(a=>[a.coverage_key,a]));const eligible=candidates.filter(a=>{if(!a||typeof a.id!=='string'||!a.id.trim())return false;if(!hasValidRankMetadata(a)||a.decision_relevance==='none'||a.scope_fit==='wrong'||a.blocked_on_observation===true||a.risk!=='read_only')return false;if(state?.require_expected_delta===true&&!hasDecisionDelta(a))return false;const key=canonicalCoverageKey(a.coverage_key);if(key&&completed.has(key)&&!auth.has(key))return false;return true});if(eligible.length===0)return{mode:'stop',action_id:null,reason:'no-safe-decision-relevant-bounded-action'};const ranked=eligible.map((action,index)=>({action,index}));ranked.sort((l,r)=>compareRank(l.action,r.action)||l.index-r.index);const selected=ranked[0].action;const key=canonicalCoverageKey(selected.coverage_key);const reopen=key&&completed.has(key)?auth.get(key):null;return{mode:'execute',action_id:selected.id,reason:'highest-decision-value-safe-read',...(reopen?{reopen_coverage_key:reopen.coverage_key,reopen_transition_key:reopen.transition_key}:{})}}

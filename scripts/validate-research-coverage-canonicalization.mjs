@@ -57,4 +57,34 @@ assert.equal(
   'material evidence may explicitly reopen a canonical covered surface',
 );
 
-console.log('research coverage canonicalization passed');
+for (const [field, invalidValue] of [
+  ['decision_relevance', 'decisivee'],
+  ['scope_fit', 'exact-ish'],
+  ['evidence_novelty', 'new'],
+  ['breadth', 'narrow'],
+  ['cost', 'cheap'],
+]) {
+  const malformed = { ...baseAction, [field]: invalidValue };
+  assert.equal(
+    selectNextResearchAction({
+      state: { decision_sensitive: true },
+      candidates: [malformed],
+    }).mode,
+    'stop',
+    `unknown ${field} must fail closed instead of becoming an executable ranked action`,
+  );
+}
+
+assert.equal(
+  selectNextResearchAction({
+    state: { decision_sensitive: true },
+    candidates: [
+      { ...baseAction, id: 'malformed', decision_relevance: 'decisivee' },
+      { ...baseAction, id: 'valid' },
+    ],
+  }).action_id,
+  'valid',
+  'a malformed candidate must not displace a valid safe read',
+);
+
+console.log('research coverage canonicalization and action metadata validation passed');

@@ -47,6 +47,14 @@ function isDecisionValue(value) {
   return typeof value === 'boolean';
 }
 
+function areComparableDecisions(before, after) {
+  return isDecisionValue(before) && isDecisionValue(after) && typeof before === typeof after;
+}
+
+function normalizeDecision(value) {
+  return typeof value === 'string' ? value.trim() : value;
+}
+
 const DECISION_DELTA_CONTRACTS = {
   resolve_scope: {
     complete: ({ before, after }) => isNonEmptyString(before?.scope_status) && isNonEmptyString(after?.scope_status),
@@ -69,8 +77,8 @@ const DECISION_DELTA_CONTRACTS = {
     realized: ({ before, after }) => before.causal_hypothesis_status !== after.causal_hypothesis_status,
   },
   change_decision: {
-    complete: ({ before, after }) => isDecisionValue(before?.decision) && isDecisionValue(after?.decision),
-    realized: ({ before, after }) => before.decision !== after.decision,
+    complete: ({ before, after }) => areComparableDecisions(before?.decision, after?.decision),
+    realized: ({ before, after }) => normalizeDecision(before.decision) !== normalizeDecision(after.decision),
   },
 };
 

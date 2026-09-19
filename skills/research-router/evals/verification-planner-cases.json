@@ -1,5 +1,5 @@
 {
-  "version": "1.3.0",
+  "version": "1.3.1",
   "purpose": "Regression cases for choosing and re-planning the next BruceAI research action by expected decision value rather than queue order, ease, repeated evidence, or a stale precomputed plan.",
   "cases": [
     {
@@ -355,13 +355,33 @@
           "decision_sensitive": true,
           "completed_coverage_keys": [
             "official-policy:plan-scope"
+          ],
+          "material_reopen_evidence": [
+            {
+              "coverage_key": "official-policy:plan-scope",
+              "material_state_observed": true,
+              "action": {
+                "expected_delta": "resolve_scope",
+                "coverage_key": "official-policy:plan-scope"
+              },
+              "before": {
+                "revision": 4,
+                "scope_status": "partial"
+              },
+              "after": {
+                "revision": 5,
+                "scope_status": "resolved"
+              },
+              "observation": {
+                "status": "completed"
+              }
+            }
           ]
         },
         "candidates": [
           {
             "id": "recheck-reopened-plan-scope",
             "coverage_key": "official-policy:plan-scope",
-            "reopened_by_material_evidence": true,
             "decision_relevance": "decisive",
             "scope_fit": "exact",
             "evidence_novelty": "same_lineage",

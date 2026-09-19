@@ -16,11 +16,48 @@ An Evidence Pack should contain only what can affect the decision:
 - **Conflicts and unknowns** — keep material contradictions, missing authenticated state, eligibility gaps, exact variant mapping, or other blockers visible.
 - **Decision impact** — mark whether unresolved uncertainty can change the recommendation or only affects detail.
 
+## Evidence Engine v1 — unified claim envelope
+
+For consequential, contested, authenticated, browser-dependent, or multi-source research, represent each material claim using the **Evidence Envelope** contract in `skills/research-router/references/evidence-envelope.schema.json` before final downstream use.
+
+The envelope is not a new workflow engine and should not be forced onto simple lookups. Its purpose is to give existing Evidence Pack, Claim Ledger, browser/auth gates, reliability gates, and conflict rules one shared claim-level representation.
+
+Each material envelope keeps these concepts together:
+
+- **Claim kind** — distinguish `observed_fact`, `inference`, `causal`, `estimate`, and `recommendation` so downstream reasoning cannot silently turn observation into explanation.
+- **Scope** — preserve only the account, plan, region, jurisdiction, variant, year, date, cohort, runtime version, or other dimensions that can materially change the claim.
+- **Evidence lineage** — identify the underlying source lineage so several summaries, agents, snippets, mirrors, or tool outputs derived from the same source do not count as independent verification.
+- **Evidence quality** — keep authority, specificity, freshness, supporting/contradicting direction, limitations, and source pointer explicit.
+- **Provenance** — when it matters, bind evidence to the narrowest verified boundary available: source identity, runtime, task space, profile, account marker, page/document/frame/session, region, authentication state, challenge state, and provider read execution.
+- **Conflict state** — material contradictions remain unresolved until evidence actually resolves them; majority vote or polished synthesis does not resolve a factual conflict.
+- **Confidence and decision impact** — confidence describes how strongly the current evidence supports the scoped claim; decision impact describes how costly it is to be wrong. Do not use confidence prose to override claim status.
+- **Next action** — keep one bounded next useful step so research stops when additional evidence cannot change the decision.
+
+### Provenance discipline
+
+Evidence content and evidence provenance are separate questions. Matching text, URL, payload, screenshot content, or tool output is not enough when the claim depends on the exact account, profile, page, document, frame, session, region, or authenticated state.
+
+Use `verified`, `partial`, `unknown`, or `not_applicable` provenance honestly. Do not invent identifiers that the runtime did not expose. If a missing provenance boundary can materially change the conclusion, keep the claim `Needs verification` or `Conflicted` rather than upgrading it from content alone.
+
+For browser evidence, record only the minimum non-sensitive markers needed to establish the relevant boundary. Do not collect or persist passwords, tokens, cookies, credential-store contents, whole profile state, or unrelated browsing data merely to make provenance look complete.
+
+### Absence and acquisition failures
+
+A failed evidence path is not itself evidence of absence. Automation challenges, profile-import failure, stale execution context, evaluator/script failure, timeout, unsupported authentication, or provider-read failure must be represented as acquisition limitations unless an independent bounded path proves the negative fact.
+
+If a fallback proves a weaker or different fact, record it as degraded/partial rather than pretending it is equivalent to the failed path. If no equivalent safe path exists, keep the claim unresolved or blocked.
+
+### Relationship to current gates
+
+Evidence Engine v1 consolidates existing rules; it does **not** add a fourth hard collaboration gate. The standing browser/auth/reliability cases remain veto conditions, while their outcomes should increasingly be expressed through the same envelope fields: scope, provenance, limitation, conflict, status, confidence, and next action.
+
+Protect the model with `skills/research-router/evals/evidence-engine-cases.json` in addition to the existing standing regression suites.
+
 ## Claim Ledger v0.1
 
 When a task has multiple material claims, multiple stages, or multiple specialists, use the compact Claim Ledger in `skills/research-router/references/claim-ledger.md` as the shared working state.
 
-Keep it to five fields: **Claim → Evidence → Status → Impact → Next action**. Research, challenge, strategy, innovation, and execution handoff should update the same rows instead of creating parallel narrative state.
+Keep it to five fields: **Claim → Evidence → Status → Impact → Next action**. The Ledger is a compact projection of the underlying Evidence Envelope state, not a second source of truth. Research, challenge, strategy, innovation, and execution handoff should update the same claim state instead of creating parallel narrative versions.
 
 For simple work, skip the Ledger. It is a lightweight collaboration aid, not a new workflow engine or hard gate.
 
@@ -100,7 +137,7 @@ The Evidence Pack is an internal handoff contract, not a transcript. Keep it com
 - include only uncertainty and conflict that can affect the decision;
 - stop when marginal evidence value is low.
 
-The final user answer does not need to expose the full Evidence Pack unless doing so improves clarity, auditability, or decision quality.
+The final user answer does not need to expose the full Evidence Pack or Evidence Envelope unless doing so improves clarity, auditability, or decision quality.
 
 ## Collaboration regression gate
 

@@ -58,6 +58,23 @@ function canonicalCoverageKey(value) {
   return key || null;
 }
 
+function materialTransitionKey(receipt) {
+  const coverageKey = canonicalCoverageKey(receipt?.coverage_key);
+  const producingCoverageKey = canonicalCoverageKey(receipt?.action?.coverage_key);
+  const beforeRevision = receipt?.before?.revision;
+  const afterRevision = receipt?.after?.revision;
+  if (
+    !coverageKey ||
+    coverageKey !== producingCoverageKey ||
+    !isNonNegativeInteger(beforeRevision) ||
+    !isNonNegativeInteger(afterRevision) ||
+    afterRevision !== beforeRevision + 1
+  ) {
+    return null;
+  }
+  return `${coverageKey}@${beforeRevision}->${afterRevision}`;
+}
+
 export function hasDecisionDelta(action) {
   return typeof action?.expected_delta === 'string' && EXPECTED_DELTAS.has(action.expected_delta);
 }
@@ -102,21 +119,45 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
   };
 }
 
-export function deriveMaterialReopenCoverageKeys({ evidence = [] } = {}) {
-  const keys = new Set();
+export function deriveMaterialReopenAuthorizations({ evidence = [], consumed = [] } = {}) {
+  const consumedKeys = new Set(
+    (Array.isArray(consumed) ? consumed : [])
+      .filter((value) => typeof value === 'string')
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+  const authorizations = new Map();
+
   for (const receipt of Array.isArray(evidence) ? evidence : []) {
-    const coverageKey = canonicalCoverageKey(receipt?.coverage_key);
-    const producingCoverageKey = canonicalCoverageKey(receipt?.action?.coverage_key);
-    if (!coverageKey || coverageKey !== producingCoverageKey || receipt?.material_state_observed !== true) continue;
+    const transitionKey = materialTransitionKey(receipt);
+    if (!transitionKey || receipt?.material_state_observed !== true) continue;
+
     const delta = evaluateDecisionDelta({
       action: receipt?.action,
       before: receipt?.before,
       after: receipt?.after,
       observation: receipt?.observation,
     });
-    if (delta.realized) keys.add(coverageKey);
+    if (!delta.realized) continue;
+
+    const coverageKey = canonicalCoverageKey(receipt.coverage_key);
+    const current = authorizations.get(coverageKey);
+    if (!current || receipt.after.revision > current.after_revision) {
+      authorizations.set(coverageKey, {
+        coverage_key: coverageKey,
+        transition_key: transitionKey,
+        after_revision: receipt.after.revision,
+      });
+    }
   }
-  return [...keys];
+
+  return [...authorizations.values()].filter(
+    (authorization) => !consumedKeys.has(authorization.transition_key),
+  );
+}
+
+export function deriveMaterialReopenCoverageKeys({ evidence = [], consumed = [] } = {}) {
+  return deriveMaterialReopenAuthorizations({ evidence, consumed }).map((authorization) => authorization.coverage_key);
 }
 
 export function updateResearchCoverage({ completed = [], action, outcome } = {}) {
@@ -136,6 +177,46 @@ export function updateResearchCoverage({ completed = [], action, outcome } = {})
   return [...next];
 }
 
+export function updateResearchRunState({ state = {}, selection, action, outcome } = {}) {
+  const completedCoverageKeys = updateResearchCoverage({
+    completed: state?.completed_coverage_keys,
+    action,
+    outcome,
+  });
+  const consumed = new Set(
+    (Array.isArray(state?.consumed_reopen_transition_keys) ? state.consumed_reopen_transition_keys : [])
+      .filter((value) => typeof value === 'string')
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+  const actionCoverageKey = canonicalCoverageKey(action?.coverage_key);
+  const currentAuthorization = actionCoverageKey
+    ? new Map(
+        deriveMaterialReopenAuthorizations({
+          evidence: state?.material_reopen_evidence,
+          consumed: state?.consumed_reopen_transition_keys,
+        }).map((authorization) => [authorization.coverage_key, authorization]),
+      ).get(actionCoverageKey)
+    : null;
+
+  if (
+    selection?.mode === 'execute' &&
+    selection?.action_id === action?.id &&
+    currentAuthorization &&
+    selection?.reopen_transition_key === currentAuthorization.transition_key &&
+    outcome?.status === 'completed' &&
+    outcome?.material_state_observed === true
+  ) {
+    consumed.add(currentAuthorization.transition_key);
+  }
+
+  return {
+    ...state,
+    completed_coverage_keys: completedCoverageKeys,
+    consumed_reopen_transition_keys: [...consumed],
+  };
+}
+
 export function selectNextResearchAction({ state, candidates = [] }) {
   if (state?.decision_sensitive === false) {
     return { mode: 'stop', action_id: null, reason: 'decision-no-longer-sensitive' };
@@ -146,8 +227,11 @@ export function selectNextResearchAction({ state, candidates = [] }) {
       .map(canonicalCoverageKey)
       .filter(Boolean),
   );
-  const materialReopenCoverageKeys = new Set(
-    deriveMaterialReopenCoverageKeys({ evidence: state?.material_reopen_evidence }),
+  const materialReopenAuthorizations = new Map(
+    deriveMaterialReopenAuthorizations({
+      evidence: state?.material_reopen_evidence,
+      consumed: state?.consumed_reopen_transition_keys,
+    }).map((authorization) => [authorization.coverage_key, authorization]),
   );
 
   const eligible = candidates.filter((action) => {
@@ -162,7 +246,7 @@ export function selectNextResearchAction({ state, candidates = [] }) {
     if (
       coverageKey &&
       completedCoverageKeys.has(coverageKey) &&
-      !materialReopenCoverageKeys.has(coverageKey)
+      !materialReopenAuthorizations.has(coverageKey)
     ) {
       return false;
     }
@@ -180,6 +264,19 @@ export function selectNextResearchAction({ state, candidates = [] }) {
   const ranked = eligible.map((action, index) => ({ action, index }));
   ranked.sort((left, right) => compareRank(left.action, right.action) || left.index - right.index);
   const selected = ranked[0].action;
+  const coverageKey = canonicalCoverageKey(selected.coverage_key);
+  const reopenAuthorization =
+    coverageKey && completedCoverageKeys.has(coverageKey)
+      ? materialReopenAuthorizations.get(coverageKey)
+      : null;
 
-  return { mode: 'execute', action_id: selected.id, reason: 'highest-decision-value-safe-read' };
+  return {
+    mode: 'execute',
+    action_id: selected.id,
+    reason: 'highest-decision-value-safe-read',
+    ...(reopenAuthorization ? {
+      reopen_coverage_key: reopenAuthorization.coverage_key,
+      reopen_transition_key: reopenAuthorization.transition_key,
+    } : {}),
+  };
 }

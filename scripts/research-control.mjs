@@ -129,6 +129,11 @@ export function selectNextResearchAction({ state, candidates = [] }) {
       .map(canonicalCoverageKey)
       .filter(Boolean),
   );
+  const materialReopenCoverageKeys = new Set(
+    (Array.isArray(state?.material_reopen_coverage_keys) ? state.material_reopen_coverage_keys : [])
+      .map(canonicalCoverageKey)
+      .filter(Boolean),
+  );
 
   const eligible = candidates.filter((action) => {
     if (!action || typeof action.id !== 'string' || !action.id.trim()) return false;
@@ -142,7 +147,7 @@ export function selectNextResearchAction({ state, candidates = [] }) {
     if (
       coverageKey &&
       completedCoverageKeys.has(coverageKey) &&
-      action.reopened_by_material_evidence !== true
+      !materialReopenCoverageKeys.has(coverageKey)
     ) {
       return false;
     }

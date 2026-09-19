@@ -17,12 +17,22 @@ const CAUSAL_HYPOTHESIS_STATUSES = new Set(['untested', 'supported', 'falsified'
 
 function rank(action) {
   return [
-    DECISION_RELEVANCE[action.decision_relevance] ?? -1,
-    SCOPE_FIT[action.scope_fit] ?? -1,
-    NOVELTY[action.evidence_novelty] ?? -1,
-    BREADTH[action.breadth] ?? -1,
-    COST[action.cost] ?? -1,
+    DECISION_RELEVANCE[action.decision_relevance],
+    SCOPE_FIT[action.scope_fit],
+    NOVELTY[action.evidence_novelty],
+    BREADTH[action.breadth],
+    COST[action.cost],
   ];
+}
+
+function hasValidRankMetadata(action) {
+  return (
+    Object.hasOwn(DECISION_RELEVANCE, action?.decision_relevance) &&
+    Object.hasOwn(SCOPE_FIT, action?.scope_fit) &&
+    Object.hasOwn(NOVELTY, action?.evidence_novelty) &&
+    Object.hasOwn(BREADTH, action?.breadth) &&
+    Object.hasOwn(COST, action?.cost)
+  );
 }
 
 function compareRank(a, b) {
@@ -122,6 +132,7 @@ export function selectNextResearchAction({ state, candidates = [] }) {
 
   const eligible = candidates.filter((action) => {
     if (!action || typeof action.id !== 'string' || !action.id.trim()) return false;
+    if (!hasValidRankMetadata(action)) return false;
     if (action.decision_relevance === 'none') return false;
     if (action.scope_fit === 'wrong') return false;
     if (action.blocked_on_observation === true) return false;

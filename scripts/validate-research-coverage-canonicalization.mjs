@@ -51,10 +51,36 @@ assert.equal(
 assert.equal(
   selectNextResearchAction({
     state: { decision_sensitive: true, completed_coverage_keys: ['official-policy:effective-date'] },
-    candidates: [{ ...baseAction, coverage_key: ' official-policy:effective-date ', reopened_by_material_evidence: true }],
+    candidates: [{ ...baseAction, coverage_key: 'official-policy:effective-date', reopened_by_material_evidence: true }],
+  }).mode,
+  'stop',
+  'a candidate-local reopen assertion must not bypass completed coverage without verified material state',
+);
+
+assert.equal(
+  selectNextResearchAction({
+    state: {
+      decision_sensitive: true,
+      completed_coverage_keys: ['official-policy:effective-date'],
+      material_reopen_coverage_keys: [' official-policy:effective-date '],
+    },
+    candidates: [{ ...baseAction, coverage_key: 'official-policy:effective-date' }],
   }).action_id,
   'verify-official-policy',
-  'material evidence may explicitly reopen a canonical covered surface',
+  'verified material state may reopen the matching canonical covered surface',
+);
+
+assert.equal(
+  selectNextResearchAction({
+    state: {
+      decision_sensitive: true,
+      completed_coverage_keys: ['official-policy:effective-date'],
+      material_reopen_coverage_keys: ['other-surface:material-change'],
+    },
+    candidates: [{ ...baseAction, coverage_key: 'official-policy:effective-date' }],
+  }).mode,
+  'stop',
+  'material evidence for a different surface must not reopen this covered surface',
 );
 
 for (const [field, invalidValue] of [

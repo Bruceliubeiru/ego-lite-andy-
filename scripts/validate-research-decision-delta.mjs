@@ -68,6 +68,11 @@ assert.equal(
   evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: 1 }, after: { independent_lineage_count: 2 }, observation: { status: 'completed' } }).realized,
   true,
 );
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: 2 }, after: { independent_lineage_count: 2 }, observation: { status: 'completed' } }).realized,
+  false,
+  'same lineage count is not independent evidence gain',
+);
 
 assert.equal(
   evaluateDecisionDelta({ action: { expected_delta: 'test_causal_hypothesis' }, before: {}, after: { causal_hypothesis_status: 'falsified' }, observation: { status: 'completed' } }).realized,
@@ -93,6 +98,16 @@ assert.equal(
   evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: { choice: 'A' } }, after: { decision: { choice: 'A' } }, observation: { status: 'completed' } }).realized,
   false,
   'non-scalar decisions are not normalized enough for deterministic delta comparison',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 'A' }, after: { decision: ' A ' }, observation: { status: 'completed' } }).realized,
+  false,
+  'format-only string normalization must not count as a decision change',
+);
+assert.equal(
+  evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 1 }, after: { decision: '1' }, observation: { status: 'completed' } }).realized,
+  false,
+  'decision type drift is invalid normalized state, not material progress',
 );
 assert.equal(
   evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 'A' }, after: { decision: 'B' }, observation: { status: 'completed' } }).realized,

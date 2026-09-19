@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { selectNextResearchAction, updateResearchCoverage } from './research-control.mjs';
+import { deriveMaterialReopenCoverageKeys, selectNextResearchAction, updateResearchCoverage } from './research-control.mjs';
 
 const baseAction = {
   id: 'verify-official-policy',
@@ -9,6 +9,15 @@ const baseAction = {
   breadth: 'bounded',
   cost: 'low',
   risk: 'read_only',
+};
+
+const realizedScopeReceipt = {
+  coverage_key: ' official-policy:effective-date ',
+  material_state_observed: true,
+  action: { expected_delta: 'resolve_scope' },
+  before: { scope_status: 'partial' },
+  after: { scope_status: 'resolved' },
+  observation: { status: 'completed' },
 };
 
 assert.deepEqual(
@@ -62,12 +71,18 @@ assert.equal(
     state: {
       decision_sensitive: true,
       completed_coverage_keys: ['official-policy:effective-date'],
-      material_reopen_coverage_keys: [' official-policy:effective-date '],
+      material_reopen_coverage_keys: ['official-policy:effective-date'],
     },
     candidates: [{ ...baseAction, coverage_key: 'official-policy:effective-date' }],
-  }).action_id,
-  'verify-official-policy',
-  'verified material state may reopen the matching canonical covered surface',
+  }).mode,
+  'stop',
+  'a bare state-level reopen key must not be treated as proof of a material Evidence Engine delta',
+);
+
+assert.deepEqual(
+  deriveMaterialReopenCoverageKeys({ evidence: [realizedScopeReceipt] }),
+  ['official-policy:effective-date'],
+  'a completed material observation with a realized Evidence Engine delta should derive a canonical reopen key',
 );
 
 assert.equal(
@@ -75,7 +90,33 @@ assert.equal(
     state: {
       decision_sensitive: true,
       completed_coverage_keys: ['official-policy:effective-date'],
-      material_reopen_coverage_keys: ['other-surface:material-change'],
+      material_reopen_evidence: [realizedScopeReceipt],
+    },
+    candidates: [{ ...baseAction, coverage_key: 'official-policy:effective-date' }],
+  }).action_id,
+  'verify-official-policy',
+  'realized material evidence may reopen the matching canonical covered surface',
+);
+
+for (const receipt of [
+  { ...realizedScopeReceipt, material_state_observed: false },
+  { ...realizedScopeReceipt, observation: { status: 'failed' } },
+  { ...realizedScopeReceipt, after: { scope_status: 'partial' } },
+  { ...realizedScopeReceipt, action: { expected_delta: 'unknown-delta' } },
+]) {
+  assert.deepEqual(
+    deriveMaterialReopenCoverageKeys({ evidence: [receipt] }),
+    [],
+    'reopening must fail closed unless material observation and realized decision delta are both established',
+  );
+}
+
+assert.equal(
+  selectNextResearchAction({
+    state: {
+      decision_sensitive: true,
+      completed_coverage_keys: ['official-policy:effective-date'],
+      material_reopen_evidence: [{ ...realizedScopeReceipt, coverage_key: 'other-surface:material-change' }],
     },
     candidates: [{ ...baseAction, coverage_key: 'official-policy:effective-date' }],
   }).mode,
@@ -113,4 +154,4 @@ assert.equal(
   'a malformed candidate must not displace a valid safe read',
 );
 
-console.log('research coverage canonicalization and action metadata validation passed');
+console.log('research coverage canonicalization, evidence-bound reopening, and action metadata validation passed');

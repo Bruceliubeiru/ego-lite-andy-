@@ -218,6 +218,20 @@ assert.deepEqual(
   'consumed transition authorization must remain closed under canonicalized replay state',
 );
 
+const newerScopeReceipt = {
+  ...realizedScopeReceipt,
+  before: { revision: 8, scope_status: 'partial' },
+  after: { revision: 9, scope_status: 'resolved' },
+};
+assert.deepEqual(
+  deriveMaterialReopenCoverageKeys({
+    evidence: [realizedScopeReceipt, newerScopeReceipt],
+    consumed: ['official-policy:effective-date@8->9'],
+  }),
+  [],
+  'a consumed newest transition must not fall back to an older unconsumed transition for the same surface',
+);
+
 for (const [field, invalidValue] of [
   ['decision_relevance', 'decisivee'],
   ['scope_fit', 'exact-ish'],

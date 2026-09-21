@@ -31,6 +31,12 @@ jobs:
       - name: Validate research control-loop trajectories
         working-directory: .
         run: node scripts/validate-research-trajectories.mjs
+      - name: Validate research decision-delta semantics
+        working-directory: .
+        run: node scripts/validate-research-decision-delta.mjs
+      - name: Validate research coverage canonicalization
+        working-directory: .
+        run: node scripts/validate-research-coverage-canonicalization.mjs
       - name: Validate evidence adapter normalization
         working-directory: .
         run: node scripts/validate-evidence-adapter.mjs

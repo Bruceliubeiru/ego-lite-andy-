@@ -37,6 +37,9 @@ jobs:
       - name: Validate research coverage canonicalization
         working-directory: .
         run: node scripts/validate-research-coverage-canonicalization.mjs
+      - name: Validate state-owned cross-surface reopen authorization
+        working-directory: .
+        run: node scripts/validate-research-cross-surface-reopen.mjs
       - name: Validate evidence adapter normalization
         working-directory: .
         run: node scripts/validate-evidence-adapter.mjs

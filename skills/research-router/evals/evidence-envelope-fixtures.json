@@ -103,6 +103,47 @@
   ],
   "invalid": [
     {
+      "name": "confirmed-solely-from-failed-connector",
+      "expect_error": "unavailable acquisition support",
+      "envelope": {
+        "version": "1.0",
+        "claim_id": "bad-acquisition-1",
+        "claim_kind": "observed_fact",
+        "claim": "An unavailable connector proves a current account fact.",
+        "scope": {
+          "account": "target"
+        },
+        "status": "Confirmed",
+        "evidence": [
+          {
+            "evidence_id": "e1",
+            "direction": "support",
+            "pointer": "failed connector acquisition",
+            "lineage_id": "connector-attempt",
+            "source_class": "connector_or_api",
+            "authority": "primary",
+            "specificity": "exact",
+            "freshness": "current",
+            "provenance": {
+              "quality": "unknown",
+              "source_identity": "connector attempt",
+              "provider_execution": "failed"
+            },
+            "limitations": [
+              "The provider read failed."
+            ]
+          }
+        ],
+        "conflicts": [],
+        "confidence": {
+          "level": "high",
+          "reason": "Incorrectly treated acquisition failure as confirmation."
+        },
+        "decision_impact": "High",
+        "next_action": "verify"
+      }
+    },
+    {
       "name": "confirmed-with-unresolved-conflict",
       "expect_error": "Confirmed claim cannot retain an unresolved material conflict",
       "envelope": {

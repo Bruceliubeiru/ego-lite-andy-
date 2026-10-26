@@ -222,7 +222,10 @@ test("navigation-only support must not hide later verified support from the same
     source_class: "search_snippet",
     authority: "navigation_only",
     specificity: "broad",
-    provenance: { quality: "partial", source_identity: "official page search result" },
+    provenance: {
+      quality: "partial",
+      source_identity: "official page search result",
+    },
     limitations: ["Underlying page not yet verified."],
   };
   envelope.evidence.push({
@@ -259,7 +262,10 @@ test("later navigation hints do not displace an already projected verified sourc
     source_class: "search_snippet",
     authority: "navigation_only",
     specificity: "broad",
-    provenance: { quality: "partial", source_identity: "official page search result" },
+    provenance: {
+      quality: "partial",
+      source_identity: "official page search result",
+    },
     limitations: ["Preview only."],
   });
 

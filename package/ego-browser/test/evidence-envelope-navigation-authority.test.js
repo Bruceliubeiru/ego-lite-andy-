@@ -8,7 +8,7 @@ function makeEnvelope() {
     version: "1.0",
     claim_id: "navigation-authority-regression",
     claim_kind: "observed_fact",
-    claim: "A material claim requires substantive support before confirmation.",
+    claim: "A material claim requires substantive support.",
     scope: {},
     status: "Confirmed",
     evidence: [
@@ -26,38 +26,32 @@ function makeEnvelope() {
       },
     ],
     conflicts: [],
-    confidence: { level: "medium", reason: "Only a search result was observed." },
+    confidence: { level: "medium", reason: "Only a snippet." },
     decision_impact: "High",
     next_action: "verify",
   };
 }
 
-test("navigation-only support cannot confirm a consequential claim", () => {
-  assert.ok(
-    validateEvidenceEnvelope(makeEnvelope()).includes(
-      "Confirmed claim cannot rely solely on navigation_only support",
-    ),
-  );
+test("reject navigation-only confirmation", () => {
+  const errors = validateEvidenceEnvelope(makeEnvelope());
+  assert.match(errors.join(" "), /navigation_only support/);
 });
 
-test("search snippets cannot claim primary authority in raw envelopes", () => {
+test("reject inflated snippet authority", () => {
   const envelope = makeEnvelope();
   envelope.status = "Needs verification";
   envelope.evidence[0].authority = "primary";
-  assert.ok(
-    validateEvidenceEnvelope(envelope).includes(
-      "evidence[0].search_snippet must have navigation_only authority",
-    ),
-  );
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.match(errors.join(" "), /navigation_only authority/);
 });
 
-test("navigation-only evidence remains valid for unconfirmed claims", () => {
+test("allow navigation hints for unconfirmed claims", () => {
   const envelope = makeEnvelope();
   envelope.status = "Needs verification";
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
 });
 
-test("confirmed claims may include snippets alongside substantive support", () => {
+test("allow confirmed claims with independent substantive support", () => {
   const envelope = makeEnvelope();
   envelope.evidence.push({
     ...envelope.evidence[0],

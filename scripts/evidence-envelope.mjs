@@ -132,6 +132,7 @@ export function validateEvidenceEnvelope(envelope) {
   const evidenceIds = new Set();
   const contradictingEvidenceIds = new Set();
   let supportingEvidence = 0;
+  let substantiveSupportingEvidence = 0;
 
   envelope.evidence.forEach((item, index) => {
     const prefix = `evidence[${index}]`;
@@ -161,7 +162,10 @@ export function validateEvidenceEnvelope(envelope) {
     if (!EVIDENCE_DIRECTIONS.has(item.direction)) {
       errors.push(`${prefix}.direction has unsupported value: ${diagnosticValue(item.direction)}`);
     }
-    if (item.direction === 'support') supportingEvidence += 1;
+    if (item.direction === 'support') {
+      supportingEvidence += 1;
+      if (item.authority !== 'navigation_only') substantiveSupportingEvidence += 1;
+    }
     if (item.direction === 'contradict' && isNonEmptyString(item.evidence_id)) {
       contradictingEvidenceIds.add(item.evidence_id);
     }
@@ -176,6 +180,10 @@ export function validateEvidenceEnvelope(envelope) {
       if (!allowedValues.has(item[field])) {
         errors.push(`${prefix}.${field} has unsupported value: ${diagnosticValue(item[field])}`);
       }
+    }
+
+    if (item.source_class === 'search_snippet' && item.authority !== 'navigation_only') {
+      errors.push(`${prefix}.search_snippet must have navigation_only authority`);
     }
 
     if (!item.provenance || typeof item.provenance !== 'object' || Array.isArray(item.provenance)) {
@@ -252,6 +260,9 @@ export function validateEvidenceEnvelope(envelope) {
   // confidence from evidence count or force every uncertainty into a conflict.
   if (envelope.status === 'Confirmed') {
     if (supportingEvidence === 0) errors.push('Confirmed claim requires at least one supporting evidence item');
+    if (supportingEvidence > 0 && substantiveSupportingEvidence === 0) {
+      errors.push('Confirmed claim cannot rely solely on navigation_only support');
+    }
     if (unresolvedConflicts > 0) errors.push('Confirmed claim cannot retain an unresolved material conflict');
     for (const evidenceId of contradictingEvidenceIds) {
       if (!dispositionedContradictions.has(evidenceId)) {

@@ -307,7 +307,11 @@ for (const [sourceClass, failedProvenance, recoveredProvenance] of [
       limitations: [],
     },
   ];
-  assert.deepEqual(validateEvidenceEnvelope(envelope), [], `${sourceClass}: recovery envelope must remain valid`);
+  assert.deepEqual(
+    validateEvidenceEnvelope(envelope),
+    [],
+    `${sourceClass}: recovery envelope must remain valid`,
+  );
   assert.equal(
     projectEvidenceEnvelopeToLedger(envelope).Evidence,
     'unavailable source read + verified source read',

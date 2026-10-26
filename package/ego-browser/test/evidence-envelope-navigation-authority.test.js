@@ -196,7 +196,10 @@ test("positive execution and independent public support remain valid", () => {
     lineage_id: "official-independent",
     pointer: "verified first-party public page",
     source_class: "first_party_public",
-    provenance: { quality: "verified", source_identity: "official public page" },
+    provenance: {
+      quality: "verified",
+      source_identity: "official public page",
+    },
     limitations: [],
   });
   assert.deepEqual(validateEvidenceEnvelope(mixed), []);

@@ -233,7 +233,7 @@ export function validateEvidenceEnvelope(envelope) {
       errors.push(`${prefix} ${conflict.state} conflict requires a non-empty string resolution_basis`);
     }
     if (conflict.state === 'resolved' || conflict.state === 'not_material') {
-      for (const evidenceId of conflict.evidence_ids ?? []) {
+      for (const evidenceId of Array.isArray(conflict.evidence_ids) ? conflict.evidence_ids : []) {
         if (contradictingEvidenceIds.has(evidenceId)) dispositionedContradictions.add(evidenceId);
       }
     }

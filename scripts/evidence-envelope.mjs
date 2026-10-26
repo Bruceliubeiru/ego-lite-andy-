@@ -57,22 +57,22 @@ const PROVENANCE_ENUMS = {
 };
 const CONFIDENCE_LEVELS = new Set(['high', 'medium', 'low', 'blocked']);
 const UNAVAILABLE_PROVIDER_EXECUTIONS = new Set(['configured_only', 'skipped', 'failed']);
-const UNAVAILABLE_AUTH_STATES = new Set(['blocked', 'not_authenticated']);
 
 function hasUnavailableAcquisitionProvenance(item) {
   const provenance = item.provenance;
   if (!provenance || typeof provenance !== 'object' || Array.isArray(provenance)) return false;
-  if (
-    item.source_class !== 'connector_or_api' &&
-    item.source_class !== 'first_party_authenticated'
-  ) {
-    return false;
+  if (item.source_class === 'connector_or_api') {
+    // Confirmation needs positive execution provenance, not merely the absence of failure.
+    return provenance.provider_execution !== 'read_executed';
   }
-  return (
-    UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution) ||
-    (item.source_class === 'first_party_authenticated' &&
-      UNAVAILABLE_AUTH_STATES.has(provenance.auth_state))
-  );
+  if (item.source_class === 'first_party_authenticated') {
+    // An unknown auth state is not proof that the target authenticated page was read.
+    return (
+      provenance.auth_state !== 'confirmed' ||
+      UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution)
+    );
+  }
+  return false;
 }
 
 function hasOwn(object, key) {

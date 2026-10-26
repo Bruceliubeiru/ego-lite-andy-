@@ -56,6 +56,24 @@ const PROVENANCE_ENUMS = {
   provider_execution: new Set(['read_executed', 'configured_only', 'skipped', 'failed', 'not_applicable']),
 };
 const CONFIDENCE_LEVELS = new Set(['high', 'medium', 'low', 'blocked']);
+const UNAVAILABLE_PROVIDER_EXECUTIONS = new Set(['configured_only', 'skipped', 'failed']);
+const UNAVAILABLE_AUTH_STATES = new Set(['blocked', 'not_authenticated']);
+
+function hasUnavailableAcquisitionProvenance(item) {
+  const provenance = item.provenance;
+  if (!provenance || typeof provenance !== 'object' || Array.isArray(provenance)) return false;
+  if (
+    item.source_class !== 'connector_or_api' &&
+    item.source_class !== 'first_party_authenticated'
+  ) {
+    return false;
+  }
+  return (
+    UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution) ||
+    (item.source_class === 'first_party_authenticated' &&
+      UNAVAILABLE_AUTH_STATES.has(provenance.auth_state))
+  );
+}
 
 function hasOwn(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
@@ -133,6 +151,7 @@ export function validateEvidenceEnvelope(envelope) {
   const contradictingEvidenceIds = new Set();
   let supportingEvidence = 0;
   let substantiveSupportingEvidence = 0;
+  let availableSupportingEvidence = 0;
 
   envelope.evidence.forEach((item, index) => {
     const prefix = `evidence[${index}]`;
@@ -164,7 +183,10 @@ export function validateEvidenceEnvelope(envelope) {
     }
     if (item.direction === 'support') {
       supportingEvidence += 1;
-      if (item.authority !== 'navigation_only') substantiveSupportingEvidence += 1;
+      if (item.authority !== 'navigation_only') {
+        substantiveSupportingEvidence += 1;
+        if (!hasUnavailableAcquisitionProvenance(item)) availableSupportingEvidence += 1;
+      }
     }
     if (item.direction === 'contradict' && isNonEmptyString(item.evidence_id)) {
       contradictingEvidenceIds.add(item.evidence_id);
@@ -262,6 +284,9 @@ export function validateEvidenceEnvelope(envelope) {
     if (supportingEvidence === 0) errors.push('Confirmed claim requires at least one supporting evidence item');
     if (supportingEvidence > 0 && substantiveSupportingEvidence === 0) {
       errors.push('Confirmed claim cannot rely solely on navigation_only support');
+    }
+    if (substantiveSupportingEvidence > 0 && availableSupportingEvidence === 0) {
+      errors.push('Confirmed claim cannot rely solely on unavailable acquisition support');
     }
     if (unresolvedConflicts > 0) errors.push('Confirmed claim cannot retain an unresolved material conflict');
     for (const evidenceId of contradictingEvidenceIds) {

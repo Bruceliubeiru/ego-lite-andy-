@@ -66,3 +66,75 @@ test("allow confirmed claims with independent substantive support", () => {
   });
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
 });
+
+function makeConnectorEnvelope(providerExecution = "failed") {
+  const envelope = makeEnvelope();
+  envelope.evidence[0] = {
+    ...envelope.evidence[0],
+    pointer: "connector acquisition receipt",
+    source_class: "connector_or_api",
+    authority: "primary",
+    specificity: "exact",
+    provenance: {
+      quality: "unknown",
+      source_identity: "connector response",
+      provider_execution: providerExecution,
+    },
+    limitations: ["The connector did not supply verified content."],
+  };
+  return envelope;
+}
+
+test("failed, skipped, or configured-only connector acquisition cannot confirm a claim", () => {
+  for (const execution of ["failed", "skipped", "configured_only"]) {
+    const envelope = makeConnectorEnvelope(execution);
+    assert.match(
+      validateEvidenceEnvelope(envelope).join(" "),
+      /unavailable acquisition support/,
+      execution,
+    );
+  }
+});
+
+test("blocked or unauthenticated first-party acquisition cannot solely confirm a claim", () => {
+  for (const authState of ["blocked", "not_authenticated"]) {
+    const envelope = makeConnectorEnvelope("read_executed");
+    envelope.evidence[0].source_class = "first_party_authenticated";
+    envelope.evidence[0].provenance.auth_state = authState;
+    assert.match(
+      validateEvidenceEnvelope(envelope).join(" "),
+      /unavailable acquisition support/,
+      authState,
+    );
+  }
+});
+
+test("an unavailable acquisition remains valid evidence context for an unconfirmed claim", () => {
+  const envelope = makeConnectorEnvelope();
+  envelope.status = "Needs verification";
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+});
+
+test("independent substantive support can confirm despite another failed acquisition", () => {
+  const envelope = makeConnectorEnvelope();
+  envelope.evidence.push({
+    ...envelope.evidence[0],
+    evidence_id: "official-1",
+    lineage_id: "official-page",
+    pointer: "verified first-party page",
+    source_class: "first_party_public",
+    provenance: { quality: "verified", source_identity: "official page" },
+    limitations: [],
+  });
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+});
+
+test("successful connector reads and unrelated user-supplied evidence remain usable", () => {
+  const executed = makeConnectorEnvelope("read_executed");
+  executed.evidence[0].provenance.quality = "verified";
+  assert.deepEqual(validateEvidenceEnvelope(executed), []);
+
+  const userSupplied = makeConnectorEnvelope();
+  userSupplied.evidence[0].source_class = "user_supplied";
+  assert.deepEqual(validateEvidenceEnvelope(userSupplied), []);
+});

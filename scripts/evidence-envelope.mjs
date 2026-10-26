@@ -266,9 +266,25 @@ export function projectEvidenceEnvelopeToLedger(envelope) {
 
   const pointers = [];
   const seenLineages = new Set();
+  const seenPointersByLineage = new Map();
+  const conflictEvidenceIds = new Set(
+    envelope.conflicts.flatMap((conflict) => conflict.evidence_ids),
+  );
   for (const item of envelope.evidence) {
-    if (seenLineages.has(item.lineage_id)) continue;
+    const firstInLineage = !seenLineages.has(item.lineage_id);
     seenLineages.add(item.lineage_id);
+    // Collapse same-source summaries, not distinct contradiction or conflict pointers.
+    if (
+      !firstInLineage &&
+      item.direction !== 'contradict' &&
+      !conflictEvidenceIds.has(item.evidence_id)
+    ) {
+      continue;
+    }
+    const seenPointers = seenPointersByLineage.get(item.lineage_id) ?? new Set();
+    if (seenPointers.has(item.pointer)) continue;
+    seenPointers.add(item.pointer);
+    seenPointersByLineage.set(item.lineage_id, seenPointers);
     pointers.push(item.pointer);
   }
 

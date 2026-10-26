@@ -138,3 +138,66 @@ test("successful connector reads and unrelated user-supplied evidence remain usa
   userSupplied.evidence[0].source_class = "user_supplied";
   assert.deepEqual(validateEvidenceEnvelope(userSupplied), []);
 });
+
+test("connector confirmation requires positive read-executed provenance", () => {
+  for (const execution of [undefined, "not_applicable"]) {
+    const envelope = makeConnectorEnvelope("read_executed");
+    if (execution === undefined) {
+      delete envelope.evidence[0].provenance.provider_execution;
+    } else {
+      envelope.evidence[0].provenance.provider_execution = execution;
+    }
+    assert.match(
+      validateEvidenceEnvelope(envelope).join(" "),
+      /unavailable acquisition support/,
+      String(execution),
+    );
+  }
+});
+
+test("authenticated confirmation requires a positively confirmed auth state", () => {
+  for (const authState of [undefined, "unknown", "not_applicable"]) {
+    const envelope = makeConnectorEnvelope("read_executed");
+    envelope.evidence[0].source_class = "first_party_authenticated";
+    if (authState !== undefined) {
+      envelope.evidence[0].provenance.auth_state = authState;
+    }
+    assert.match(
+      validateEvidenceEnvelope(envelope).join(" "),
+      /unavailable acquisition support/,
+      String(authState),
+    );
+  }
+});
+
+test("authenticated confirmation cannot ignore an explicit failed provider execution", () => {
+  const envelope = makeConnectorEnvelope("failed");
+  envelope.evidence[0].source_class = "first_party_authenticated";
+  envelope.evidence[0].provenance.auth_state = "confirmed";
+  assert.match(
+    validateEvidenceEnvelope(envelope).join(" "),
+    /unavailable acquisition support/,
+  );
+});
+
+test("positive execution and independent public support remain valid", () => {
+  const connector = makeConnectorEnvelope("read_executed");
+  assert.deepEqual(validateEvidenceEnvelope(connector), []);
+
+  const authenticated = makeConnectorEnvelope("read_executed");
+  authenticated.evidence[0].source_class = "first_party_authenticated";
+  authenticated.evidence[0].provenance.auth_state = "confirmed";
+  assert.deepEqual(validateEvidenceEnvelope(authenticated), []);
+
+  const mixed = makeConnectorEnvelope("not_applicable");
+  mixed.evidence.push({
+    ...mixed.evidence[0],
+    evidence_id: "official-independent",
+    lineage_id: "official-independent",
+    pointer: "verified first-party public page",
+    source_class: "first_party_public",
+    provenance: { quality: "verified", source_identity: "official public page" },
+    limitations: [],
+  });
+  assert.deepEqual(validateEvidenceEnvelope(mixed), []);
+});

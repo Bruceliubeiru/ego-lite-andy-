@@ -212,3 +212,61 @@ test("first support pointer is not duplicated after contextual or repeated suppo
     "supporting source",
   );
 });
+
+test("navigation-only support must not hide later verified support from the same lineage", () => {
+  const envelope = makeEnvelope();
+  envelope.evidence[0] = {
+    ...envelope.evidence[0],
+    evidence_id: "snippet-1",
+    pointer: "search result preview",
+    source_class: "search_snippet",
+    authority: "navigation_only",
+    specificity: "broad",
+    provenance: { quality: "partial", source_identity: "official page search result" },
+    limitations: ["Underlying page not yet verified."],
+  };
+  envelope.evidence.push({
+    ...envelope.evidence[0],
+    evidence_id: "verified-1",
+    pointer: "verified official page",
+    source_class: "first_party_public",
+    authority: "primary",
+    specificity: "exact",
+    provenance: { quality: "verified", source_identity: "official page" },
+    limitations: [],
+  });
+  envelope.evidence.push({
+    ...envelope.evidence[1],
+    evidence_id: "verified-summary",
+    pointer: "repeated summary of verified page",
+  });
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(countIndependentEvidenceLineages(envelope), 1);
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "search result preview + verified official page",
+    "verified same-lineage evidence must remain visible without counting repeated summaries",
+  );
+});
+
+test("later navigation hints do not displace an already projected verified source", () => {
+  const envelope = makeEnvelope();
+  envelope.evidence.push({
+    ...envelope.evidence[0],
+    evidence_id: "snippet-1",
+    pointer: "later navigation-only preview",
+    source_class: "search_snippet",
+    authority: "navigation_only",
+    specificity: "broad",
+    provenance: { quality: "partial", source_identity: "official page search result" },
+    limitations: ["Preview only."],
+  });
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "supporting source",
+    "navigation-only repetition must not inflate a lineage already represented by verified support",
+  );
+});

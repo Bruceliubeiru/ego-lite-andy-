@@ -180,26 +180,87 @@ for (const fixture of evidenceEnvelopeFixtures.invalid ?? []) {
 // Malformed JSON must produce validation errors, not crash error formatting.
 const hostileDiagnosticValue = JSON.parse('{"toString":null}');
 const diagnosticCases = [
-  ['version', (envelope) => { envelope.version = hostileDiagnosticValue; }, 'unsupported envelope version'],
-  ['claim kind', (envelope) => { envelope.claim_kind = hostileDiagnosticValue; }, 'claim_kind has unsupported'],
-  ['status', (envelope) => { envelope.status = hostileDiagnosticValue; }, 'status has unsupported'],
-  ['decision impact', (envelope) => { envelope.decision_impact = hostileDiagnosticValue; }, 'decision_impact has unsupported'],
-  ['confidence level', (envelope) => { envelope.confidence.level = hostileDiagnosticValue; }, 'confidence.level has unsupported'],
-  ['evidence direction', (envelope) => { envelope.evidence[0].direction = hostileDiagnosticValue; }, 'direction has unsupported'],
-  ['evidence ID', (envelope) => { envelope.evidence[0].evidence_id = hostileDiagnosticValue; }, 'evidence_id must be'],
-  ['conflict evidence ID', (envelope) => {
-    envelope.conflicts = [{ evidence_ids: ['known', hostileDiagnosticValue], issue: 'test', state: 'resolved', resolution_basis: 'test' }];
-  }, 'references unknown evidence_id'],
-  ['conflict state', (envelope) => {
-    envelope.conflicts = [{ evidence_ids: ['known', 'unknown'], issue: 'test', state: hostileDiagnosticValue }];
-  }, 'state has unsupported'],
+  [
+    'version',
+    (envelope) => {
+      envelope.version = hostileDiagnosticValue;
+    },
+    'unsupported envelope version',
+  ],
+  [
+    'claim kind',
+    (envelope) => {
+      envelope.claim_kind = hostileDiagnosticValue;
+    },
+    'claim_kind has unsupported',
+  ],
+  [
+    'status',
+    (envelope) => {
+      envelope.status = hostileDiagnosticValue;
+    },
+    'status has unsupported',
+  ],
+  [
+    'decision impact',
+    (envelope) => {
+      envelope.decision_impact = hostileDiagnosticValue;
+    },
+    'decision_impact has unsupported',
+  ],
+  [
+    'confidence level',
+    (envelope) => {
+      envelope.confidence.level = hostileDiagnosticValue;
+    },
+    'confidence.level has unsupported',
+  ],
+  [
+    'evidence direction',
+    (envelope) => {
+      envelope.evidence[0].direction = hostileDiagnosticValue;
+    },
+    'direction has unsupported',
+  ],
+  [
+    'evidence ID',
+    (envelope) => {
+      envelope.evidence[0].evidence_id = hostileDiagnosticValue;
+    },
+    'evidence_id must be',
+  ],
+  [
+    'conflict evidence ID',
+    (envelope) => {
+      envelope.conflicts = [
+        {
+          evidence_ids: ['known', hostileDiagnosticValue],
+          issue: 'test',
+          state: 'resolved',
+          resolution_basis: 'test',
+        },
+      ];
+    },
+    'references unknown evidence_id',
+  ],
+  [
+    'conflict state',
+    (envelope) => {
+      envelope.conflicts = [
+        { evidence_ids: ['known', 'unknown'], issue: 'test', state: hostileDiagnosticValue },
+      ];
+    },
+    'state has unsupported',
+  ],
 ];
 for (const [label, mutate, expectedError] of diagnosticCases) {
   const envelope = structuredClone(evidenceEnvelopeFixtures.valid[0].envelope);
   mutate(envelope);
   let errors;
   assert.doesNotThrow(
-    () => { errors = validateEvidenceEnvelope(envelope); },
+    () => {
+      errors = validateEvidenceEnvelope(envelope);
+    },
     `malformed ${label} must not throw during diagnostic formatting`,
   );
   assert.ok(

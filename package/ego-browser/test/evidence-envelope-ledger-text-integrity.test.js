@@ -175,11 +175,13 @@ test("contradiction first must not hide later same-lineage supporting evidence",
     direction: "contradict",
     pointer: "contradictory passage",
   });
-  envelope.conflicts = [{
-    evidence_ids: ["contradict-1", "support-1"],
-    issue: "The same source gives incompatible observations.",
-    state: "unresolved",
-  }];
+  envelope.conflicts = [
+    {
+      evidence_ids: ["contradict-1", "support-1"],
+      issue: "The same source gives incompatible observations.",
+      state: "unresolved",
+    },
+  ];
 
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
   assert.equal(countIndependentEvidenceLineages(envelope), 1);
@@ -205,5 +207,8 @@ test("first support pointer is not duplicated after contextual or repeated suppo
 
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
   assert.equal(countIndependentEvidenceLineages(envelope), 1);
-  assert.equal(projectEvidenceEnvelopeToLedger(envelope).Evidence, "supporting source");
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "supporting source",
+  );
 });

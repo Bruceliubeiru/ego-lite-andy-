@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { evaluateDecisionDelta, hasDecisionDelta, selectNextResearchAction } from './research-control.mjs';
+import { deriveMaterialReopenAuthorizations, evaluateDecisionDelta, hasDecisionDelta, selectNextResearchAction } from './research-control.mjs';
 
 assert.equal(hasDecisionDelta({ expected_delta: 'resolve_conflict' }), true);
 assert.equal(hasDecisionDelta({ expected_delta: 'collect_more_information' }), false);
@@ -30,6 +30,20 @@ assert.equal(evaluateDecisionDelta({ action: { expected_delta: 'establish_proven
 assert.equal(evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 'A' }, after: {}, observation: { status: 'completed' } }).realized, false, 'missing post-observation decision must not masquerade as a changed decision');
 assert.equal(evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: {}, after: { decision: 'B' }, observation: { status: 'completed' } }).realized, false, 'an absent baseline decision cannot establish a decision change');
 assert.equal(evaluateDecisionDelta({ action: { expected_delta: 'change_decision' }, before: { decision: 'A' }, after: { decision: 'B' }, observation: { status: 'completed' } }).realized, true);
+
+const decisionDeltaAction = { id: 'recheck-decision', coverage_key: 'policy:decision', expected_delta: 'change_decision' };
+const sameStructuredDecision = {
+  before: { revision: 7, decision: { recommendation: 'hold', conditions: { region: 'HK', cost: 100 } } },
+  after: { revision: 8, decision: { conditions: { cost: 100, region: 'HK' }, recommendation: 'hold' } },
+  observation: { status: 'completed' },
+};
+assert.equal(evaluateDecisionDelta({ action: decisionDeltaAction, ...sameStructuredDecision }).realized, false, 'reconstructed equal decisions must not count as a material change');
+assert.equal(evaluateDecisionDelta({ action: decisionDeltaAction, before: { decision: ['hold', { reason: 'risk' }] }, after: { decision: ['hold', { reason: 'risk' }] }, observation: { status: 'completed' } }).realized, false, 'equivalent array decisions must not count as a change');
+assert.equal(evaluateDecisionDelta({ action: decisionDeltaAction, before: { decision: { recommendation: 'hold', conditions: { cost: 100 } } }, after: { decision: { recommendation: 'hold', conditions: { cost: 101 } } }, observation: { status: 'completed' } }).realized, true, 'nested material decision changes must still be detected');
+const unchangedDecisionReceipt = { coverage_key: 'policy:decision', action: decisionDeltaAction, ...sameStructuredDecision, material_state_observed: true };
+assert.deepEqual(deriveMaterialReopenAuthorizations({ evidence: [unchangedDecisionReceipt] }), [], 'equal structured decisions must not authorize a covered-surface reopen');
+assert.deepEqual(deriveMaterialReopenAuthorizations({ evidence: [{ ...unchangedDecisionReceipt, after: { revision: 8, decision: { recommendation: 'reject', conditions: { region: 'HK', cost: 100 } } } }] }), [{ coverage_key: 'policy:decision', transition_key: 'policy:decision@7->8', after_revision: 8 }], 'a genuinely changed structured decision may authorize the same-surface reopen');
+
 
 assert.equal(evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: { independent_lineage_count: 2 }, after: { independent_lineage_count: 2 }, observation: { status: 'completed' } }).realized, false);
 assert.equal(evaluateDecisionDelta({ action: { expected_delta: 'add_independent_lineage' }, before: {}, after: { independent_lineage_count: 1 }, observation: { status: 'completed' } }).realized, false, 'missing baseline lineage count must not be treated as zero realized progress');

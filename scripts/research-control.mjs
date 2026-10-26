@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+
 const DECISION_RELEVANCE = { none: 0, material: 1, decisive: 2 };
 const SCOPE_FIT = { wrong: 0, partial: 1, exact: 2 };
 const NOVELTY = { none: 0, same_lineage: 1, independent: 2 };
@@ -110,7 +112,7 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
     change_decision:
       isKnownValue(before?.decision) &&
       isKnownValue(after?.decision) &&
-      before.decision !== after.decision,
+      !isDeepStrictEqual(before.decision, after.decision),
   };
 
   return {

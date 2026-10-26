@@ -262,4 +262,42 @@ assert.equal(
   'a malformed candidate must not displace a valid safe read',
 );
 
+const unsafeRevision = Number.MAX_SAFE_INTEGER + 1;
+const unsafeRevisionReceipt = {
+  ...realizedScopeReceipt,
+  before: { revision: unsafeRevision, scope_status: 'partial' },
+  after: { revision: unsafeRevision, scope_status: 'resolved' },
+};
+assert.deepEqual(
+  deriveMaterialReopenAuthorizations({ evidence: [unsafeRevisionReceipt] }),
+  [],
+  'unsafe equal revisions must not impersonate a monotonic one-step transition',
+);
+assert.deepEqual(
+  deriveMaterialReopenAuthorizations({
+    evidence: [{
+      ...realizedScopeReceipt,
+      before: { revision: Number.MAX_SAFE_INTEGER, scope_status: 'partial' },
+      after: { revision: unsafeRevision, scope_status: 'resolved' },
+    }],
+  }),
+  [],
+  'an unsafe post-revision must not authorize a reopen',
+);
+assert.deepEqual(
+  deriveMaterialReopenAuthorizations({
+    evidence: [{
+      ...realizedScopeReceipt,
+      before: { revision: Number.MAX_SAFE_INTEGER - 1, scope_status: 'partial' },
+      after: { revision: Number.MAX_SAFE_INTEGER, scope_status: 'resolved' },
+    }],
+  }),
+  [{
+    coverage_key: 'official-policy:effective-date',
+    transition_key: `official-policy:effective-date@${Number.MAX_SAFE_INTEGER - 1}->${Number.MAX_SAFE_INTEGER}`,
+    after_revision: Number.MAX_SAFE_INTEGER,
+  }],
+  'the last exactly representable one-step revision remains valid',
+);
+
 console.log('research replay-safe coverage authorization and action metadata validation passed');

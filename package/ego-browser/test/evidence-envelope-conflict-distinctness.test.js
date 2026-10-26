@@ -183,7 +183,7 @@ test("unsupported decision impact fails closed", () => {
   assert.ok(errors.includes("decision_impact has unsupported value: Critical"));
 });
 
-test("malformed resolved conflict evidence IDs return validation errors instead of crashing", () => {
+test("malformed resolved conflict IDs fail closed", () => {
   const malformedIds = [42, true, { ids: ["e1", "e2"] }, null, "e1,e2"];
   for (const state of ["resolved", "not_material"]) {
     for (const evidenceIds of malformedIds) {

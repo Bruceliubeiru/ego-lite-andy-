@@ -59,4 +59,15 @@ assert.equal(evaluateDecisionDelta({ action: { expected_delta: 'test_causal_hypo
 assert.equal(evaluateDecisionDelta({ action: { expected_delta: 'test_causal_hypothesis' }, before: { causal_hypothesis_status: 'invalid' }, after: { causal_hypothesis_status: 'supported' }, observation: { status: 'completed' } }).realized, false, 'unknown causal baseline enum must not establish a realized hypothesis test');
 assert.equal(evaluateDecisionDelta({ action: { expected_delta: 'test_causal_hypothesis' }, before: { causal_hypothesis_status: 'supported' }, after: { causal_hypothesis_status: 'falsified' }, observation: { status: 'completed' } }).realized, false, 'already-tested causal states must not be counted as a fresh test');
 
+assert.equal(
+  evaluateDecisionDelta({
+    action: { expected_delta: 'add_independent_lineage' },
+    before: { independent_lineage_count: 1 },
+    after: { independent_lineage_count: Number.MAX_SAFE_INTEGER + 1 },
+    observation: { status: 'completed' },
+  }).realized,
+  false,
+  'unsafe integer lineage counts cannot establish verified independent evidence growth',
+);
+
 console.log('research decision-delta control passed');

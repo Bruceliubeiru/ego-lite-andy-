@@ -51,7 +51,7 @@ function isKnownValue(value) {
 }
 
 function isNonNegativeInteger(value) {
-  return Number.isInteger(value) && value >= 0;
+  return Number.isSafeInteger(value) && value >= 0;
 }
 
 function canonicalCoverageKey(value) {

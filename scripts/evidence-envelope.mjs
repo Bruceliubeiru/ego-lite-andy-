@@ -266,16 +266,21 @@ export function projectEvidenceEnvelopeToLedger(envelope) {
 
   const pointers = [];
   const seenLineages = new Set();
+  const seenSupportingLineages = new Set();
   const seenPointersByLineage = new Map();
   const conflictEvidenceIds = new Set(
     envelope.conflicts.flatMap((conflict) => conflict.evidence_ids),
   );
   for (const item of envelope.evidence) {
     const firstInLineage = !seenLineages.has(item.lineage_id);
+    const firstSupportInLineage = item.direction === 'support' && !seenSupportingLineages.has(item.lineage_id);
     seenLineages.add(item.lineage_id);
+    if (item.direction === 'support') seenSupportingLineages.add(item.lineage_id);
+    // Keep the first actual support even when context or contradiction appears first.
     // Collapse same-source summaries, not distinct contradiction or conflict pointers.
     if (
       !firstInLineage &&
+      !firstSupportInLineage &&
       item.direction !== 'contradict' &&
       !conflictEvidenceIds.has(item.evidence_id)
     ) {

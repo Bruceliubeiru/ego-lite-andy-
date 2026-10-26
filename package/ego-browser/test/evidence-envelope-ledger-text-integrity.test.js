@@ -141,3 +141,69 @@ test("contradictory evidence remains visible before a conflict is classified", (
     "supporting source + unresolved contradictory observation",
   );
 });
+
+test("contextual first pointer must not hide later same-lineage supporting evidence", () => {
+  const envelope = makeEnvelope();
+  envelope.evidence.unshift({
+    ...envelope.evidence[0],
+    evidence_id: "context-1",
+    direction: "context",
+    pointer: "general source overview",
+  });
+  envelope.evidence.push({
+    ...envelope.evidence[1],
+    evidence_id: "support-summary",
+    pointer: "same-source supporting summary",
+  });
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(countIndependentEvidenceLineages(envelope), 1);
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "general source overview + supporting source",
+    "retain the first real support but collapse later same-lineage summaries",
+  );
+});
+
+test("contradiction first must not hide later same-lineage supporting evidence", () => {
+  const envelope = makeEnvelope();
+  envelope.status = "Conflicted";
+  envelope.confidence.level = "medium";
+  envelope.evidence.unshift({
+    ...envelope.evidence[0],
+    evidence_id: "contradict-1",
+    direction: "contradict",
+    pointer: "contradictory passage",
+  });
+  envelope.conflicts = [{
+    evidence_ids: ["contradict-1", "support-1"],
+    issue: "The same source gives incompatible observations.",
+    state: "unresolved",
+  }];
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(countIndependentEvidenceLineages(envelope), 1);
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "contradictory passage + supporting source",
+  );
+});
+
+test("first support pointer is not duplicated after contextual or repeated support references", () => {
+  const envelope = makeEnvelope();
+  envelope.evidence.unshift({
+    ...envelope.evidence[0],
+    evidence_id: "context-1",
+    direction: "context",
+    pointer: "supporting source",
+  });
+  envelope.evidence.push({
+    ...envelope.evidence[1],
+    evidence_id: "support-summary",
+    pointer: "same-source summary",
+  });
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(countIndependentEvidenceLineages(envelope), 1);
+  assert.equal(projectEvidenceEnvelopeToLedger(envelope).Evidence, "supporting source");
+});

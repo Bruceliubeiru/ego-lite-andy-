@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  countIndependentEvidenceLineages,
   projectEvidenceEnvelopeToLedger,
   validateEvidenceEnvelope,
 } from "../../../scripts/evidence-envelope.mjs";
@@ -81,4 +82,62 @@ test("valid text fields still project unchanged into the Claim Ledger", () => {
     Impact: "High",
     "Next action": "none",
   });
+});
+
+test("same-lineage conflicting passages remain inspectable without becoming independent sources", () => {
+  const envelope = makeEnvelope();
+  envelope.status = "Conflicted";
+  envelope.confidence.level = "medium";
+  envelope.next_action = "verify";
+  envelope.evidence[0].lineage_id = "shared-source";
+  envelope.evidence.push({
+    ...envelope.evidence[0],
+    evidence_id: "contradict-1",
+    direction: "contradict",
+    pointer: "conflicting section",
+  });
+  envelope.conflicts = [
+    {
+      evidence_ids: ["support-1", "contradict-1"],
+      issue: "Two passages in one source disagree.",
+      state: "unresolved",
+    },
+  ];
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(countIndependentEvidenceLineages(envelope), 1);
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "supporting source + conflicting section",
+  );
+
+  envelope.evidence.push({
+    ...envelope.evidence[0],
+    evidence_id: "summary-1",
+    pointer: "repeated summary of supporting source",
+  });
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "supporting source + conflicting section",
+    "a same-lineage summary must not inflate the ledger evidence list",
+  );
+});
+
+test("contradictory evidence remains visible before a conflict is classified", () => {
+  const envelope = makeEnvelope();
+  envelope.status = "Needs verification";
+  envelope.confidence.level = "low";
+  envelope.evidence.push({
+    ...envelope.evidence[0],
+    evidence_id: "contradict-1",
+    direction: "contradict",
+    pointer: "unresolved contradictory observation",
+  });
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(countIndependentEvidenceLineages(envelope), 1);
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "supporting source + unresolved contradictory observation",
+  );
 });

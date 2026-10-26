@@ -182,3 +182,22 @@ test("unsupported decision impact fails closed", () => {
   const errors = validateEvidenceEnvelope(envelope);
   assert.ok(errors.includes("decision_impact has unsupported value: Critical"));
 });
+
+test("malformed resolved conflict evidence IDs return validation errors instead of crashing", () => {
+  for (const state of ["resolved", "not_material"]) {
+    for (const evidenceIds of [42, true, { ids: ["e1", "e2"] }, null, "e1,e2"]) {
+      const envelope = envelopeWithConflict(evidenceIds);
+      envelope.status = "Needs verification";
+      envelope.conflicts[0].state = state;
+      envelope.conflicts[0].resolution_basis = "Explicit rationale.";
+
+      const errors = validateEvidenceEnvelope(envelope);
+      assert.ok(
+        errors.includes(
+          "conflicts[0].evidence_ids must contain at least two evidence IDs",
+        ),
+        `expected fail-closed validation for ${state} with ${JSON.stringify(evidenceIds)}; got: ${errors.join("; ")}`,
+      );
+    }
+  }
+});

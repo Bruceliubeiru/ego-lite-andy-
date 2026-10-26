@@ -313,6 +313,7 @@ export function projectEvidenceEnvelopeToLedger(envelope) {
   const seenLineages = new Set();
   const seenSupportingLineages = new Set();
   const seenSubstantiveSupportingLineages = new Set();
+  const seenAvailableSupportingLineages = new Set();
   const seenPointersByLineage = new Map();
   const conflictEvidenceIds = new Set(
     envelope.conflicts.flatMap((conflict) => conflict.evidence_ids),
@@ -324,18 +325,25 @@ export function projectEvidenceEnvelopeToLedger(envelope) {
       item.direction === 'support' &&
       item.authority !== 'navigation_only' &&
       !seenSubstantiveSupportingLineages.has(item.lineage_id);
+    const firstAvailableSupportInLineage =
+      item.direction === 'support' &&
+      item.authority !== 'navigation_only' &&
+      !hasUnavailableAcquisitionProvenance(item) &&
+      !seenAvailableSupportingLineages.has(item.lineage_id);
     seenLineages.add(item.lineage_id);
     if (item.direction === 'support') {
       seenSupportingLineages.add(item.lineage_id);
       if (item.authority !== 'navigation_only') seenSubstantiveSupportingLineages.add(item.lineage_id);
+      if (firstAvailableSupportInLineage) seenAvailableSupportingLineages.add(item.lineage_id);
     }
     // Keep the first support and the first substantive support separately, so a
-    // navigation hint cannot hide the verified source from the same lineage.
+    // navigation hint or unavailable acquisition cannot hide later usable support.
     // Collapse same-source summaries, not distinct contradiction or conflict pointers.
     if (
       !firstInLineage &&
       !firstSupportInLineage &&
       !firstSubstantiveSupportInLineage &&
+      !firstAvailableSupportInLineage &&
       item.direction !== 'contradict' &&
       !conflictEvidenceIds.has(item.evidence_id)
     ) {

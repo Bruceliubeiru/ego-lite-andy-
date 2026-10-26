@@ -71,6 +71,15 @@ function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+// Never invoke untrusted object methods while reporting malformed evidence.
+function diagnosticValue(value) {
+  if (value !== null && typeof value === 'object') {
+    return Array.isArray(value) ? '[array]' : '[object Object]';
+  }
+  if (typeof value === 'function') return '[function]';
+  return String(value);
+}
+
 /**
  * Validate the small set of Evidence Engine semantic invariants that can be
  * checked mechanically without pretending to judge whether external evidence
@@ -87,18 +96,18 @@ export function validateEvidenceEnvelope(envelope) {
   pushMissing(errors, envelope, TOP_LEVEL_REQUIRED, 'envelope');
   if (errors.length) return errors;
 
-  if (envelope.version !== '1.0') errors.push(`unsupported envelope version: ${envelope.version}`);
+  if (envelope.version !== '1.0') errors.push(`unsupported envelope version: ${diagnosticValue(envelope.version)}`);
   if (!isNonEmptyString(envelope.claim_id)) errors.push('claim_id must be a non-empty string');
   if (!isNonEmptyString(envelope.claim)) errors.push('claim must be a non-empty string');
   if (!isNonEmptyString(envelope.next_action)) errors.push('next_action must be a non-empty string');
   if (!CLAIM_KINDS.has(envelope.claim_kind)) {
-    errors.push(`claim_kind has unsupported value: ${envelope.claim_kind}`);
+    errors.push(`claim_kind has unsupported value: ${diagnosticValue(envelope.claim_kind)}`);
   }
   if (!CLAIM_STATUSES.has(envelope.status)) {
-    errors.push(`status has unsupported value: ${envelope.status}`);
+    errors.push(`status has unsupported value: ${diagnosticValue(envelope.status)}`);
   }
   if (!DECISION_IMPACTS.has(envelope.decision_impact)) {
-    errors.push(`decision_impact has unsupported value: ${envelope.decision_impact}`);
+    errors.push(`decision_impact has unsupported value: ${diagnosticValue(envelope.decision_impact)}`);
   }
   if (!envelope.scope || typeof envelope.scope !== 'object' || Array.isArray(envelope.scope)) {
     errors.push('scope must be an object');
@@ -109,7 +118,7 @@ export function validateEvidenceEnvelope(envelope) {
     errors.push('confidence must be an object');
   } else {
     if (!CONFIDENCE_LEVELS.has(envelope.confidence.level)) {
-      errors.push(`confidence.level has unsupported value: ${envelope.confidence.level}`);
+      errors.push(`confidence.level has unsupported value: ${diagnosticValue(envelope.confidence.level)}`);
     }
     if (!isNonEmptyString(envelope.confidence.reason)) {
       errors.push('confidence.reason must be a non-empty string');
@@ -136,7 +145,7 @@ export function validateEvidenceEnvelope(envelope) {
     if (!isNonEmptyString(item.evidence_id)) {
       errors.push(`${prefix}.evidence_id must be a non-empty string`);
     } else if (evidenceIds.has(item.evidence_id)) {
-      errors.push(`duplicate evidence_id: ${item.evidence_id}`);
+      errors.push(`duplicate evidence_id: ${diagnosticValue(item.evidence_id)}`);
     } else {
       evidenceIds.add(item.evidence_id);
     }
@@ -150,7 +159,7 @@ export function validateEvidenceEnvelope(envelope) {
     }
 
     if (!EVIDENCE_DIRECTIONS.has(item.direction)) {
-      errors.push(`${prefix}.direction has unsupported value: ${item.direction}`);
+      errors.push(`${prefix}.direction has unsupported value: ${diagnosticValue(item.direction)}`);
     }
     if (item.direction === 'support') supportingEvidence += 1;
     if (item.direction === 'contradict' && isNonEmptyString(item.evidence_id)) {
@@ -165,7 +174,7 @@ export function validateEvidenceEnvelope(envelope) {
     ];
     for (const [field, allowedValues] of boundedAssessmentFields) {
       if (!allowedValues.has(item[field])) {
-        errors.push(`${prefix}.${field} has unsupported value: ${item[field]}`);
+        errors.push(`${prefix}.${field} has unsupported value: ${diagnosticValue(item[field])}`);
       }
     }
 
@@ -175,14 +184,14 @@ export function validateEvidenceEnvelope(envelope) {
       if (!hasOwn(item.provenance, 'quality')) {
         errors.push(`${prefix}.provenance missing required field: quality`);
       } else if (!PROVENANCE_QUALITIES.has(item.provenance.quality)) {
-        errors.push(`${prefix}.provenance.quality has unsupported value: ${item.provenance.quality}`);
+        errors.push(`${prefix}.provenance.quality has unsupported value: ${diagnosticValue(item.provenance.quality)}`);
       }
       if (!isNonEmptyString(item.provenance.source_identity)) {
         errors.push(`${prefix}.provenance.source_identity must be a non-empty string`);
       }
       for (const [field, allowedValues] of Object.entries(PROVENANCE_ENUMS)) {
         if (hasOwn(item.provenance, field) && !allowedValues.has(item.provenance[field])) {
-          errors.push(`${prefix}.provenance.${field} has unsupported value: ${item.provenance[field]}`);
+          errors.push(`${prefix}.provenance.${field} has unsupported value: ${diagnosticValue(item.provenance[field])}`);
         }
       }
     }
@@ -216,21 +225,21 @@ export function validateEvidenceEnvelope(envelope) {
       }
       for (const evidenceId of conflict.evidence_ids) {
         if (!evidenceIds.has(evidenceId)) {
-          errors.push(`${prefix} references unknown evidence_id: ${evidenceId}`);
+          errors.push(`${prefix} references unknown evidence_id: ${diagnosticValue(evidenceId)}`);
         }
       }
     }
 
     if (!isNonEmptyString(conflict.issue)) errors.push(`${prefix}.issue must be a non-empty string`);
     if (!CONFLICT_STATES.has(conflict.state)) {
-      errors.push(`${prefix}.state has unsupported value: ${conflict.state}`);
+      errors.push(`${prefix}.state has unsupported value: ${diagnosticValue(conflict.state)}`);
     }
     if (conflict.state === 'unresolved') unresolvedConflicts += 1;
     if (
       (conflict.state === 'resolved' || conflict.state === 'not_material') &&
       !isNonEmptyString(conflict.resolution_basis)
     ) {
-      errors.push(`${prefix} ${conflict.state} conflict requires a non-empty string resolution_basis`);
+      errors.push(`${prefix} ${diagnosticValue(conflict.state)} conflict requires a non-empty string resolution_basis`);
     }
     if (conflict.state === 'resolved' || conflict.state === 'not_material') {
       for (const evidenceId of Array.isArray(conflict.evidence_ids) ? conflict.evidence_ids : []) {
@@ -246,7 +255,7 @@ export function validateEvidenceEnvelope(envelope) {
     if (unresolvedConflicts > 0) errors.push('Confirmed claim cannot retain an unresolved material conflict');
     for (const evidenceId of contradictingEvidenceIds) {
       if (!dispositionedContradictions.has(evidenceId)) {
-        errors.push(`Confirmed claim has undispositioned contradictory evidence: ${evidenceId}`);
+        errors.push(`Confirmed claim has undispositioned contradictory evidence: ${diagnosticValue(evidenceId)}`);
       }
     }
   }

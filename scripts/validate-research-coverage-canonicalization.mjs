@@ -275,28 +275,34 @@ assert.deepEqual(
 );
 assert.deepEqual(
   deriveMaterialReopenAuthorizations({
-    evidence: [{
-      ...realizedScopeReceipt,
-      before: { revision: Number.MAX_SAFE_INTEGER, scope_status: 'partial' },
-      after: { revision: unsafeRevision, scope_status: 'resolved' },
-    }],
+    evidence: [
+      {
+        ...realizedScopeReceipt,
+        before: { revision: Number.MAX_SAFE_INTEGER, scope_status: 'partial' },
+        after: { revision: unsafeRevision, scope_status: 'resolved' },
+      },
+    ],
   }),
   [],
   'an unsafe post-revision must not authorize a reopen',
 );
 assert.deepEqual(
   deriveMaterialReopenAuthorizations({
-    evidence: [{
-      ...realizedScopeReceipt,
-      before: { revision: Number.MAX_SAFE_INTEGER - 1, scope_status: 'partial' },
-      after: { revision: Number.MAX_SAFE_INTEGER, scope_status: 'resolved' },
-    }],
+    evidence: [
+      {
+        ...realizedScopeReceipt,
+        before: { revision: Number.MAX_SAFE_INTEGER - 1, scope_status: 'partial' },
+        after: { revision: Number.MAX_SAFE_INTEGER, scope_status: 'resolved' },
+      },
+    ],
   }),
-  [{
-    coverage_key: 'official-policy:effective-date',
-    transition_key: `official-policy:effective-date@${Number.MAX_SAFE_INTEGER - 1}->${Number.MAX_SAFE_INTEGER}`,
-    after_revision: Number.MAX_SAFE_INTEGER,
-  }],
+  [
+    {
+      coverage_key: 'official-policy:effective-date',
+      transition_key: `official-policy:effective-date@${Number.MAX_SAFE_INTEGER - 1}->${Number.MAX_SAFE_INTEGER}`,
+      after_revision: Number.MAX_SAFE_INTEGER,
+    },
+  ],
   'the last exactly representable one-step revision remains valid',
 );
 

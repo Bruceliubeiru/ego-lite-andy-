@@ -123,12 +123,20 @@ function hasResolvedConflictDelta(before, after) {
     (conflict) => conflict.state === 'resolved' || conflict.state === 'not_material',
   );
   const usedDispositions = new Set();
+  const previousEvidenceById = new Map(previous.evidence.map((item) => [item.evidence_id, item]));
   for (const prior of unresolvedBefore) {
+    // Retain every original contradictory source in the disposition trail.
+    // Sharing only a support ID cannot document a withdrawn contradiction.
+    const priorContradictions = prior.evidence_ids.filter(
+      (id) => previousEvidenceById.get(id)?.direction === 'contradict',
+    );
     const match = resolvedAfter.findIndex(
       (candidate, index) =>
         !usedDispositions.has(index) &&
         candidate.issue === prior.issue &&
-        candidate.evidence_ids.some((id) => prior.evidence_ids.includes(id)),
+        (priorContradictions.length > 0
+          ? priorContradictions.every((id) => candidate.evidence_ids.includes(id))
+          : candidate.evidence_ids.some((id) => prior.evidence_ids.includes(id))),
     );
     if (match === -1) return false;
     usedDispositions.add(match);

@@ -388,3 +388,94 @@ test("source alias deduplication does not erase a contradictory pointer", () => 
     "supporting passage + contradictory passage",
   );
 });
+
+
+test("unavailable source is not projected as acquired support beside a verified source", () => {
+  const envelope = makeEnvelope();
+  envelope.evidence.unshift({
+    ...envelope.evidence[0],
+    evidence_id: "failed-support",
+    pointer: "provider read that failed",
+    lineage_id: "failed-lineage",
+    source_class: "secondary",
+    authority: "secondary",
+    provenance: {
+      quality: "verified",
+      source_identity: "failed source",
+      provider_execution: "failed",
+    },
+    limitations: ["Source acquisition failed."],
+  });
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "supporting source",
+    "failed acquisition must not masquerade as a second supporting source",
+  );
+});
+
+test("unavailable same-lineage source cannot hide later acquired support", () => {
+  const envelope = makeEnvelope();
+  envelope.evidence.unshift({
+    ...envelope.evidence[0],
+    evidence_id: "failed-first",
+    pointer: "failed attempt",
+    source_class: "secondary",
+    authority: "secondary",
+    provenance: {
+      quality: "verified",
+      source_identity: "earlier attempt",
+      provider_execution: "configured_only",
+    },
+    limitations: ["No provider read executed."],
+  });
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(projectEvidenceEnvelopeToLedger(envelope).Evidence, "supporting source");
+});
+
+test("unavailable contradiction is not projected as negative evidence, but explicit context remains", () => {
+  const envelope = makeEnvelope();
+  envelope.evidence.unshift({
+    ...envelope.evidence[0],
+    evidence_id: "unavailable-contradiction",
+    direction: "contradict",
+    pointer: "unavailable contrary read",
+    lineage_id: "contrary-lineage",
+    source_class: "independent_authoritative",
+    authority: "authoritative_secondary",
+    provenance: {
+      quality: "verified",
+      source_identity: "unavailable source",
+      provider_execution: "skipped",
+    },
+    limitations: ["No read executed."],
+  });
+  envelope.evidence.unshift({
+    ...envelope.evidence[0],
+    evidence_id: "contextual-failure",
+    direction: "context",
+    pointer: "provider limitation (context)",
+    lineage_id: "context-lineage",
+  });
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "provider limitation (context) + supporting source",
+  );
+});
+
+test("user-provided material is not suppressed by unrelated inherited provider metadata", () => {
+  const envelope = makeEnvelope();
+  envelope.evidence[0].source_class = "user_supplied";
+  envelope.evidence[0].provenance = {
+    quality: "verified",
+    source_identity: "direct user document",
+    provider_execution: "failed",
+  };
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.equal(projectEvidenceEnvelopeToLedger(envelope).Evidence, "supporting source");
+});

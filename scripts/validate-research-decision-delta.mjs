@@ -391,6 +391,49 @@ const replacementDelta = (before, after) => evaluateDecisionDelta({
 }).realized;
 assert.equal(replacementDelta(beforeReplacement, afterReplacement), true,
   'a newly acquired independent lineage is not hidden by an unchanged total count');
+
+// A transitive alias bridge links the old source to a newly named source:
+// A(L1,S1) -- B(L1,S2) -- C(L2,S2). Neither source reordering nor
+// renaming C can manufacture a second independent lineage.
+const bridgeBefore = structuredClone(emptyEnvelope);
+bridgeBefore.evidence = [
+  lineageItem('bridge-old', 'bridge-lineage-a', 'first_party_public', 'primary',
+    { source_identity: 'bridge-source-a' }),
+];
+const bridgeAfter = structuredClone(bridgeBefore);
+bridgeAfter.evidence.push(
+  lineageItem('bridge-alias', 'bridge-lineage-a', 'first_party_public', 'primary',
+    { source_identity: 'bridge-source-b' }),
+  lineageItem('bridge-rekey', 'bridge-lineage-b', 'first_party_public', 'primary',
+    { source_identity: 'bridge-source-b' }),
+);
+assert.deepEqual(validateEvidenceEnvelope(bridgeAfter), []);
+for (const order of [
+  bridgeAfter.evidence,
+  [bridgeAfter.evidence[1], bridgeAfter.evidence[0], bridgeAfter.evidence[2]],
+  [...bridgeAfter.evidence].reverse(),
+]) {
+  const reordered = { ...bridgeAfter, evidence: order };
+  assert.equal(countDecisionRelevantEvidenceLineages(reordered), 1,
+    'transitively linked sources count once regardless of evidence order');
+  assert.equal(replacementDelta(bridgeBefore, reordered), false,
+    'an alias bridge to prior evidence cannot be treated as new independent progress');
+}
+const bridgePlusIndependent = structuredClone(bridgeAfter);
+bridgePlusIndependent.evidence.push(
+  lineageItem('bridge-independent', 'bridge-lineage-c', 'first_party_public', 'primary',
+    { source_identity: 'bridge-source-c' }),
+);
+assert.equal(countDecisionRelevantEvidenceLineages(bridgePlusIndependent), 2);
+assert.equal(replacementDelta(bridgeBefore, bridgePlusIndependent), true,
+  'a genuinely distinct source still establishes independent progress');
+const failedBridge = structuredClone(bridgeAfter);
+failedBridge.evidence[1].provenance.provider_execution = 'failed';
+assert.deepEqual(validateEvidenceEnvelope(failedBridge), []);
+assert.equal(countDecisionRelevantEvidenceLineages(failedBridge), 2,
+  'failed acquisitions cannot bridge two independently acquired sources');
+assert.equal(replacementDelta(bridgeBefore, failedBridge), true,
+  'a failed alias acquisition must not hide a distinct acquired source');
 const reorderedExisting = structuredClone(beforeReplacement);
 reorderedExisting.evidence.reverse();
 assert.equal(replacementDelta(beforeReplacement, reorderedExisting), false,

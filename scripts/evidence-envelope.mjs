@@ -425,17 +425,53 @@ export function decisionRelevantEvidenceSourceKey(item) {
   ]);
 }
 
-export function decisionRelevantEvidenceLineageIds(envelope) {
-  const lineages = new Set();
-  const sources = new Set();
-  for (const item of Array.isArray(envelope?.evidence) ? envelope.evidence : []) {
-    if (!isDecisionRelevantEvidenceItem(item)) continue;
-    const source = decisionRelevantEvidenceSourceKey(item);
-    if (lineages.has(item.lineage_id) || sources.has(source)) continue;
-    lineages.add(item.lineage_id);
-    sources.add(source);
+// A source can be linked to another by either its declared lineage or its
+// bounded provenance identity. Resolve transitive links before counting:
+// greedy first-seen deduplication changes its answer when evidence is reordered.
+export function groupDecisionRelevantEvidenceItems(envelope) {
+  const items = (Array.isArray(envelope?.evidence) ? envelope.evidence : [])
+    .filter(isDecisionRelevantEvidenceItem);
+  const parent = new Map();
+  const size = new Map();
+  const find = (key) => {
+    if (!parent.has(key)) {
+      parent.set(key, key);
+      size.set(key, 1);
+    }
+    let root = key;
+    while (parent.get(root) !== root) root = parent.get(root);
+    while (parent.get(key) !== key) {
+      const next = parent.get(key);
+      parent.set(key, root);
+      key = next;
+    }
+    return root;
+  };
+  const union = (left, right) => {
+    let a = find(left);
+    let b = find(right);
+    if (a === b) return;
+    if (size.get(a) < size.get(b)) [a, b] = [b, a];
+    parent.set(b, a);
+    size.set(a, size.get(a) + size.get(b));
+  };
+  const lineageKey = (item) => JSON.stringify(['lineage', item.lineage_id]);
+  for (const item of items) {
+    union(lineageKey(item), JSON.stringify(['source', decisionRelevantEvidenceSourceKey(item)]));
   }
-  return [...lineages];
+  const groups = new Map();
+  for (const item of items) {
+    const root = find(lineageKey(item));
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root).push(item);
+  }
+  return [...groups.values()];
+}
+
+export function decisionRelevantEvidenceLineageIds(envelope) {
+  return groupDecisionRelevantEvidenceItems(envelope)
+    .map((group) => group.map((item) => item.lineage_id).sort()[0])
+    .sort();
 }
 
 export function countDecisionRelevantEvidenceLineages(envelope) {

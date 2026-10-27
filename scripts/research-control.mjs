@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
-import { decisionRelevantEvidenceSourceKey, isDecisionRelevantEvidenceItem, validateEvidenceEnvelope } from './evidence-envelope.mjs';
+import { decisionRelevantEvidenceSourceKey, groupDecisionRelevantEvidenceItems, isDecisionRelevantEvidenceItem, validateEvidenceEnvelope } from './evidence-envelope.mjs';
 
 const DECISION_RELEVANCE = { none: 0, material: 1, decisive: 2 };
 const SCOPE_FIT = { wrong: 0, partial: 1, exact: 2 };
@@ -173,11 +173,14 @@ function hasIndependentLineageDelta(before, after) {
     const previousLineages = new Set(previousItems.map((item) => item.lineage_id));
     const previousSources = new Set(previousItems.map(decisionRelevantEvidenceSourceKey));
     const previousEvidenceIds = new Set(previousItems.map((item) => item.evidence_id));
-    return current.evidence.some((item) =>
-      isDecisionRelevantEvidenceItem(item) &&
-      !previousLineages.has(item.lineage_id) &&
-      !previousSources.has(decisionRelevantEvidenceSourceKey(item)) &&
-      !previousEvidenceIds.has(item.evidence_id)
+    // A new label is not an independent source if another current item
+    // bridges it to a previously acquired lineage or source identity.
+    return groupDecisionRelevantEvidenceItems(current).some((group) =>
+      group.every((item) =>
+        !previousLineages.has(item.lineage_id) &&
+        !previousSources.has(decisionRelevantEvidenceSourceKey(item)) &&
+        !previousEvidenceIds.has(item.evidence_id)
+      )
     );
   }
   // Legacy count-only receipts remain supported but do not prove provenance.

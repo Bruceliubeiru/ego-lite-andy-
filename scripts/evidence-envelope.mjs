@@ -72,6 +72,11 @@ function hasUnavailableAcquisitionProvenance(item) {
       UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution)
     );
   }
+  if (item.source_class === 'first_party_public') {
+    // A failed public-page read is not evidence, but provider status is not a
+    // universal field: user-supplied evidence may carry irrelevant old metadata.
+    return UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution);
+  }
   return false;
 }
 
@@ -188,7 +193,13 @@ export function validateEvidenceEnvelope(envelope) {
         if (!hasUnavailableAcquisitionProvenance(item)) availableSupportingEvidence += 1;
       }
     }
-    if (item.direction === 'contradict' && isNonEmptyString(item.evidence_id)) {
+    // An unavailable read cannot establish negative or conflicting evidence.
+    // Explicit unresolved conflict records remain independently blocking.
+    if (
+      item.direction === 'contradict' &&
+      isNonEmptyString(item.evidence_id) &&
+      !hasUnavailableAcquisitionProvenance(item)
+    ) {
       contradictingEvidenceIds.add(item.evidence_id);
     }
 

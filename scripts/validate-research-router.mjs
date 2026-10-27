@@ -326,6 +326,57 @@ for (const [sourceClass, failedProvenance, recoveredProvenance] of [
   );
 }
 
+// A failed acquisition cannot contradict a confirmed claim, even if a stale
+// emitter labels the unavailable record as 'contradict'. The same exact source
+// after a successful read must still trigger the existing Conflict gate.
+for (const [sourceClass, unavailableProvenance, availableProvenance] of [
+  ['connector_or_api', { provider_execution: 'failed' }, { provider_execution: 'read_executed' }],
+  ['first_party_authenticated', { auth_state: 'blocked' }, { auth_state: 'confirmed' }],
+  ['first_party_public', { provider_execution: 'failed' }, {}],
+]) {
+  const envelope = structuredClone(evidenceEnvelopeFixtures.valid[0].envelope);
+  envelope.evidence.push({
+    ...envelope.evidence[0],
+    evidence_id: 'unavailable-contradiction',
+    direction: 'contradict',
+    pointer: 'unavailable read',
+    lineage_id: 'separate-source',
+    source_class: sourceClass,
+    provenance: { quality: 'unknown', source_identity: 'separate source', ...unavailableProvenance },
+    limitations: ['Read unavailable.'],
+  });
+  assert.deepEqual(
+    validateEvidenceEnvelope(envelope),
+    [],
+    `${sourceClass}: unavailable read cannot veto otherwise confirmed evidence`,
+  );
+  envelope.evidence[1].provenance = {
+    quality: 'verified', source_identity: 'separate source', ...availableProvenance,
+  };
+  assert.ok(
+    validateEvidenceEnvelope(envelope).some((error) => error.includes('undispositioned contradictory evidence')),
+    `${sourceClass}: actual contradiction must still be dispositioned`,
+  );
+  envelope.evidence[1].provenance = {
+    quality: 'unknown', source_identity: 'separate source', ...unavailableProvenance,
+  };
+  envelope.conflicts = [{
+    evidence_ids: [envelope.evidence[0].evidence_id, 'unavailable-contradiction'],
+    issue: 'Explicitly unresolved issue',
+    state: 'unresolved',
+  }];
+  assert.ok(
+    validateEvidenceEnvelope(envelope).some((error) => error.includes('unresolved material conflict')),
+    `${sourceClass}: an explicit unresolved conflict must remain blocking`,
+  );
+}
+const failedPublicSupport = structuredClone(evidenceEnvelopeFixtures.valid[0].envelope);
+failedPublicSupport.evidence[0].provenance.provider_execution = 'failed';
+assert.ok(
+  validateEvidenceEnvelope(failedPublicSupport).some((error) => error.includes('unavailable acquisition support')),
+  'explicitly failed public-page acquisition must not confirm a claim',
+);
+
 assert.equal(
   countIndependentEvidenceLineages(
     evidenceEnvelopeFixtures.lineage.envelope,

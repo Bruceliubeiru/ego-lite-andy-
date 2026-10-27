@@ -62,7 +62,7 @@ Set up ego lite for me: https://github.com/citrolabs/ego-lite
 Read `skills/ego-browser/references/install.md` and follow the steps to install ego lite.
 ```
 
-On first launch, ego lite asks one question, whether to migrate your Chrome data. Say yes and your agent inherits your existing logins, cookies, extensions, and bookmarks.
+On first launch, ego lite may offer to import data from Chrome or another browser. **Import is optional.** Review the specific profile and data categories before deciding; for a bounded research task, prefer signing in directly to only the needed sites. Do not import or export unrelated browser profiles, cookies, credentials, tokens, or browsing history merely to establish research provenance.
 
 ### 2. Run your first task
 

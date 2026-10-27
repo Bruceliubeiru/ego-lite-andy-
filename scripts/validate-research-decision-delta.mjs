@@ -83,6 +83,67 @@ const emptyEnvelope = structuredClone(envelopeFixture);
 emptyEnvelope.status = 'Needs verification';
 emptyEnvelope.confidence = { level: 'low', reason: 'No acquired evidence' };
 emptyEnvelope.evidence = [];
+
+  
+// A status downgrade is not conflict resolution while an explicit material
+// conflict persists. Evidence-backed receipts must agree on claim and scope.
+const conflictedEnvelope = structuredClone(envelopeFixture);
+conflictedEnvelope.status = 'Conflicted';
+conflictedEnvelope.confidence = { level: 'medium', reason: 'Independent material contradiction is unresolved.' };
+conflictedEnvelope.evidence.push({
+  ...conflictedEnvelope.evidence[0],
+  evidence_id: 'conflict-counter',
+  direction: 'contradict',
+  pointer: 'independent contradictory observation',
+  lineage_id: 'conflict-counter-lineage',
+});
+conflictedEnvelope.conflicts = [{
+  evidence_ids: ['e1', 'conflict-counter'],
+  issue: 'Material contradiction about the same scoped claim.',
+  state: 'unresolved',
+}];
+const stillConflicted = structuredClone(conflictedEnvelope);
+stillConflicted.status = 'Needs verification';
+const resolvedConflict = structuredClone(stillConflicted);
+resolvedConflict.conflicts[0].state = 'resolved';
+resolvedConflict.conflicts[0].resolution_basis = 'Independent verification resolved the contradiction.';
+const silentlyDroppedConflict = structuredClone(stillConflicted);
+silentlyDroppedConflict.conflicts = [];
+const withdrawnContradiction = structuredClone(silentlyDroppedConflict);
+withdrawnContradiction.evidence = withdrawnContradiction.evidence.filter((item) => item.direction !== 'contradict');
+const wrongScopeResolution = structuredClone(resolvedConflict);
+wrongScopeResolution.scope = { runtime_version: 'different' };
+for (const [label, envelope] of [
+  ['original unresolved', conflictedEnvelope],
+  ['unresolved after status downgrade', stillConflicted],
+  ['resolved with basis', resolvedConflict],
+  ['conflict record silently removed', silentlyDroppedConflict],
+  ['contradiction withdrawn', withdrawnContradiction],
+  ['different claim scope', wrongScopeResolution],
+]) {
+  assert.deepEqual(validateEvidenceEnvelope(envelope), [], label);
+}
+const conflictDelta = (before, after) => evaluateDecisionDelta({
+  action: { expected_delta: 'resolve_conflict' },
+  before,
+  after,
+  observation: { status: 'completed' },
+}).realized;
+const conflictBefore = { claim_status: 'Conflicted', evidence_envelope: conflictedEnvelope };
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: stillConflicted }), false,
+  'downgrading claim status must not hide an unresolved material conflict');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: silentlyDroppedConflict }), false,
+  'silently deleting a conflict record while retaining its contradiction is not resolution');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: resolvedConflict }), true,
+  'a dispositioned conflict can be resolved even if other uncertainty remains');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: withdrawnContradiction }), true,
+  'removing a discredited contradictory observation can resolve the conflict');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: wrongScopeResolution }), false,
+  'a different claim scope cannot resolve the original conflict');
+assert.equal(conflictDelta({ claim_status: 'Conflicted' }, { claim_status: 'Needs verification', evidence_envelope: resolvedConflict }), false,
+  'one-sided Envelope state must not silently fall back to a status-only receipt');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Confirmed', evidence_envelope: resolvedConflict }), false,
+  'a claim status inconsistent with its Envelope cannot establish resolution');
 const lineageItem = (id, lineageId, sourceClass, authority, provenance, direction = 'support') => ({
   ...envelopeFixture.evidence[0],
   evidence_id: id,

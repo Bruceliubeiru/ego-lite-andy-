@@ -81,9 +81,10 @@ function hasUnavailableAcquisitionProvenance(item) {
       UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution)
     );
   }
-  if (item.source_class === 'first_party_public') {
-    // A failed public-page read is not evidence, but provider status is not a
-    // universal field: user-supplied evidence may carry irrelevant old metadata.
+  if (['first_party_public', 'independent_authoritative', 'secondary', 'community'].includes(item.source_class)) {
+    // A failed source acquisition is not evidence regardless of the source's
+    // authority. Provider status is not universal: user-supplied material may
+    // carry unrelated old provider metadata and must not be rejected for it.
     return UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution);
   }
   return false;

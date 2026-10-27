@@ -410,10 +410,30 @@ export function isDecisionRelevantEvidenceItem(item) {
   );
 }
 
+// Deduplicate on bounded source identity as well as declared lineage. Re-keying
+// the same acquired document/account cannot manufacture an independent source.
+// These markers are assertions, not independent proof of external provenance.
+export function decisionRelevantEvidenceSourceKey(item) {
+  const provenance = item.provenance ?? {};
+  const marker = (key) => typeof provenance[key] === 'string' ? provenance[key].trim() : '';
+  const page = marker('page_url');
+  return JSON.stringify([
+    page ? 'page' : 'identity',
+    page || marker('source_identity'),
+    marker('document_marker'),
+    marker('account_marker'),
+  ]);
+}
+
 export function decisionRelevantEvidenceLineageIds(envelope) {
   const lineages = new Set();
+  const sources = new Set();
   for (const item of Array.isArray(envelope?.evidence) ? envelope.evidence : []) {
-    if (isDecisionRelevantEvidenceItem(item)) lineages.add(item.lineage_id);
+    if (!isDecisionRelevantEvidenceItem(item)) continue;
+    const source = decisionRelevantEvidenceSourceKey(item);
+    if (lineages.has(item.lineage_id) || sources.has(source)) continue;
+    lineages.add(item.lineage_id);
+    sources.add(source);
   }
   return [...lineages];
 }

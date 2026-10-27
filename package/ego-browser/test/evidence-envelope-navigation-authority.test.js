@@ -139,6 +139,16 @@ test("successful connector reads and unrelated user-supplied evidence remain usa
 
   const userSupplied = makeConnectorEnvelope();
   userSupplied.evidence[0].source_class = "user_supplied";
+  // The provider failure marker is unrelated to this directly observed file.
+  // The origin is only partially established, not verified by the connector.
+  userSupplied.evidence[0].provenance = {
+    quality: "partial",
+    source_identity: "directly inspected user-provided file",
+    provider_execution: "failed",
+  };
+  userSupplied.evidence[0].limitations = [
+    "The file's external origin has not been independently verified.",
+  ];
   assert.deepEqual(validateEvidenceEnvelope(userSupplied), []);
 });
 

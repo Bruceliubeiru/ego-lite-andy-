@@ -61,16 +61,16 @@ const UNAVAILABLE_PROVIDER_EXECUTIONS = new Set(['configured_only', 'skipped', '
 function hasUnavailableAcquisitionProvenance(item) {
   const provenance = item.provenance;
   if (!provenance || typeof provenance !== 'object' || Array.isArray(provenance)) return false;
+  // An explicit failed/skipped/unexecuted acquisition is not factual evidence,
+  // regardless of source class or whether it supports or contradicts a claim.
+  if (UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution)) return true;
   if (item.source_class === 'connector_or_api') {
     // Confirmation needs positive execution provenance, not merely the absence of failure.
     return provenance.provider_execution !== 'read_executed';
   }
   if (item.source_class === 'first_party_authenticated') {
     // An unknown auth state is not proof that the target authenticated page was read.
-    return (
-      provenance.auth_state !== 'confirmed' ||
-      UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution)
-    );
+    return provenance.auth_state !== 'confirmed';
   }
   return false;
 }
@@ -188,7 +188,13 @@ export function validateEvidenceEnvelope(envelope) {
         if (!hasUnavailableAcquisitionProvenance(item)) availableSupportingEvidence += 1;
       }
     }
-    if (item.direction === 'contradict' && isNonEmptyString(item.evidence_id)) {
+    // An unavailable read cannot establish negative or conflicting evidence.
+    // Explicit unresolved conflict records remain independently blocking.
+    if (
+      item.direction === 'contradict' &&
+      isNonEmptyString(item.evidence_id) &&
+      !hasUnavailableAcquisitionProvenance(item)
+    ) {
       contradictingEvidenceIds.add(item.evidence_id);
     }
 

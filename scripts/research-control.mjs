@@ -111,10 +111,28 @@ function hasResolvedConflictDelta(before, after) {
     previous.status !== before.claim_status ||
     current.status !== after.claim_status
   ) return false;
+  const unresolvedBefore = previous.conflicts.filter((conflict) => conflict.state === 'unresolved');
   if (
-    !previous.conflicts.some((conflict) => conflict.state === 'unresolved') ||
+    unresolvedBefore.length === 0 ||
     current.conflicts.some((conflict) => conflict.state === 'unresolved')
   ) return false;
+  // Dropping the old conflict and its evidence is not a verified resolution.
+  // Require an explicit, traceable disposition for *each* prior conflict.
+  // One new disposition cannot silently clear multiple old conflicts.
+  const resolvedAfter = current.conflicts.filter(
+    (conflict) => conflict.state === 'resolved' || conflict.state === 'not_material',
+  );
+  const usedDispositions = new Set();
+  for (const prior of unresolvedBefore) {
+    const match = resolvedAfter.findIndex(
+      (candidate, index) =>
+        !usedDispositions.has(index) &&
+        candidate.issue === prior.issue &&
+        candidate.evidence_ids.some((id) => prior.evidence_ids.includes(id)),
+    );
+    if (match === -1) return false;
+    usedDispositions.add(match);
+  }
   // A still-acquired contradiction requires an explicit disposition, even
   // when its local evidence ID changes between independent snapshots.
   const dispositionedIds = new Set(

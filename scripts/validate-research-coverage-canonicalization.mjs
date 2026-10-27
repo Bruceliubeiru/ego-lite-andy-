@@ -306,4 +306,29 @@ assert.deepEqual(
   'the last exactly representable one-step revision remains valid',
 );
 
+
+// A completed-looking receipt must not mark coverage when the selector did
+// not authorize that read. This is separate from transition consumption.
+for (const [label, selection, action] of [
+  ['mismatched action', { mode: 'execute', action_id: 'different-read' }, baseAction],
+  ['stopped selector', { mode: 'stop', action_id: null }, baseAction],
+  ['write-class action', { mode: 'execute', action_id: baseAction.id }, { ...baseAction, risk: 'write' }],
+]) {
+  const state = updateResearchRunState({
+    state: { completed_coverage_keys: [] },
+    selection,
+    action: { ...action, coverage_key: 'unread-policy:scope' },
+    outcome: { status: 'completed', material_state_observed: true },
+  });
+  assert.deepEqual(state.completed_coverage_keys, [], `${label} must not manufacture completed read coverage`);
+}
+const selectedReadCoverage = updateResearchRunState({
+  state: { completed_coverage_keys: [] },
+  selection: { mode: 'execute', action_id: baseAction.id },
+  action: { ...baseAction, coverage_key: 'read-policy:scope' },
+  outcome: { status: 'completed', material_state_observed: true },
+});
+assert.deepEqual(selectedReadCoverage.completed_coverage_keys, ['read-policy:scope'],
+  'a genuinely selected, completed, read-only observation must still complete coverage');
+
 console.log('research replay-safe coverage authorization and action metadata validation passed');

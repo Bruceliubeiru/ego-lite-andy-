@@ -163,6 +163,8 @@ export function normalizeEvidenceObservation(observation) {
   const resultEmpty = optionalBoolean(observation.result_empty, 'result_empty') ?? false;
   const enumerationComplete =
     optionalBoolean(observation.enumeration_complete, 'enumeration_complete') ?? false;
+  const enumerationScopeMatchesClaim =
+    optionalBoolean(observation.enumeration_scope_matches_claim, 'enumeration_scope_matches_claim') ?? false;
 
   if (!['support', 'contradict', 'context'].includes(direction)) {
     throw new Error(`unsupported direction: ${direction}`);
@@ -181,6 +183,13 @@ export function normalizeEvidenceObservation(observation) {
   if (resultEmpty && direction !== 'context' && !enumerationComplete) {
     throw new Error(
       'empty result cannot support or contradict a claim without enumeration_complete=true',
+    );
+  }
+  // Completeness in the wrong account/region/time window cannot prove absence
+  // for the claim being evaluated. The emitter must establish exact scope fit.
+  if (resultEmpty && direction !== 'context' && !enumerationScopeMatchesClaim) {
+    throw new Error(
+      'empty result cannot support or contradict a claim without enumeration_scope_matches_claim=true',
     );
   }
 

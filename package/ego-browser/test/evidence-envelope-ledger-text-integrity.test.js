@@ -281,35 +281,75 @@ test("transitive acquired-source aliases project once despite lineage rekeys", (
   const envelope = makeEnvelope();
   const base = envelope.evidence[0];
   envelope.evidence = [
-    { ...base, evidence_id: "original", lineage_id: "L1", pointer: "official original",
-      provenance: { quality: "verified", source_identity: "source A" } },
-    { ...base, evidence_id: "alias", lineage_id: "L1", pointer: "alias summary",
-      provenance: { quality: "verified", source_identity: "source B" } },
-    { ...base, evidence_id: "rekey", lineage_id: "L2", pointer: "rekeyed summary",
-      provenance: { quality: "verified", source_identity: "source B" } },
+    {
+      ...base,
+      evidence_id: "original",
+      lineage_id: "L1",
+      pointer: "official original",
+      provenance: { quality: "verified", source_identity: "source A" },
+    },
+    {
+      ...base,
+      evidence_id: "alias",
+      lineage_id: "L1",
+      pointer: "alias summary",
+      provenance: { quality: "verified", source_identity: "source B" },
+    },
+    {
+      ...base,
+      evidence_id: "rekey",
+      lineage_id: "L2",
+      pointer: "rekeyed summary",
+      provenance: { quality: "verified", source_identity: "source B" },
+    },
   ];
 
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
-  assert.equal(projectEvidenceEnvelopeToLedger(envelope).Evidence, "official original");
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "official original",
+  );
   envelope.evidence.reverse();
-  assert.equal(projectEvidenceEnvelopeToLedger(envelope).Evidence, "rekeyed summary",
-    "reordering can change which pointer is shown but must not inflate the source count");
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "rekeyed summary",
+    "reordering can change which pointer is shown but must not inflate the source count",
+  );
 });
 
 test("different verified document pages remain separate ledger evidence", () => {
   const envelope = makeEnvelope();
   const base = envelope.evidence[0];
   envelope.evidence = [
-    { ...base, evidence_id: "page-a", lineage_id: "L1", pointer: "page A",
-      provenance: { quality: "verified", source_identity: "general docs",
-        page_url: "https://example.test/docs/a" } },
-    { ...base, evidence_id: "page-b", lineage_id: "L2", pointer: "page B",
-      provenance: { quality: "verified", source_identity: "general docs",
-        page_url: "https://example.test/docs/b" } },
+    {
+      ...base,
+      evidence_id: "page-a",
+      lineage_id: "L1",
+      pointer: "page A",
+      provenance: {
+        quality: "verified",
+        source_identity: "general docs",
+        page_url: "https://example.test/docs/a",
+      },
+    },
+    {
+      ...base,
+      evidence_id: "page-b",
+      lineage_id: "L2",
+      pointer: "page B",
+      provenance: {
+        quality: "verified",
+        source_identity: "general docs",
+        page_url: "https://example.test/docs/b",
+      },
+    },
   ];
 
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
-  assert.equal(projectEvidenceEnvelopeToLedger(envelope).Evidence, "page A + page B");
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "page A + page B",
+  );
 });
 
 test("source alias deduplication does not erase a contradictory pointer", () => {
@@ -318,17 +358,29 @@ test("source alias deduplication does not erase a contradictory pointer", () => 
   envelope.status = "Conflicted";
   envelope.confidence.level = "low";
   envelope.evidence = [
-    { ...base, evidence_id: "support", lineage_id: "L1", pointer: "supporting passage",
-      provenance: { quality: "verified", source_identity: "same document" } },
-    { ...base, evidence_id: "contradict", lineage_id: "L2", direction: "contradict",
+    {
+      ...base,
+      evidence_id: "support",
+      lineage_id: "L1",
+      pointer: "supporting passage",
+      provenance: { quality: "verified", source_identity: "same document" },
+    },
+    {
+      ...base,
+      evidence_id: "contradict",
+      lineage_id: "L2",
+      direction: "contradict",
       pointer: "contradictory passage",
-      provenance: { quality: "verified", source_identity: "same document" } },
+      provenance: { quality: "verified", source_identity: "same document" },
+    },
   ];
-  envelope.conflicts = [{
-    issue: "The source gives conflicting statements.",
-    state: "unresolved",
-    evidence_ids: ["support", "contradict"],
-  }];
+  envelope.conflicts = [
+    {
+      issue: "The source gives conflicting statements.",
+      state: "unresolved",
+      evidence_ids: ["support", "contradict"],
+    },
+  ];
 
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
   assert.equal(

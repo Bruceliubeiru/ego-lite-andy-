@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validateEvidenceEnvelope } from "../../../scripts/evidence-envelope.mjs";
+import {
+  decisionRelevantEvidenceLineageIds,
+  validateEvidenceEnvelope,
+} from "../../../scripts/evidence-envelope.mjs";
 
 function makeEnvelope() {
   return {
@@ -203,8 +206,73 @@ test("partial authenticated provenance remains eligible when auth is confirmed",
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
 });
 
+test("unknown connector provenance cannot confirm or count progress", () => {
+  for (const quality of ["unknown", "not_applicable"]) {
+    const envelope = makeConnectorEnvelope("read_executed");
+    envelope.evidence[0].provenance.quality = quality;
+    assert.match(
+      validateEvidenceEnvelope(envelope).join(" "),
+      /unknown connector provenance/,
+    );
+    assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), []);
+  }
+});
+
+test("partial connector provenance remains usable after a read", () => {
+  const envelope = makeConnectorEnvelope("read_executed");
+  envelope.evidence[0].provenance.quality = "partial";
+  envelope.evidence[0].limitations = [];
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), [
+    "snippet-source",
+  ]);
+});
+
+test("unknown connector contradiction cannot veto verified support", () => {
+  const envelope = makeConnectorEnvelope("read_executed");
+  envelope.evidence[0].direction = "contradict";
+  envelope.evidence.push({
+    ...envelope.evidence[0],
+    evidence_id: "official-1",
+    pointer: "verified official page",
+    lineage_id: "official-page",
+    direction: "support",
+    source_class: "first_party_public",
+    provenance: { quality: "verified", source_identity: "official page" },
+    limitations: [],
+  });
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), [
+    "official-page",
+  ]);
+  envelope.evidence[0].provenance.quality = "verified";
+  assert.match(
+    validateEvidenceEnvelope(envelope).join(" "),
+    /undispositioned contradictory evidence/,
+  );
+});
+
+test("verified same-lineage recovery remains usable", () => {
+  const envelope = makeConnectorEnvelope("read_executed");
+  envelope.evidence.push({
+    ...envelope.evidence[0],
+    evidence_id: "verified-2",
+    pointer: "verified read",
+    provenance: {
+      ...envelope.evidence[0].provenance,
+      quality: "verified",
+    },
+    limitations: [],
+  });
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+  assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), [
+    "snippet-source",
+  ]);
+});
+
 test("positive execution and independent public support remain valid", () => {
   const connector = makeConnectorEnvelope("read_executed");
+  connector.evidence[0].provenance.quality = "verified";
   assert.deepEqual(validateEvidenceEnvelope(connector), []);
 
   const authenticated = makeConnectorEnvelope("read_executed");

@@ -126,6 +126,16 @@ lineageProgress([
   lineageItem('partial-auth', 'new-auth-source', 'first_party_authenticated', 'primary', { auth_state: 'confirmed', quality: 'partial' }),
 ], 1, 'partial but usable authenticated provenance remains eligible for bounded research progress');
 lineageProgress([
+  lineageItem('unknown-connector', 'new-connector', 'connector_or_api', 'primary', {
+    provider_execution: 'read_executed', quality: 'unknown',
+  }),
+], 0, 'executed connector with unknown provenance cannot count as verification');
+lineageProgress([
+  lineageItem('partial-connector', 'new-connector', 'connector_or_api', 'primary', {
+    provider_execution: 'read_executed', quality: 'partial',
+  }),
+], 1, 'executed connector with partial provenance can count as bounded progress');
+lineageProgress([
   lineageItem('context', 'new-source', 'first_party_public', 'primary', {}, 'context'),
 ], 0, 'context-only source is not claim verification');
 const recoveredEnvelope = lineageProgress([

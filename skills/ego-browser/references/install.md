@@ -2,7 +2,7 @@
 
 Read this file only when ego lite isn't installed yet, or when the user asks to install ego lite. For day-to-day browser work, go back to `SKILL.md`.
 
-The ego-browser skill depends on the ego lite browser: the `ego-browser` command is provided by the ego lite app. Once ego lite is installed and you've gone through onboarding once, the environment is ready and there are no further environment issues.
+The ego-browser skill depends on the ego lite browser: the `ego-browser` command is provided by the ego lite app. Installation and onboarding do not by themselves prove that the intended agent can resolve the current skill, launch the CLI, or connect to the running browser. Verify the effective runtime with a bounded read-only task before relying on it.
 
 ego lite website: https://lite.ego.app/
 
@@ -24,6 +24,18 @@ If `codesign` or `spctl` fails, stop. Do not strip quarantine to force the app t
 For the current unresolved state, prefer a user-driven install from the official ego lite website and let macOS Gatekeeper surface any trust decision normally. Do not bypass a Gatekeeper warning on the user's behalf.
 
 Upstream tracking issue: https://github.com/citrolabs/ego-lite/issues/292
+
+## Windows beta (native Windows agents only)
+
+Official Windows beta setup: https://lite.ego.app/document/en/docs/windows/quick-start
+Official download: https://lite.ego.app/download
+
+1. Download from the official page and review the installer publisher/signature and Windows security prompts. Do not silently bypass a warning, disable security protections, or claim that an installer has been verified without checking the exact downloaded artifact.
+2. Install and open ego lite on Windows, then complete its first-run setup. Browser-profile import is optional: choose only the profile/data needed for the task, or sign in directly in ego lite. Never collect or export cookies, credentials, tokens, or unrelated browser history for a research task.
+3. Start the agent **natively on Windows**. Confirm that the agent actually resolves the current Ego Browser skill; if it is missing, finish onboarding and restart the agent as the official guide suggests.
+4. Run one **read-only** browser task in an agent Space, then inspect the actual page and compare the reported result with the observed page. A visible skill entry or successful app launch alone is not proof of authenticated-page access or provenance correctness. Do not grant blanket agent permissions merely to pass this smoke test; review the specific execution permission and stop if it exceeds the authorized scope.
+
+The bundled `skills/ego-browser/scripts/install.sh`, the macOS `codesign`/`spctl` checks, and the `~/.local/bin` PATH instructions below are **not** Windows installation steps. Windows beta availability does not prove that an agent running inside WSL2 can reach the Windows-hosted browser. Upstream WSL2 bridge support is tracked separately at https://github.com/citrolabs/ego-lite/issues/374; do not create a network-exposed CDP/relay workaround to bridge this gap.
 
 ## Install steps (macOS only)
 
@@ -50,7 +62,7 @@ After a verified installation, the user completes the first-run onboarding in th
 
 Onboarding is a step the user completes in the GUI. After the user confirms they've finished onboarding, continue with the checks below.
 
-## After installing: confirm `ego-browser` is available
+## After installing on macOS: confirm `ego-browser` is available
 
 Once the user has finished onboarding, confirm the command is ready:
 
@@ -81,7 +93,8 @@ Once the environment is ready, return to the user's original task and continue w
 
 ## Troubleshooting
 
-- **Not macOS**: the bundled script supports macOS only (`uname -s` is `Darwin`). On other platforms, use the official ego lite distribution instructions and do not assume equivalent verification commands.
+- **Windows beta**: follow the native Windows section above; do not use the macOS shell installer or infer WSL2 support from native Windows availability.
+- **Linux or another unsupported host**: the bundled script supports macOS only (`uname -s` is `Darwin`). Do not assume a supported native browser runtime or equivalent verification commands.
 - **Download failed**: retry through the official source and verify the final artifact before installing.
 - **`codesign` or `spctl` fails**: stop the automated flow. Do not remove quarantine or bypass Gatekeeper. Check the upstream security issue for a fixed release.
 - **Gatekeeper blocks first launch**: do not suppress the warning automatically. Treat it as a trust decision that requires a fixed/verified artifact or explicit user handling.

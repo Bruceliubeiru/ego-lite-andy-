@@ -117,6 +117,15 @@ lineageProgress([
   lineageItem('snippet', 'new-source', 'search_snippet', 'navigation_only', {}),
 ], 0, 'navigation-only snippet is not independent verification');
 lineageProgress([
+  lineageItem('unknown-auth', 'new-auth-source', 'first_party_authenticated', 'primary', { auth_state: 'confirmed', quality: 'unknown' }),
+], 0, 'an authenticated page with unknown provenance quality is not acquired verification');
+lineageProgress([
+  lineageItem('na-auth', 'new-auth-source', 'first_party_authenticated', 'primary', { auth_state: 'confirmed', quality: 'not_applicable' }),
+], 0, 'authenticated provenance cannot be not_applicable for decision progress');
+lineageProgress([
+  lineageItem('partial-auth', 'new-auth-source', 'first_party_authenticated', 'primary', { auth_state: 'confirmed', quality: 'partial' }),
+], 1, 'partial but usable authenticated provenance remains eligible for bounded research progress');
+lineageProgress([
   lineageItem('context', 'new-source', 'first_party_public', 'primary', {}, 'context'),
 ], 0, 'context-only source is not claim verification');
 const recoveredEnvelope = lineageProgress([

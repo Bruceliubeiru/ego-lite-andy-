@@ -69,6 +69,9 @@ function hasUnavailableAcquisitionProvenance(item) {
     // An unknown auth state is not proof that the target authenticated page was read.
     return (
       provenance.auth_state !== 'confirmed' ||
+      // An asserted confirmed login cannot establish exact account/page provenance
+      // when the source's own provenance quality is unknown or not applicable.
+      !['verified', 'partial'].includes(provenance.quality) ||
       UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution)
     );
   }
@@ -297,7 +300,7 @@ export function validateEvidenceEnvelope(envelope) {
       errors.push('Confirmed claim cannot rely solely on navigation_only support');
     }
     if (substantiveSupportingEvidence > 0 && availableSupportingEvidence === 0) {
-      errors.push('Confirmed claim cannot rely solely on unavailable acquisition support');
+      errors.push('Confirmed claim cannot rely solely on unavailable acquisition support or unknown authenticated provenance');
     }
     if (unresolvedConflicts > 0) errors.push('Confirmed claim cannot retain an unresolved material conflict');
     for (const evidenceId of contradictingEvidenceIds) {

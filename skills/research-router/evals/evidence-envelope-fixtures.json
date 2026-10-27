@@ -99,6 +99,62 @@
         "decision_impact": "High",
         "next_action": "verify"
       }
+    },
+    {
+      "name": "unknown-auth-provenance-with-independent-public-support",
+      "envelope": {
+        "version": "1.0",
+        "claim_id": "confirmed-with-independent-public-source",
+        "claim_kind": "observed_fact",
+        "claim": "The released runtime documents macOS as supported.",
+        "scope": {
+          "runtime_version": "1.2.3"
+        },
+        "status": "Confirmed",
+        "evidence": [
+          {
+            "evidence_id": "e1",
+            "direction": "support",
+            "pointer": "authenticated page content without established provenance",
+            "lineage_id": "auth-page-unverified",
+            "source_class": "first_party_authenticated",
+            "authority": "primary",
+            "specificity": "exact",
+            "freshness": "current",
+            "provenance": {
+              "quality": "unknown",
+              "source_identity": "account page (identity unverified)",
+              "auth_state": "confirmed"
+            },
+            "limitations": []
+          },
+          {
+            "evidence_id": "e2",
+            "direction": "support",
+            "pointer": "independent public policy",
+            "lineage_id": "independent-public",
+            "source_class": "first_party_public",
+            "authority": "primary",
+            "specificity": "exact",
+            "freshness": "current",
+            "provenance": {
+              "quality": "verified",
+              "source_identity": "upstream release README",
+              "auth_state": "not_applicable",
+              "challenge_state": "not_applicable",
+              "provider_execution": "not_applicable"
+            },
+            "limitations": []
+          }
+        ],
+        "conflicts": [],
+        "confidence": {
+          "level": "high",
+          "reason": "Exact released first-party source."
+        },
+        "decision_impact": "High",
+        "next_action": "none"
+      }
     }
   ],
   "invalid": [
@@ -264,6 +320,84 @@
         "version":"1.0","claim_id":"bad-12","claim_kind":"observed_fact","claim":"Unknown provenance quality must not masquerade as a recognized verification state.","scope":{},"status":"Needs verification",
         "evidence":[{"evidence_id":"e1","direction":"context","pointer":"source A","lineage_id":"a","source_class":"first_party_authenticated","authority":"primary","specificity":"exact","freshness":"current","provenance":{"quality":"provider_specific_quality","source_identity":"source A"},"limitations":[]}],
         "conflicts":[],"confidence":{"level":"low","reason":"Unknown provenance quality must fail closed."},"decision_impact":"High","next_action":"verify"
+      }
+    },
+    {
+      "name": "confirmed-solely-from-unknown-authenticated-provenance",
+      "expect_error": "unknown authenticated provenance",
+      "envelope": {
+        "version": "1.0",
+        "claim_id": "invalid-auth-provenance-unknown",
+        "claim_kind": "observed_fact",
+        "claim": "Target account has capability X.",
+        "scope": {
+          "account": "target"
+        },
+        "status": "Confirmed",
+        "evidence": [
+          {
+            "evidence_id": "e1",
+            "direction": "support",
+            "pointer": "authenticated page content without established provenance",
+            "lineage_id": "auth-page-unverified",
+            "source_class": "first_party_authenticated",
+            "authority": "primary",
+            "specificity": "exact",
+            "freshness": "current",
+            "provenance": {
+              "quality": "unknown",
+              "source_identity": "account page (identity unverified)",
+              "auth_state": "confirmed"
+            },
+            "limitations": []
+          }
+        ],
+        "conflicts": [],
+        "confidence": {
+          "level": "high",
+          "reason": "Exact released first-party source."
+        },
+        "decision_impact": "High",
+        "next_action": "none"
+      }
+    },
+    {
+      "name": "confirmed-solely-from-not_applicable-authenticated-provenance",
+      "expect_error": "unknown authenticated provenance",
+      "envelope": {
+        "version": "1.0",
+        "claim_id": "invalid-auth-provenance-not_applicable",
+        "claim_kind": "observed_fact",
+        "claim": "Target account has capability X.",
+        "scope": {
+          "account": "target"
+        },
+        "status": "Confirmed",
+        "evidence": [
+          {
+            "evidence_id": "e1",
+            "direction": "support",
+            "pointer": "authenticated page content without established provenance",
+            "lineage_id": "auth-page-unverified",
+            "source_class": "first_party_authenticated",
+            "authority": "primary",
+            "specificity": "exact",
+            "freshness": "current",
+            "provenance": {
+              "quality": "not_applicable",
+              "source_identity": "account page (identity unverified)",
+              "auth_state": "confirmed"
+            },
+            "limitations": []
+          }
+        ],
+        "conflicts": [],
+        "confidence": {
+          "level": "high",
+          "reason": "Exact released first-party source."
+        },
+        "decision_impact": "High",
+        "next_action": "none"
       }
     }
   ],

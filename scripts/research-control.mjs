@@ -111,9 +111,26 @@ function hasResolvedConflictDelta(before, after) {
     previous.status !== before.claim_status ||
     current.status !== after.claim_status
   ) return false;
-  return (
-    previous.conflicts.some((conflict) => conflict.state === 'unresolved') &&
-    !current.conflicts.some((conflict) => conflict.state === 'unresolved')
+  if (
+    !previous.conflicts.some((conflict) => conflict.state === 'unresolved') ||
+    current.conflicts.some((conflict) => conflict.state === 'unresolved')
+  ) return false;
+  // Dropping a conflict record without disposing of its still-present
+  // contradictory evidence is not proof that the conflict was resolved.
+  const priorConflictIds = new Set(
+    previous.conflicts
+      .filter((conflict) => conflict.state === 'unresolved')
+      .flatMap((conflict) => conflict.evidence_ids),
+  );
+  const dispositionedIds = new Set(
+    current.conflicts
+      .filter((conflict) => conflict.state === 'resolved' || conflict.state === 'not_material')
+      .flatMap((conflict) => conflict.evidence_ids),
+  );
+  return current.evidence.every((item) =>
+    item.direction !== 'contradict' ||
+    !priorConflictIds.has(item.evidence_id) ||
+    dispositionedIds.has(item.evidence_id)
   );
 }
 

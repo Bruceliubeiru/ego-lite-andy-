@@ -218,10 +218,32 @@ for (const [label, envelope] of [
   assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: envelope }), false,
     `${label} cannot evade the unresolved acquired contradiction check`);
 }
-assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: failedContradiction }), true,
-  'a failed connector acquisition must not be treated as negative evidence');
-assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: navigationContradiction }), true,
-  'a navigation-only hint must not be treated as acquired contradiction');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: failedContradiction }), false,
+  'reclassifying a contradiction as failed acquisition requires an explicit conflict disposition');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: navigationContradiction }), false,
+  'reclassifying a contradiction as a navigation hint requires an explicit conflict disposition');
+const documentedFailedAcquisition = structuredClone(failedContradiction);
+documentedFailedAcquisition.conflicts = [{
+  evidence_ids: ['e1', 'conflict-counter'],
+  issue: 'Material contradiction about the same scoped claim.',
+  state: 'resolved',
+  resolution_basis: 'The prior contradiction was a failed connector acquisition, not acquired negative evidence.',
+}];
+const documentedNavigationHint = structuredClone(navigationContradiction);
+documentedNavigationHint.conflicts = [{
+  evidence_ids: ['e1', 'conflict-counter'],
+  issue: 'Material contradiction about the same scoped claim.',
+  state: 'not_material',
+  resolution_basis: 'The prior contradiction was a navigation hint and never acquired substantive evidence.',
+}];
+for (const [label, envelope] of [
+  ['failed acquisition disposition', documentedFailedAcquisition],
+  ['navigation hint disposition', documentedNavigationHint],
+]) {
+  assert.deepEqual(validateEvidenceEnvelope(envelope), [], label);
+  assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: envelope }), true,
+    `${label} remains a valid documented reclassification`);
+}
 
 const lineageItem = (id, lineageId, sourceClass, authority, provenance, direction = 'support') => ({
   ...envelopeFixture.evidence[0],

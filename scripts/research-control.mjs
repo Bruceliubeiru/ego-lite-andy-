@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
+import { countDecisionRelevantEvidenceLineages, validateEvidenceEnvelope } from './evidence-envelope.mjs';
 
 const DECISION_RELEVANCE = { none: 0, material: 1, decisive: 2 };
 const SCOPE_FIT = { wrong: 0, partial: 1, exact: 2 };
@@ -81,6 +82,35 @@ export function hasDecisionDelta(action) {
   return typeof action?.expected_delta === 'string' && EXPECTED_DELTAS.has(action.expected_delta);
 }
 
+
+function hasEnvelopeSnapshot(state) {
+  return state !== null && typeof state === 'object' && Object.hasOwn(state, 'evidence_envelope');
+}
+
+function hasIndependentLineageDelta(before, after) {
+  const hasBefore = hasEnvelopeSnapshot(before);
+  const hasAfter = hasEnvelopeSnapshot(after);
+  if (hasBefore || hasAfter) {
+    if (!hasBefore || !hasAfter) return false;
+    const previous = before.evidence_envelope;
+    const current = after.evidence_envelope;
+    if (validateEvidenceEnvelope(previous).length || validateEvidenceEnvelope(current).length) return false;
+    if (
+      previous.claim_id !== current.claim_id ||
+      previous.claim_kind !== current.claim_kind ||
+      previous.claim !== current.claim ||
+      !isDeepStrictEqual(previous.scope, current.scope)
+    ) return false;
+    return countDecisionRelevantEvidenceLineages(current) > countDecisionRelevantEvidenceLineages(previous);
+  }
+  // Legacy count-only receipts remain supported but do not prove provenance.
+  return (
+    isNonNegativeInteger(before?.independent_lineage_count) &&
+    isNonNegativeInteger(after?.independent_lineage_count) &&
+    after.independent_lineage_count > before.independent_lineage_count
+  );
+}
+
 export function evaluateDecisionDelta({ action, before, after, observation } = {}) {
   if (!hasDecisionDelta(action)) return { realized: false, reason: 'no-valid-expected-delta' };
   if (observation?.status !== 'completed') return { realized: false, reason: 'acquisition-not-completed' };
@@ -101,9 +131,7 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
       before.provenance_established === false &&
       after.provenance_established === true,
     add_independent_lineage:
-      isNonNegativeInteger(before?.independent_lineage_count) &&
-      isNonNegativeInteger(after?.independent_lineage_count) &&
-      after.independent_lineage_count > before.independent_lineage_count,
+      action.expected_delta === 'add_independent_lineage' && hasIndependentLineageDelta(before, after),
     test_causal_hypothesis:
       CAUSAL_HYPOTHESIS_STATUSES.has(before?.causal_hypothesis_status) &&
       CAUSAL_HYPOTHESIS_STATUSES.has(after?.causal_hypothesis_status) &&

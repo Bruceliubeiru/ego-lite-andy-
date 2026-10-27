@@ -200,6 +200,8 @@ export function validateEvidenceEnvelope(envelope) {
     // Explicit unresolved conflict records remain independently blocking.
     if (
       item.direction === 'contradict' &&
+      // A navigation hint can trigger verification, not establish contradiction.
+      item.authority !== 'navigation_only' &&
       isNonEmptyString(item.evidence_id) &&
       !hasUnavailableAcquisitionProvenance(item)
     ) {

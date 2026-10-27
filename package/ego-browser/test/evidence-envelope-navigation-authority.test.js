@@ -180,6 +180,29 @@ test("authenticated confirmation cannot ignore an explicit failed provider execu
   );
 });
 
+test("unknown or inapplicable authenticated provenance cannot solely confirm a claim", () => {
+  for (const quality of ["unknown", "not_applicable"]) {
+    const envelope = makeConnectorEnvelope("read_executed");
+    envelope.evidence[0].source_class = "first_party_authenticated";
+    envelope.evidence[0].provenance.auth_state = "confirmed";
+    envelope.evidence[0].provenance.quality = quality;
+    assert.match(
+      validateEvidenceEnvelope(envelope).join(" "),
+      /unknown authenticated provenance/,
+      quality,
+    );
+  }
+});
+
+test("partial authenticated provenance remains eligible when auth is confirmed", () => {
+  const envelope = makeConnectorEnvelope("read_executed");
+  envelope.evidence[0].source_class = "first_party_authenticated";
+  envelope.evidence[0].provenance.auth_state = "confirmed";
+  envelope.evidence[0].provenance.quality = "partial";
+  envelope.evidence[0].limitations = [];
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+});
+
 test("positive execution and independent public support remain valid", () => {
   const connector = makeConnectorEnvelope("read_executed");
   assert.deepEqual(validateEvidenceEnvelope(connector), []);
@@ -187,6 +210,8 @@ test("positive execution and independent public support remain valid", () => {
   const authenticated = makeConnectorEnvelope("read_executed");
   authenticated.evidence[0].source_class = "first_party_authenticated";
   authenticated.evidence[0].provenance.auth_state = "confirmed";
+  authenticated.evidence[0].provenance.quality = "verified";
+  authenticated.evidence[0].limitations = [];
   assert.deepEqual(validateEvidenceEnvelope(authenticated), []);
 
   const mixed = makeConnectorEnvelope("not_applicable");

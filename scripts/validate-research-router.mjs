@@ -279,8 +279,8 @@ assert.deepEqual(
   'Evidence Envelope -> Claim Ledger projection changed unexpectedly',
 );
 // A failed acquisition may precede a successful read of the same source.
-// Keep the first available substantive pointer in the compact ledger, without
-// manufacturing another independent lineage or repeating an identical pointer.
+// Omit the unavailable attempt from acquired Ledger evidence while retaining
+// the recovered substantive pointer without inflating independent lineages.
 for (const [sourceClass, failedProvenance, recoveredProvenance] of [
   ['connector_or_api', { provider_execution: 'failed' }, { provider_execution: 'read_executed' }],
   ['first_party_authenticated', { auth_state: 'blocked' }, { auth_state: 'confirmed' }],
@@ -314,15 +314,15 @@ for (const [sourceClass, failedProvenance, recoveredProvenance] of [
   );
   assert.equal(
     projectEvidenceEnvelopeToLedger(envelope).Evidence,
-    'unavailable source read + verified source read',
-    `${sourceClass}: failed acquisition must not hide a later successful same-lineage read`,
+    'verified source read',
+    `${sourceClass}: failed acquisition must not appear as acquired Ledger support`,
   );
   assert.equal(countIndependentEvidenceLineages(envelope, 'support'), 1);
   envelope.evidence[1].pointer = 'unavailable source read';
   assert.equal(
     projectEvidenceEnvelopeToLedger(envelope).Evidence,
     'unavailable source read',
-    `${sourceClass}: identical pointers must remain deduplicated`,
+    `${sourceClass}: recovered read remains visible even with identical pointer text`,
   );
 }
 

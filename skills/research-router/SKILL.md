@@ -51,6 +51,8 @@ For consequential multi-step research, do not let queue order or an extra planne
 
 The control order is intentionally lexicographic rather than a fabricated numeric score: decision relevance first, then exact material scope, independent evidence gain, boundedness, and lower cost. Reject wrong-scope actions, actions waiting on an unobserved intermediate result, and state-changing actions used only for verification. If the decision is no longer sensitive, or no safe decision-relevant read remains, stop and preserve residual uncertainty rather than expanding the search.
 
+For `add_independent_lineage`, pass independent before/after `evidence_envelope` snapshots when available. The controller then derives substantive acquired lineage counts from the Evidence Engine instead of trusting raw counters; legacy count-only receipts remain supported but cannot independently establish provenance. Do not treat shared mutable references as independent snapshots.
+
 This selector is a convergence aid, not a truth engine. The Evidence Engine still determines claim state, lineage, scope, provenance, and conflict semantics; the selector only chooses the next safe read from already-classified candidates. Re-plan after every material observation instead of executing a stale precomputed batch.
 
 Use **compact coverage memory** for long consequential runs. When a bounded read successfully observes the material state for a stable research surface, record a privacy-safe semantic `coverage_key` for the current run. Do not revisit that surface merely because it is easy or familiar. A timeout, challenge, partial visibility, acquisition failure, or non-material read does **not** complete coverage.

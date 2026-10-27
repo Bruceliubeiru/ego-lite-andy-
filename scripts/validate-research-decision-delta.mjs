@@ -149,6 +149,49 @@ documentedWithdrawal.conflicts = [{
 assert.deepEqual(validateEvidenceEnvelope(documentedWithdrawal), []);
 assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: documentedWithdrawal }), true,
   'a traceable disposition can resolve an invalidated contradiction');
+// A new contradiction plus a shared supporting ID cannot erase the original
+// counterevidence while claiming that the original dispute was resolved.
+const substitutedContradiction = structuredClone(documentedWithdrawal);
+substitutedContradiction.evidence = substitutedContradiction.evidence.filter(
+  (item) => item.evidence_id !== 'conflict-counter',
+);
+substitutedContradiction.evidence.push({
+  ...conflictedEnvelope.evidence[1],
+  evidence_id: 'replacement-counter',
+  lineage_id: 'replacement-counter-lineage',
+});
+substitutedContradiction.conflicts[0].evidence_ids = ['e1', 'replacement-counter'];
+assert.deepEqual(validateEvidenceEnvelope(substitutedContradiction), []);
+assert.equal(conflictDelta(conflictBefore, {
+  claim_status: 'Needs verification',
+  evidence_envelope: substitutedContradiction,
+}), false, 'a shared support ID cannot disguise a withdrawn original contradiction');
+
+const documentedSubstitution = structuredClone(substitutedContradiction);
+documentedSubstitution.evidence.push({ ...conflictedEnvelope.evidence[1], direction: 'context' });
+documentedSubstitution.conflicts[0].evidence_ids.push('conflict-counter');
+assert.deepEqual(validateEvidenceEnvelope(documentedSubstitution), []);
+assert.equal(conflictDelta(conflictBefore, {
+  claim_status: 'Needs verification',
+  evidence_envelope: documentedSubstitution,
+}), true, 'retaining the original contradiction as context preserves a traceable disposition');
+
+const multiCounterConflict = structuredClone(conflictedEnvelope);
+multiCounterConflict.evidence.push({
+  ...conflictedEnvelope.evidence[1],
+  evidence_id: 'second-original-counter',
+  lineage_id: 'second-original-counter-lineage',
+});
+multiCounterConflict.conflicts[0].evidence_ids.push('second-original-counter');
+assert.deepEqual(validateEvidenceEnvelope(multiCounterConflict), []);
+assert.equal(conflictDelta({
+  claim_status: 'Conflicted',
+  evidence_envelope: multiCounterConflict,
+}, {
+  claim_status: 'Needs verification',
+  evidence_envelope: documentedWithdrawal,
+}), false, 'all original contradictions in one dispute require traceable disposition');
+
 const unrelatedDisposition = structuredClone(documentedWithdrawal);
 unrelatedDisposition.conflicts[0].issue = 'Unrelated issue';
 assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: unrelatedDisposition }), false,

@@ -412,4 +412,31 @@ assert.deepEqual(validateEvidenceEnvelope(acquiredAfterRecovery), []);
 assert.equal(replacementDelta(failedBeforeRecovery, acquiredAfterRecovery), true,
   'a failed prior acquisition does not prevent later successful evidence from counting');
 
+// A secondary, community, or independent-authoritative source with an explicit
+// failed provider acquisition is not acquired evidence. Do not apply this
+// blanket rule to user-supplied material with unrelated provider metadata.
+for (const sourceClass of ['independent_authoritative', 'secondary', 'community']) {
+  for (const providerExecution of ['configured_only', 'skipped', 'failed']) {
+    const description = `${sourceClass} ${providerExecution} is not acquired evidence`;
+    lineageProgress([
+      lineageItem(`unavailable-${sourceClass}-${providerExecution}`,
+        `lineage-${sourceClass}-${providerExecution}`, sourceClass, 'authoritative_secondary',
+        { provider_execution: providerExecution }),
+    ], 0, description);
+    const falseConfirmation = structuredClone(envelopeFixture);
+    falseConfirmation.evidence[0].source_class = sourceClass;
+    falseConfirmation.evidence[0].provenance.provider_execution = providerExecution;
+    assert.ok(validateEvidenceEnvelope(falseConfirmation).length > 0,
+      `${description}: cannot confirm solely from an unavailable read`);
+  }
+  lineageProgress([
+    lineageItem(`available-${sourceClass}`, `lineage-available-${sourceClass}`,
+      sourceClass, 'authoritative_secondary', { provider_execution: 'not_applicable' }),
+  ], 1, `${sourceClass}: absence of provider metadata does not imply failed acquisition`);
+}
+lineageProgress([
+  lineageItem('user-supplied-with-old-provider-state', 'lineage-user-material',
+    'user_supplied', 'primary', { provider_execution: 'failed' }),
+], 1, 'user-supplied evidence must not inherit unrelated provider failure');
+
 console.log('research decision-delta control passed');

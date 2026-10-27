@@ -223,7 +223,9 @@ test("partial connector provenance remains usable after a read", () => {
   envelope.evidence[0].provenance.quality = "partial";
   envelope.evidence[0].limitations = [];
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
-  assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), ["snippet-source"]);
+  assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), [
+    "snippet-source",
+  ]);
 });
 
 test("unknown connector contradiction cannot veto verified support", () => {
@@ -240,7 +242,9 @@ test("unknown connector contradiction cannot veto verified support", () => {
     limitations: [],
   });
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
-  assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), ["official-page"]);
+  assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), [
+    "official-page",
+  ]);
   envelope.evidence[0].provenance.quality = "verified";
   assert.match(
     validateEvidenceEnvelope(envelope).join(" "),
@@ -261,7 +265,9 @@ test("verified same-lineage recovery remains usable", () => {
     limitations: [],
   });
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
-  assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), ["snippet-source"]);
+  assert.deepEqual(decisionRelevantEvidenceLineageIds(envelope), [
+    "snippet-source",
+  ]);
 });
 
 test("positive execution and independent public support remain valid", () => {

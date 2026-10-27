@@ -62,8 +62,11 @@ function hasUnavailableAcquisitionProvenance(item) {
   const provenance = item.provenance;
   if (!provenance || typeof provenance !== 'object' || Array.isArray(provenance)) return false;
   if (item.source_class === 'connector_or_api') {
-    // Confirmation needs positive execution provenance, not merely the absence of failure.
-    return provenance.provider_execution !== 'read_executed';
+    // An executed read without usable source provenance is not verified acquisition.
+    return (
+      provenance.provider_execution !== 'read_executed' ||
+      !['verified', 'partial'].includes(provenance.quality)
+    );
   }
   if (item.source_class === 'first_party_authenticated') {
     // An unknown auth state is not proof that the target authenticated page was read.
@@ -302,7 +305,7 @@ export function validateEvidenceEnvelope(envelope) {
       errors.push('Confirmed claim cannot rely solely on navigation_only support');
     }
     if (substantiveSupportingEvidence > 0 && availableSupportingEvidence === 0) {
-      errors.push('Confirmed claim cannot rely solely on unavailable acquisition support or unknown authenticated provenance');
+      errors.push('Confirmed claim cannot rely solely on unavailable acquisition support or unknown authenticated provenance or unknown connector provenance');
     }
     if (unresolvedConflicts > 0) errors.push('Confirmed claim cannot retain an unresolved material conflict');
     for (const evidenceId of contradictingEvidenceIds) {

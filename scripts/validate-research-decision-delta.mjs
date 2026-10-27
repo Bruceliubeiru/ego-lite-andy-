@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { countDecisionRelevantEvidenceLineages, validateEvidenceEnvelope } from './evidence-envelope.mjs';
 import { deriveMaterialReopenAuthorizations, evaluateDecisionDelta, hasDecisionDelta, selectNextResearchAction } from './research-control.mjs';
 
 assert.equal(hasDecisionDelta({ expected_delta: 'resolve_conflict' }), true);
@@ -69,5 +71,75 @@ assert.equal(
   false,
   'unsafe integer lineage counts cannot establish verified independent evidence growth',
 );
+
+
+// Envelope-backed lineage progress must not trust a raw count inflated by
+// failed reads, navigation hints, context-only records, or duplicate sources.
+const envelopeFixture = JSON.parse(readFileSync(
+  new URL('../skills/research-router/evals/evidence-envelope-fixtures.json', import.meta.url),
+  'utf8',
+)).valid[0].envelope;
+const emptyEnvelope = structuredClone(envelopeFixture);
+emptyEnvelope.status = 'Needs verification';
+emptyEnvelope.confidence = { level: 'low', reason: 'No acquired evidence' };
+emptyEnvelope.evidence = [];
+const lineageItem = (id, lineageId, sourceClass, authority, provenance, direction = 'support') => ({
+  ...envelopeFixture.evidence[0],
+  evidence_id: id,
+  lineage_id: lineageId,
+  pointer: id,
+  direction,
+  source_class: sourceClass,
+  authority,
+  provenance: { quality: 'verified', source_identity: id, ...provenance },
+  limitations: [],
+});
+const lineageProgress = (items, expectedCount, description) => {
+  const current = structuredClone(emptyEnvelope);
+  current.evidence = items;
+  assert.deepEqual(validateEvidenceEnvelope(current), [], `${description}: envelope remains valid`);
+  assert.equal(countDecisionRelevantEvidenceLineages(current), expectedCount, description);
+  assert.equal(evaluateDecisionDelta({
+    action: { expected_delta: 'add_independent_lineage' },
+    before: { independent_lineage_count: 0, evidence_envelope: emptyEnvelope },
+    after: { independent_lineage_count: 999, evidence_envelope: current },
+    observation: { status: 'completed' },
+  }).realized, expectedCount > 0, description);
+  return current;
+};
+lineageProgress([
+  lineageItem('failed', 'new-source', 'connector_or_api', 'primary', { provider_execution: 'failed' }),
+], 0, 'failed-only connector receipt is not independent verification');
+lineageProgress([
+  lineageItem('blocked', 'new-source', 'first_party_authenticated', 'primary', { auth_state: 'blocked' }),
+], 0, 'blocked authenticated read is not independent verification');
+lineageProgress([
+  lineageItem('snippet', 'new-source', 'search_snippet', 'navigation_only', {}),
+], 0, 'navigation-only snippet is not independent verification');
+lineageProgress([
+  lineageItem('context', 'new-source', 'first_party_public', 'primary', {}, 'context'),
+], 0, 'context-only source is not claim verification');
+const recoveredEnvelope = lineageProgress([
+  lineageItem('failed', 'same-source', 'connector_or_api', 'primary', { provider_execution: 'failed' }),
+  lineageItem('recovered', 'same-source', 'connector_or_api', 'primary', { provider_execution: 'read_executed' }),
+  lineageItem('duplicate', 'same-source', 'connector_or_api', 'primary', { provider_execution: 'read_executed' }),
+], 1, 'recovered same-lineage source counts once');
+lineageProgress([
+  lineageItem('contradiction', 'new-source', 'first_party_public', 'primary', {}, 'contradict'),
+], 1, 'acquired contradictory evidence can add independent verification');
+const changedScopeEnvelope = structuredClone(recoveredEnvelope);
+changedScopeEnvelope.scope = { ...changedScopeEnvelope.scope, different_region: 'other' };
+assert.equal(evaluateDecisionDelta({
+  action: { expected_delta: 'add_independent_lineage' },
+  before: { evidence_envelope: emptyEnvelope },
+  after: { evidence_envelope: changedScopeEnvelope },
+  observation: { status: 'completed' },
+}).realized, false, 'a different claim scope cannot establish same-claim lineage growth');
+assert.equal(evaluateDecisionDelta({
+  action: { expected_delta: 'add_independent_lineage' },
+  before: { independent_lineage_count: 0, evidence_envelope: emptyEnvelope },
+  after: { independent_lineage_count: 999 },
+  observation: { status: 'completed' },
+}).realized, false, 'a missing after-envelope must not silently fall back to raw counts');
 
 console.log('research decision-delta control passed');

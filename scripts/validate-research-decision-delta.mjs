@@ -144,6 +144,48 @@ assert.equal(conflictDelta({ claim_status: 'Conflicted' }, { claim_status: 'Need
   'one-sided Envelope state must not silently fall back to a status-only receipt');
 assert.equal(conflictDelta(conflictBefore, { claim_status: 'Confirmed', evidence_envelope: resolvedConflict }), false,
   'a claim status inconsistent with its Envelope cannot establish resolution');
+
+const rekeyedContradiction = structuredClone(silentlyDroppedConflict);
+rekeyedContradiction.evidence[1].evidence_id = 'rekeyed-contradiction';
+const relinedContradiction = structuredClone(silentlyDroppedConflict);
+relinedContradiction.evidence[1].lineage_id = 'rekeyed-contradiction-lineage';
+const newContradiction = structuredClone(withdrawnContradiction);
+newContradiction.evidence.push({
+  ...conflictedEnvelope.evidence[1],
+  evidence_id: 'new-contradiction',
+  lineage_id: 'new-contradiction-lineage',
+});
+const failedContradiction = structuredClone(silentlyDroppedConflict);
+failedContradiction.evidence[1].source_class = 'connector_or_api';
+failedContradiction.evidence[1].provenance = {
+  quality: 'verified',
+  source_identity: 'failed connector acquisition',
+  provider_execution: 'failed',
+};
+const navigationContradiction = structuredClone(silentlyDroppedConflict);
+navigationContradiction.evidence[1].authority = 'navigation_only';
+for (const [label, envelope] of [
+  ['rekeyed evidence ID', rekeyedContradiction],
+  ['rekeyed lineage ID', relinedContradiction],
+  ['new acquired contradiction', newContradiction],
+  ['failed acquisition', failedContradiction],
+  ['navigation hint', navigationContradiction],
+]) {
+  assert.deepEqual(validateEvidenceEnvelope(envelope), [], label);
+}
+for (const [label, envelope] of [
+  ['rekeyed evidence ID', rekeyedContradiction],
+  ['rekeyed lineage ID', relinedContradiction],
+  ['new acquired contradiction', newContradiction],
+]) {
+  assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: envelope }), false,
+    `${label} cannot evade the unresolved acquired contradiction check`);
+}
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: failedContradiction }), true,
+  'a failed connector acquisition must not be treated as negative evidence');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: navigationContradiction }), true,
+  'a navigation-only hint must not be treated as acquired contradiction');
+
 const lineageItem = (id, lineageId, sourceClass, authority, provenance, direction = 'support') => ({
   ...envelopeFixture.evidence[0],
   evidence_id: id,

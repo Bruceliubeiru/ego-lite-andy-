@@ -352,6 +352,13 @@ export function projectEvidenceEnvelopeToLedger(envelope) {
     envelope.conflicts.flatMap((conflict) => conflict.evidence_ids),
   );
   for (const item of envelope.evidence) {
+    // An unavailable acquisition is a limitation, not acquired support or
+    // contradiction. Keep explicit context and navigation hints visible.
+    if (
+      (item.direction === 'support' || item.direction === 'contradict') &&
+      item.authority !== 'navigation_only' &&
+      hasUnavailableAcquisitionProvenance(item)
+    ) continue;
     const supportGroup = supportSourceGroupByEvidenceId.get(item.evidence_id);
     const firstInLineage = !seenLineages.has(item.lineage_id);
     const firstSupportInLineage = item.direction === 'support' && !seenSupportingLineages.has(item.lineage_id);

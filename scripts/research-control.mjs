@@ -87,6 +87,36 @@ function hasEnvelopeSnapshot(state) {
   return state !== null && typeof state === 'object' && Object.hasOwn(state, 'evidence_envelope');
 }
 
+function hasResolvedConflictDelta(before, after) {
+  if (
+    before?.claim_status !== 'Conflicted' ||
+    !CLAIM_STATUSES.has(after?.claim_status) ||
+    after.claim_status === 'Conflicted'
+  ) return false;
+
+  const hasBefore = hasEnvelopeSnapshot(before);
+  const hasAfter = hasEnvelopeSnapshot(after);
+  // Preserve legacy status-only receipts; when a claim-level Envelope is
+  // supplied, require matching, independently represented conflict state.
+  if (!hasBefore && !hasAfter) return true;
+  if (!hasBefore || !hasAfter) return false;
+  const previous = before.evidence_envelope;
+  const current = after.evidence_envelope;
+  if (validateEvidenceEnvelope(previous).length || validateEvidenceEnvelope(current).length) return false;
+  if (
+    previous.claim_id !== current.claim_id ||
+    previous.claim_kind !== current.claim_kind ||
+    previous.claim !== current.claim ||
+    !isDeepStrictEqual(previous.scope, current.scope) ||
+    previous.status !== before.claim_status ||
+    current.status !== after.claim_status
+  ) return false;
+  return (
+    previous.conflicts.some((conflict) => conflict.state === 'unresolved') &&
+    !current.conflicts.some((conflict) => conflict.state === 'unresolved')
+  );
+}
+
 function hasIndependentLineageDelta(before, after) {
   const hasBefore = hasEnvelopeSnapshot(before);
   const hasAfter = hasEnvelopeSnapshot(after);
@@ -122,10 +152,7 @@ export function evaluateDecisionDelta({ action, before, after, observation } = {
       SCOPE_STATUSES.has(after?.scope_status) &&
       before.scope_status !== 'resolved' &&
       after.scope_status === 'resolved',
-    resolve_conflict:
-      before?.claim_status === 'Conflicted' &&
-      CLAIM_STATUSES.has(after?.claim_status) &&
-      after.claim_status !== 'Conflicted',
+    resolve_conflict: hasResolvedConflictDelta(before, after),
     establish_provenance:
       typeof before?.provenance_established === 'boolean' &&
       typeof after?.provenance_established === 'boolean' &&

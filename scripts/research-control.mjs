@@ -285,10 +285,16 @@ export function updateResearchCoverage({ completed = [], action, outcome } = {})
 }
 
 export function updateResearchRunState({ state = {}, selection, action, outcome } = {}) {
+  // Only the selected, read-only action may mark a research surface covered.
+  // A mismatched/stale execution receipt is not evidence of that read.
+  const matchedRead =
+    selection?.mode === 'execute' &&
+    selection?.action_id === action?.id &&
+    action?.risk === 'read_only';
   const completedCoverageKeys = updateResearchCoverage({
     completed: state?.completed_coverage_keys,
-    action,
-    outcome,
+    action: matchedRead ? action : null,
+    outcome: matchedRead ? outcome : null,
   });
   const consumed = new Set(
     (Array.isArray(state?.consumed_reopen_transition_keys) ? state.consumed_reopen_transition_keys : [])

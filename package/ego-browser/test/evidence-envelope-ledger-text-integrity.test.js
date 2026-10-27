@@ -389,8 +389,7 @@ test("source alias deduplication does not erase a contradictory pointer", () => 
   );
 });
 
-
-test("unavailable source is not projected as acquired support beside a verified source", () => {
+test("failed support is excluded from Ledger", () => {
   const envelope = makeEnvelope();
   envelope.evidence.unshift({
     ...envelope.evidence[0],
@@ -415,7 +414,7 @@ test("unavailable source is not projected as acquired support beside a verified 
   );
 });
 
-test("unavailable same-lineage source cannot hide later acquired support", () => {
+test("failed same-lineage source does not hide acquired support", () => {
   const envelope = makeEnvelope();
   envelope.evidence.unshift({
     ...envelope.evidence[0],
@@ -432,10 +431,13 @@ test("unavailable same-lineage source cannot hide later acquired support", () =>
   });
 
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
-  assert.equal(projectEvidenceEnvelopeToLedger(envelope).Evidence, "supporting source");
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "supporting source",
+  );
 });
 
-test("unavailable contradiction is not projected as negative evidence, but explicit context remains", () => {
+test("failed contradiction is excluded but context remains", () => {
   const envelope = makeEnvelope();
   envelope.evidence.unshift({
     ...envelope.evidence[0],
@@ -467,7 +469,7 @@ test("unavailable contradiction is not projected as negative evidence, but expli
   );
 });
 
-test("user-provided material is not suppressed by unrelated inherited provider metadata", () => {
+test("user material ignores unrelated provider failure", () => {
   const envelope = makeEnvelope();
   envelope.evidence[0].source_class = "user_supplied";
   envelope.evidence[0].provenance = {
@@ -477,5 +479,8 @@ test("user-provided material is not suppressed by unrelated inherited provider m
   };
 
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
-  assert.equal(projectEvidenceEnvelopeToLedger(envelope).Evidence, "supporting source");
+  assert.equal(
+    projectEvidenceEnvelopeToLedger(envelope).Evidence,
+    "supporting source",
+  );
 });

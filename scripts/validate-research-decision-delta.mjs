@@ -395,6 +395,43 @@ const reorderedExisting = structuredClone(beforeReplacement);
 reorderedExisting.evidence.reverse();
 assert.equal(replacementDelta(beforeReplacement, reorderedExisting), false,
   'reordering already acquired lineages is not new verification');
+const rekeyedExisting = structuredClone(beforeReplacement);
+rekeyedExisting.evidence[0].lineage_id = 'renamed-lineage-a';
+assert.equal(replacementDelta(beforeReplacement, rekeyedExisting), false,
+  'renaming an acquired source lineage does not create independent evidence');
+const duplicatedSource = structuredClone(beforeReplacement);
+duplicatedSource.evidence.push({
+  ...lineageItem('summary-a', 'renamed-source-a', 'first_party_public', 'primary', {}),
+  provenance: { quality: 'verified', source_identity: 'source-a' },
+});
+assert.deepEqual(validateEvidenceEnvelope(duplicatedSource), []);
+assert.equal(countDecisionRelevantEvidenceLineages(duplicatedSource), 2,
+  'different lineage labels for one asserted source identity count only once');
+assert.equal(replacementDelta(beforeReplacement, duplicatedSource), false,
+  'a second summary of the same acquired source is not independent verification');
+const pageBefore = structuredClone(emptyEnvelope);
+pageBefore.evidence = [lineageItem('page-a', 'page-lineage-a', 'first_party_public', 'primary',
+  { source_identity: 'general docs', page_url: 'https://example.test/docs/a' })];
+const pageAfter = structuredClone(pageBefore);
+pageAfter.evidence.push(lineageItem('page-b', 'page-lineage-b', 'first_party_public', 'primary',
+  { source_identity: 'general docs', page_url: 'https://example.test/docs/b' }));
+assert.deepEqual(validateEvidenceEnvelope(pageAfter), []);
+assert.equal(replacementDelta(pageBefore, pageAfter), true,
+  'distinct verified document URLs remain independent even with a shared generic source label');
+const samePageRenamed = structuredClone(pageBefore);
+samePageRenamed.evidence.push(lineageItem('page-renamed', 'page-lineage-renamed', 'first_party_public', 'primary',
+  { source_identity: 'renamed source label', page_url: 'https://example.test/docs/a' }));
+assert.equal(replacementDelta(pageBefore, samePageRenamed), false,
+  'renaming a source label on the same document URL is not independent verification');
+const accountBefore = structuredClone(emptyEnvelope);
+accountBefore.evidence = [lineageItem('account-a', 'account-lineage-a', 'first_party_authenticated', 'primary',
+  { source_identity: 'account page', page_url: 'https://example.test/account', account_marker: 'A', auth_state: 'confirmed' })];
+const accountAfter = structuredClone(accountBefore);
+accountAfter.evidence.push(lineageItem('account-b', 'account-lineage-b', 'first_party_authenticated', 'primary',
+  { source_identity: 'account page', page_url: 'https://example.test/account', account_marker: 'B', auth_state: 'confirmed' }));
+assert.deepEqual(validateEvidenceEnvelope(accountAfter), []);
+assert.equal(replacementDelta(accountBefore, accountAfter), true,
+  'different verified account markers remain distinct scoped sources');
 const lostExisting = structuredClone(beforeReplacement);
 lostExisting.evidence.pop();
 assert.equal(replacementDelta(beforeReplacement, lostExisting), false,

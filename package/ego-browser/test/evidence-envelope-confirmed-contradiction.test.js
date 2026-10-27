@@ -99,3 +99,40 @@ test("Confirmed claims allow contradictory evidence explicitly judged not materi
 
   assert.deepEqual(validateEvidenceEnvelope(envelope), []);
 });
+
+test("navigation-only contradiction does not veto independent verified support", () => {
+  const envelope = makeConfirmedEnvelope();
+  Object.assign(envelope.evidence[1], {
+    source_class: "search_snippet",
+    authority: "navigation_only",
+    provenance: { quality: "partial", source_identity: "search preview" },
+    limitations: ["The underlying page has not been opened."],
+  });
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+});
+
+test("navigation-only public pointers are also non-substantive contradictions", () => {
+  const envelope = makeConfirmedEnvelope();
+  envelope.evidence[1].authority = "navigation_only";
+
+  assert.deepEqual(validateEvidenceEnvelope(envelope), []);
+});
+
+test("an explicit unresolved conflict still blocks confirmation despite a navigation hint", () => {
+  const envelope = makeConfirmedEnvelope([
+    {
+      evidence_ids: ["support-1", "contradict-1"],
+      issue: "A possible discrepancy still needs investigation.",
+      state: "unresolved",
+    },
+  ]);
+  envelope.evidence[1].source_class = "search_snippet";
+  envelope.evidence[1].authority = "navigation_only";
+
+  const errors = validateEvidenceEnvelope(envelope);
+  assert.ok(
+    errors.includes("Confirmed claim cannot retain an unresolved material conflict"),
+    `expected unresolved conflict veto, got: ${errors.join("; ")}`,
+  );
+});

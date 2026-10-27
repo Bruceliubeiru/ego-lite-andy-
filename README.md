@@ -27,16 +27,18 @@ https://github.com/user-attachments/assets/ffe7954b-58ee-411e-b35d-ec30c58a08bc
 
 ## Quick Start
 
-ego lite runs on macOS today. Windows and Linux are on the [roadmap](https://lite.ego.app/roadmap).
+ego lite runs on macOS and Windows (beta). Linux remains on the [roadmap](https://lite.ego.app/roadmap).
 
 ### 1. Install
 
 Pick whichever fits your flow.
 
-**1.1 Download the macOS app**
+**1.1 Download the app**
 
 <a href="https://cdn.ego.app/setup/macos/arm64/egolite-Y7MbxKIuhzFB.dmg"><img src="https://img.shields.io/badge/⬇%20Apple%20Silicon-.dmg-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download ego lite for Apple Silicon" /></a>
 <a href="https://cdn.ego.app/setup/macos/x64/egolite-Y7MbxKIuhzFB.dmg"><img src="https://img.shields.io/badge/⬇%20Intel-.dmg-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download ego lite for Intel" /></a>
+
+Windows beta: use the [official Windows download page](https://lite.ego.app/download) and verify the installer before running it. The repository's macOS `install.sh` does not install Windows.
 
 Click to download, then open it to install. Either way, ego lite adds the `ego-browser` skill to every agent's skills directory on your machine.
 

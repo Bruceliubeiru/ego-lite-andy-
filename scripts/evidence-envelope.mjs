@@ -388,7 +388,7 @@ export function countIndependentEvidenceLineages(envelope, direction = null) {
 /** Count acquired substantive claim evidence lineages for Decision Delta.
  * This is not independent proof that a source's asserted provenance is true.
  */
-export function countDecisionRelevantEvidenceLineages(envelope) {
+export function decisionRelevantEvidenceLineageIds(envelope) {
   const lineages = new Set();
   for (const item of Array.isArray(envelope?.evidence) ? envelope.evidence : []) {
     if (item?.direction !== 'support' && item?.direction !== 'contradict') continue;
@@ -396,5 +396,9 @@ export function countDecisionRelevantEvidenceLineages(envelope) {
     if (hasUnavailableAcquisitionProvenance(item)) continue;
     if (isNonEmptyString(item.lineage_id)) lineages.add(item.lineage_id);
   }
-  return lineages.size;
+  return [...lineages];
+}
+
+export function countDecisionRelevantEvidenceLineages(envelope) {
+  return decisionRelevantEvidenceLineageIds(envelope).length;
 }

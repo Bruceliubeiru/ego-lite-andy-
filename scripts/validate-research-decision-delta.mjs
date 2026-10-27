@@ -142,4 +142,50 @@ assert.equal(evaluateDecisionDelta({
   observation: { status: 'completed' },
 }).realized, false, 'a missing after-envelope must not silently fall back to raw counts');
 
+
+// A new acquired independent lineage is progress even when a stale lineage
+// drops out of the after snapshot, leaving the aggregate count unchanged.
+const beforeReplacement = structuredClone(emptyEnvelope);
+beforeReplacement.evidence = [
+  lineageItem('source-a', 'lineage-a', 'first_party_public', 'primary', {}),
+  lineageItem('source-b', 'lineage-b', 'first_party_public', 'primary', {}),
+];
+const afterReplacement = structuredClone(emptyEnvelope);
+afterReplacement.evidence = [
+  lineageItem('source-a', 'lineage-a', 'first_party_public', 'primary', {}),
+  lineageItem('source-c', 'lineage-c', 'first_party_public', 'primary', {}),
+];
+assert.deepEqual(validateEvidenceEnvelope(beforeReplacement), []);
+assert.deepEqual(validateEvidenceEnvelope(afterReplacement), []);
+assert.equal(countDecisionRelevantEvidenceLineages(beforeReplacement), 2);
+assert.equal(countDecisionRelevantEvidenceLineages(afterReplacement), 2);
+const replacementDelta = (before, after) => evaluateDecisionDelta({
+  action: { expected_delta: 'add_independent_lineage' },
+  before: { evidence_envelope: before },
+  after: { evidence_envelope: after },
+  observation: { status: 'completed' },
+}).realized;
+assert.equal(replacementDelta(beforeReplacement, afterReplacement), true,
+  'a newly acquired independent lineage is not hidden by an unchanged total count');
+const reorderedExisting = structuredClone(beforeReplacement);
+reorderedExisting.evidence.reverse();
+assert.equal(replacementDelta(beforeReplacement, reorderedExisting), false,
+  'reordering already acquired lineages is not new verification');
+const lostExisting = structuredClone(beforeReplacement);
+lostExisting.evidence.pop();
+assert.equal(replacementDelta(beforeReplacement, lostExisting), false,
+  'losing a lineage without acquiring another is not progress');
+const failedBeforeRecovery = structuredClone(emptyEnvelope);
+failedBeforeRecovery.evidence = [
+  lineageItem('failed-before', 'lineage-recovery', 'connector_or_api', 'primary', { provider_execution: 'failed' }),
+];
+const acquiredAfterRecovery = structuredClone(failedBeforeRecovery);
+acquiredAfterRecovery.evidence.push(
+  lineageItem('recovered-after', 'lineage-recovery', 'connector_or_api', 'primary', { provider_execution: 'read_executed' }),
+);
+assert.deepEqual(validateEvidenceEnvelope(failedBeforeRecovery), []);
+assert.deepEqual(validateEvidenceEnvelope(acquiredAfterRecovery), []);
+assert.equal(replacementDelta(failedBeforeRecovery, acquiredAfterRecovery), true,
+  'a failed prior acquisition does not prevent later successful evidence from counting');
+
 console.log('research decision-delta control passed');

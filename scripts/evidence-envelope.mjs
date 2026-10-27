@@ -61,16 +61,21 @@ const UNAVAILABLE_PROVIDER_EXECUTIONS = new Set(['configured_only', 'skipped', '
 function hasUnavailableAcquisitionProvenance(item) {
   const provenance = item.provenance;
   if (!provenance || typeof provenance !== 'object' || Array.isArray(provenance)) return false;
-  // An explicit failed/skipped/unexecuted acquisition is not factual evidence,
-  // regardless of source class or whether it supports or contradicts a claim.
-  if (UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution)) return true;
   if (item.source_class === 'connector_or_api') {
     // Confirmation needs positive execution provenance, not merely the absence of failure.
     return provenance.provider_execution !== 'read_executed';
   }
   if (item.source_class === 'first_party_authenticated') {
     // An unknown auth state is not proof that the target authenticated page was read.
-    return provenance.auth_state !== 'confirmed';
+    return (
+      provenance.auth_state !== 'confirmed' ||
+      UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution)
+    );
+  }
+  if (item.source_class === 'first_party_public') {
+    // A failed public-page read is not evidence, but provider status is not a
+    // universal field: user-supplied evidence may carry irrelevant old metadata.
+    return UNAVAILABLE_PROVIDER_EXECUTIONS.has(provenance.provider_execution);
   }
   return false;
 }

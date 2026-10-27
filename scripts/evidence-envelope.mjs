@@ -333,6 +333,16 @@ export function projectEvidenceEnvelopeToLedger(envelope) {
   }
 
   const pointers = [];
+  // Reuse Decision Delta's transitive acquired-source groups. A re-keyed
+  // summary is not another independent Ledger pointer, but conflict pointers
+  // must remain inspectable.
+  const supportSourceGroupByEvidenceId = new Map();
+  groupDecisionRelevantEvidenceItems(envelope).forEach((group, index) => {
+    for (const item of group) {
+      if (item.direction === 'support') supportSourceGroupByEvidenceId.set(item.evidence_id, index);
+    }
+  });
+  const projectedSupportGroups = new Set();
   const seenLineages = new Set();
   const seenSupportingLineages = new Set();
   const seenSubstantiveSupportingLineages = new Set();
@@ -342,6 +352,7 @@ export function projectEvidenceEnvelopeToLedger(envelope) {
     envelope.conflicts.flatMap((conflict) => conflict.evidence_ids),
   );
   for (const item of envelope.evidence) {
+    const supportGroup = supportSourceGroupByEvidenceId.get(item.evidence_id);
     const firstInLineage = !seenLineages.has(item.lineage_id);
     const firstSupportInLineage = item.direction === 'support' && !seenSupportingLineages.has(item.lineage_id);
     const firstSubstantiveSupportInLineage =
@@ -359,6 +370,7 @@ export function projectEvidenceEnvelopeToLedger(envelope) {
       if (item.authority !== 'navigation_only') seenSubstantiveSupportingLineages.add(item.lineage_id);
       if (firstAvailableSupportInLineage) seenAvailableSupportingLineages.add(item.lineage_id);
     }
+    if (supportGroup !== undefined && projectedSupportGroups.has(supportGroup) && !conflictEvidenceIds.has(item.evidence_id)) continue;
     // Keep the first support and the first substantive support separately, so a
     // navigation hint or unavailable acquisition cannot hide later usable support.
     // Collapse same-source summaries, not distinct contradiction or conflict pointers.
@@ -377,6 +389,7 @@ export function projectEvidenceEnvelopeToLedger(envelope) {
     seenPointers.add(item.pointer);
     seenPointersByLineage.set(item.lineage_id, seenPointers);
     pointers.push(item.pointer);
+    if (supportGroup !== undefined) projectedSupportGroups.add(supportGroup);
   }
 
   return {

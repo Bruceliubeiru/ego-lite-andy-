@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
-import { decisionRelevantEvidenceLineageIds, validateEvidenceEnvelope } from './evidence-envelope.mjs';
+import { decisionRelevantEvidenceLineageIds, isDecisionRelevantEvidenceItem, validateEvidenceEnvelope } from './evidence-envelope.mjs';
 
 const DECISION_RELEVANCE = { none: 0, material: 1, decisive: 2 };
 const SCOPE_FIT = { wrong: 0, partial: 1, exact: 2 };
@@ -115,13 +115,8 @@ function hasResolvedConflictDelta(before, after) {
     !previous.conflicts.some((conflict) => conflict.state === 'unresolved') ||
     current.conflicts.some((conflict) => conflict.state === 'unresolved')
   ) return false;
-  // Dropping a conflict record without disposing of its still-present
-  // contradictory evidence is not proof that the conflict was resolved.
-  const priorConflictIds = new Set(
-    previous.conflicts
-      .filter((conflict) => conflict.state === 'unresolved')
-      .flatMap((conflict) => conflict.evidence_ids),
-  );
+  // A still-acquired contradiction requires an explicit disposition, even
+  // when its local evidence ID changes between independent snapshots.
   const dispositionedIds = new Set(
     current.conflicts
       .filter((conflict) => conflict.state === 'resolved' || conflict.state === 'not_material')
@@ -129,7 +124,7 @@ function hasResolvedConflictDelta(before, after) {
   );
   return current.evidence.every((item) =>
     item.direction !== 'contradict' ||
-    !priorConflictIds.has(item.evidence_id) ||
+    !isDecisionRelevantEvidenceItem(item) ||
     dispositionedIds.has(item.evidence_id)
   );
 }

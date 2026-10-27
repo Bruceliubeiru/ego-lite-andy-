@@ -62,7 +62,7 @@ After a verified installation, the user completes the first-run onboarding in th
 
 Onboarding is a step the user completes in the GUI. After the user confirms they've finished onboarding, continue with the checks below.
 
-## After installing: confirm `ego-browser` is available
+## After installing on macOS: confirm `ego-browser` is available
 
 Once the user has finished onboarding, confirm the command is ready:
 

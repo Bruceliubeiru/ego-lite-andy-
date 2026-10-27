@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "purpose": "Executable fixtures that distinguish a successful empty read from proof of absence. Empty results may remain context evidence when enumeration completeness is unknown, but direct support or contradiction from absence requires the emitter to have independently established exhaustive enumeration for the material scope.",
+  "purpose": "Executable fixtures that distinguish a successful empty read from proof of absence. Empty results may remain context evidence when enumeration completeness is unknown, but direct support or contradiction from absence requires independently established exhaustive enumeration and a match to the claim's material scope.",
   "valid": [
     {
       "name": "empty connector read with unknown completeness remains context only",
@@ -33,6 +33,7 @@
         "outcome": "success",
         "result_empty": true,
         "enumeration_complete": true,
+        "enumeration_scope_matches_claim": true,
         "evidence_id": "e-empty-complete",
         "direction": "support",
         "pointer": "connector://authoritative-inventory/list-all",
@@ -122,6 +123,77 @@
         "provenance": {"quality": "verified", "provider_execution": "read_executed"}
       },
       "error_contains": "enumeration_complete must be a boolean when provided"
+    },
+    {
+      "name": "complete enumeration of a different scope cannot prove absence",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_empty": true,
+        "enumeration_complete": true,
+        "enumeration_scope_matches_claim": false,
+        "evidence_id": "e-empty-complete",
+        "direction": "support",
+        "pointer": "connector://other-account/list-all",
+        "lineage_id": "connector-read:authoritative-inventory-list-all",
+        "source_identity": "authoritative exhaustive inventory enumeration",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {
+          "quality": "verified",
+          "provider_execution": "read_executed"
+        },
+        "limitations": []
+      },
+      "error_contains": "enumeration_scope_matches_claim=true"
+    },
+    {
+      "name": "unverified scope fit cannot prove absence",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_empty": true,
+        "enumeration_complete": true,
+        "evidence_id": "e-empty-complete",
+        "direction": "support",
+        "pointer": "connector://authoritative-inventory/list-all",
+        "lineage_id": "connector-read:authoritative-inventory-list-all",
+        "source_identity": "authoritative exhaustive inventory enumeration",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {
+          "quality": "verified",
+          "provider_execution": "read_executed"
+        },
+        "limitations": []
+      },
+      "error_contains": "enumeration_scope_matches_claim=true"
+    },
+    {
+      "name": "scope-match proof must be boolean",
+      "observation": {
+        "adapter": "connector_api",
+        "outcome": "success",
+        "result_empty": true,
+        "enumeration_complete": true,
+        "enumeration_scope_matches_claim": "yes",
+        "evidence_id": "e-empty-complete",
+        "direction": "support",
+        "pointer": "connector://authoritative-inventory/list-all",
+        "lineage_id": "connector-read:authoritative-inventory-list-all",
+        "source_identity": "authoritative exhaustive inventory enumeration",
+        "authority": "primary",
+        "specificity": "exact",
+        "freshness": "current",
+        "provenance": {
+          "quality": "verified",
+          "provider_execution": "read_executed"
+        },
+        "limitations": []
+      },
+      "error_contains": "enumeration_scope_matches_claim must be a boolean"
     }
   ]
 }

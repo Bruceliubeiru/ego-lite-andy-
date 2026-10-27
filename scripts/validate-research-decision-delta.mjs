@@ -136,8 +136,45 @@ assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification',
   'silently deleting a conflict record while retaining its contradiction is not resolution');
 assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: resolvedConflict }), true,
   'a dispositioned conflict can be resolved even if other uncertainty remains');
-assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: withdrawnContradiction }), true,
-  'removing a discredited contradictory observation can resolve the conflict');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: withdrawnContradiction }), false,
+  'silently removing the contradiction and conflict is not a documented resolution');
+const documentedWithdrawal = structuredClone(withdrawnContradiction);
+documentedWithdrawal.evidence.push({ ...conflictedEnvelope.evidence[1], direction: 'context' });
+documentedWithdrawal.conflicts = [{
+  evidence_ids: ['e1', 'conflict-counter'],
+  issue: 'Material contradiction about the same scoped claim.',
+  state: 'resolved',
+  resolution_basis: 'Independent recheck invalidated the earlier contradiction; retained as context.',
+}];
+assert.deepEqual(validateEvidenceEnvelope(documentedWithdrawal), []);
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: documentedWithdrawal }), true,
+  'a traceable disposition can resolve an invalidated contradiction');
+const unrelatedDisposition = structuredClone(documentedWithdrawal);
+unrelatedDisposition.conflicts[0].issue = 'Unrelated issue';
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: unrelatedDisposition }), false,
+  'a resolved unrelated issue must not clear the original conflict');
+const unlinkedDisposition = structuredClone(documentedWithdrawal);
+unlinkedDisposition.evidence.forEach((item, index) => { item.evidence_id = `rekeyed-${index}`; });
+unlinkedDisposition.conflicts[0].evidence_ids = unlinkedDisposition.evidence.map((item) => item.evidence_id);
+assert.deepEqual(validateEvidenceEnvelope(unlinkedDisposition), []);
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: unlinkedDisposition }), false,
+  'unlinked evidence rekeys cannot manufacture a traceable conflict resolution');
+const twoConflictsBefore = structuredClone(conflictedEnvelope);
+twoConflictsBefore.evidence.push({
+  ...conflictedEnvelope.evidence[1],
+  evidence_id: 'second-counter',
+  lineage_id: 'second-counter-lineage',
+});
+twoConflictsBefore.conflicts.push({
+  evidence_ids: ['e1', 'second-counter'],
+  issue: 'Material contradiction about the same scoped claim.',
+  state: 'unresolved',
+});
+const oneDispositionAfter = structuredClone(documentedWithdrawal);
+assert.deepEqual(validateEvidenceEnvelope(twoConflictsBefore), []);
+assert.equal(conflictDelta({ claim_status: 'Conflicted', evidence_envelope: twoConflictsBefore },
+  { claim_status: 'Needs verification', evidence_envelope: oneDispositionAfter }), false,
+  'one disposition cannot erase two distinct unresolved conflicts');
 assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: wrongScopeResolution }), false,
   'a different claim scope cannot resolve the original conflict');
 assert.equal(conflictDelta({ claim_status: 'Conflicted' }, { claim_status: 'Needs verification', evidence_envelope: resolvedConflict }), false,
@@ -181,10 +218,32 @@ for (const [label, envelope] of [
   assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: envelope }), false,
     `${label} cannot evade the unresolved acquired contradiction check`);
 }
-assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: failedContradiction }), true,
-  'a failed connector acquisition must not be treated as negative evidence');
-assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: navigationContradiction }), true,
-  'a navigation-only hint must not be treated as acquired contradiction');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: failedContradiction }), false,
+  'reclassifying a contradiction as failed acquisition requires an explicit conflict disposition');
+assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: navigationContradiction }), false,
+  'reclassifying a contradiction as a navigation hint requires an explicit conflict disposition');
+const documentedFailedAcquisition = structuredClone(failedContradiction);
+documentedFailedAcquisition.conflicts = [{
+  evidence_ids: ['e1', 'conflict-counter'],
+  issue: 'Material contradiction about the same scoped claim.',
+  state: 'resolved',
+  resolution_basis: 'The prior contradiction was a failed connector acquisition, not acquired negative evidence.',
+}];
+const documentedNavigationHint = structuredClone(navigationContradiction);
+documentedNavigationHint.conflicts = [{
+  evidence_ids: ['e1', 'conflict-counter'],
+  issue: 'Material contradiction about the same scoped claim.',
+  state: 'not_material',
+  resolution_basis: 'The prior contradiction was a navigation hint and never acquired substantive evidence.',
+}];
+for (const [label, envelope] of [
+  ['failed acquisition disposition', documentedFailedAcquisition],
+  ['navigation hint disposition', documentedNavigationHint],
+]) {
+  assert.deepEqual(validateEvidenceEnvelope(envelope), [], label);
+  assert.equal(conflictDelta(conflictBefore, { claim_status: 'Needs verification', evidence_envelope: envelope }), true,
+    `${label} remains a valid documented reclassification`);
+}
 
 const lineageItem = (id, lineageId, sourceClass, authority, provenance, direction = 'support') => ({
   ...envelopeFixture.evidence[0],

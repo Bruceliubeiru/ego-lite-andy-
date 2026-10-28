@@ -329,6 +329,26 @@ assert.deepEqual(
 );
 
 
+// Malformed execution receipts must never match merely because both IDs
+// are missing or blank; the selector never emits such an action ID.
+for (const [label, id] of [
+  ['missing-id', undefined],
+  ['empty-id', ''],
+  ['whitespace-id', '   '],
+]) {
+  const state = updateResearchRunState({
+    state: { completed_coverage_keys: [] },
+    selection: { mode: 'execute', action_id: id },
+    action: { id, risk: 'read_only', coverage_key: 'unread-account:absence' },
+    outcome: { status: 'completed', material_state_observed: true },
+  });
+  assert.deepEqual(
+    state.completed_coverage_keys,
+    [],
+    `${label} must not manufacture completed coverage from an invalid selected action ID`,
+  );
+}
+
 // A completed-looking receipt must not mark coverage when the selector did
 // not authorize that read. This is separate from transition consumption.
 for (const [label, selection, action] of [

@@ -157,6 +157,11 @@ export async function ensureSession() {
       const preferred = state.preferredTargetId
         ? tabs.find((t) => t.targetId === state.preferredTargetId)
         : null;
+      // An explicitly selected tab must not silently fall back to another
+      // active tab when the requested target disappears or is not yet listed.
+      if (state.preferredTargetId && !preferred) {
+        throw new Error("preferred browser target is unavailable");
+      }
       const active =
         preferred || tabs.find((t) => t.active) || tabs[tabs.length - 1];
       if (!active) {

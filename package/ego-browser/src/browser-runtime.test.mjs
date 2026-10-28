@@ -764,27 +764,20 @@ for (const method of [
   "Input.dispatchMouseEvent",
   "Page.navigate",
 ]) {
-  test(
-    `browserCdp does not replay potentially effectful ${method} after session loss`,
-    async () => {
-      const calls = installLostSessionEgo(method);
-      try {
-        await assert.rejects(() => browserCdp(method, {}), /Session not found/);
-        assert.equal(
-          calls.filter((call) => call.method === method).length,
-          1,
-          "effectful command must not be sent a second time",
-        );
-        assert.equal(
-          state.sessionId,
-          null,
-          "failed session must be invalidated",
-        );
-      } finally {
-        cleanup();
-      }
-    },
-  );
+  test(`browserCdp does not replay potentially effectful ${method} after session loss`, async () => {
+    const calls = installLostSessionEgo(method);
+    try {
+      await assert.rejects(() => browserCdp(method, {}), /Session not found/);
+      assert.equal(
+        calls.filter((call) => call.method === method).length,
+        1,
+        "effectful command must not be sent a second time",
+      );
+      assert.equal(state.sessionId, null, "failed session must be invalidated");
+    } finally {
+      cleanup();
+    }
+  });
 }
 
 test("browserCdp refuses to retry a read on a different active target", async () => {

@@ -1027,23 +1027,23 @@ for (const method of [
   test(
     `browserCdp does not automatically replay document-bound ${method}`,
     async () => {
-    const calls = installLostSessionEgo(method);
-    try {
-      await assert.rejects(() => browserCdp(method, {}), /Session not found/);
-      assert.equal(
-        calls.filter((call) => call.method === method).length,
-        1,
-        "a lost-session read must not be replayed against an unverified document",
-      );
-      assert.equal(
-        calls.filter((call) => call.method === "Target.attachToTarget").length,
-        1,
-        "no automatic reattachment for the failed read",
-      );
-      assert.equal(state.sessionId, null);
-    } finally {
-      cleanup();
-    }
+      const calls = installLostSessionEgo(method);
+      try {
+        await assert.rejects(() => browserCdp(method, {}), /Session not found/);
+        assert.equal(
+          calls.filter((call) => call.method === method).length,
+          1,
+          "a lost-session read must not be replayed against an unverified document",
+        );
+        assert.equal(
+          calls.filter((call) => call.method === "Target.attachToTarget").length,
+          1,
+          "no automatic reattachment for the failed read",
+        );
+        assert.equal(state.sessionId, null);
+      } finally {
+        cleanup();
+      }
     },
   );
 }
@@ -1051,52 +1051,52 @@ for (const method of [
 test(
   "same-target navigation during session loss cannot silently retry a read",
   async () => {
-  const calls = installLostSessionEgo("DOM.getDocument", "tab-1");
-  const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
-  globalThis.ego.sendCDPMessage = (payload) => {
-    const request = JSON.parse(payload);
-    if (request.method === "DOM.getDocument") {
-      setTimeout(() => {
-        globalThis.ego.onCDPMessage(
-          JSON.stringify({
-            method: "Page.frameNavigated",
-            sessionId: request.sessionId,
-            params: {
-              frame: {
-                id: "main",
-                url: "https://changed.example/new-document",
-                loaderId: "loader-new",
+    const calls = installLostSessionEgo("DOM.getDocument", "tab-1");
+    const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+    globalThis.ego.sendCDPMessage = (payload) => {
+      const request = JSON.parse(payload);
+      if (request.method === "DOM.getDocument") {
+        setTimeout(() => {
+          globalThis.ego.onCDPMessage(
+            JSON.stringify({
+              method: "Page.frameNavigated",
+              sessionId: request.sessionId,
+              params: {
+                frame: {
+                  id: "main",
+                  url: "https://changed.example/new-document",
+                  loaderId: "loader-new",
+                },
               },
-            },
-          }),
-        );
-      }, 0);
+            }),
+          );
+        }, 0);
+      }
+      originalSend(payload);
+    };
+    try {
+      await assert.rejects(
+        () => browserCdp("DOM.getDocument", { depth: 1 }),
+        /Session not found/,
+      );
+      assert.equal(
+        calls.filter((call) => call.method === "DOM.getDocument").length,
+        1,
+      );
+      assert.equal(
+        calls.filter((call) => call.method === "Target.attachToTarget").length,
+        1,
+      );
+      assert.equal(state.sessionId, null);
+      assert.ok(
+        drainBrowserEvents().some(
+          (event) => event.method === "Page.frameNavigated",
+        ),
+        "the simulated document replacement was delivered",
+      );
+    } finally {
+      cleanup();
     }
-    originalSend(payload);
-  };
-  try {
-    await assert.rejects(
-      () => browserCdp("DOM.getDocument", { depth: 1 }),
-      /Session not found/,
-    );
-    assert.equal(
-      calls.filter((call) => call.method === "DOM.getDocument").length,
-      1,
-    );
-    assert.equal(
-      calls.filter((call) => call.method === "Target.attachToTarget").length,
-      1,
-    );
-    assert.equal(state.sessionId, null);
-    assert.ok(
-      drainBrowserEvents().some(
-        (event) => event.method === "Page.frameNavigated",
-      ),
-      "the simulated document replacement was delivered",
-    );
-  } finally {
-    cleanup();
-  }
   },
 );
 

@@ -729,7 +729,11 @@ test("late old-target session failure preserves the new target session", async (
       read,
       /browser target preference changed during CDP request: DOM.getDocument/,
     );
-    assert.equal(state.sessionId, newSession, "late failure must not clear the new session");
+    assert.equal(
+      state.sessionId,
+      newSession,
+      "late failure must not clear the new session",
+    );
     assert.equal(state.sessionTargetId, "tab-B");
   } finally {
     cleanup();

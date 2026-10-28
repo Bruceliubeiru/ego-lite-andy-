@@ -122,7 +122,9 @@ export async function browserCdp(
       !BROWSER_LEVEL(method) &&
       selectionVersion !== targetSelectionVersion
     ) {
-      throw new Error(`browser target preference changed during CDP request: ${method}`);
+      throw new Error(
+        `browser target preference changed during CDP request: ${method}`,
+      );
     }
   };
   let effective = sessionId;

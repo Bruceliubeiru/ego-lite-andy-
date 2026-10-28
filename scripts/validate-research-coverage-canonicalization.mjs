@@ -366,11 +366,58 @@ for (const [label, selection, action] of [
 }
 const selectedReadCoverage = updateResearchRunState({
   state: { completed_coverage_keys: [] },
-  selection: { mode: 'execute', action_id: baseAction.id },
+  selection: selectNextResearchAction({
+    state: { decision_sensitive: true },
+    candidates: [{ ...baseAction, coverage_key: 'read-policy:scope' }],
+  }),
   action: { ...baseAction, coverage_key: 'read-policy:scope' },
   outcome: { status: 'completed', material_state_observed: true },
 });
 assert.deepEqual(selectedReadCoverage.completed_coverage_keys, ['read-policy:scope'],
   'a genuinely selected, completed, read-only observation must still complete coverage');
+
+
+const selectedScopedRead = selectNextResearchAction({
+  state: { decision_sensitive: true },
+  candidates: [{ ...baseAction, coverage_key: 'read-policy:scope' }],
+});
+assert.equal(selectedScopedRead.coverage_key, 'read-policy:scope',
+  'selection must carry the exact semantic surface it authorized');
+for (const [label, selection, coverageKey] of [
+  ['same action ID, different surface', selectedScopedRead, 'other-policy:scope'],
+  ['missing selection surface', { mode: 'execute', action_id: baseAction.id }, 'read-policy:scope'],
+  ['blank selection surface', { ...selectedScopedRead, coverage_key: '  ' }, 'read-policy:scope'],
+]) {
+  const result = updateResearchRunState({
+    state: { completed_coverage_keys: [] },
+    selection,
+    action: { ...baseAction, coverage_key: coverageKey },
+    outcome: { status: 'completed', material_state_observed: true },
+  });
+  assert.deepEqual(result.completed_coverage_keys, [],
+    `${label} must not manufacture coverage from an action-ID-only match`);
+}
+const canonicalSurfaceReceipt = updateResearchRunState({
+  state: { completed_coverage_keys: [] },
+  selection: selectedScopedRead,
+  action: { ...baseAction, coverage_key: ' read-policy:scope ' },
+  outcome: { status: 'completed', material_state_observed: true },
+});
+assert.deepEqual(canonicalSurfaceReceipt.completed_coverage_keys, ['read-policy:scope'],
+  'canonical whitespace variants of the same selected surface remain valid');
+
+const mismatchedReopenSurface = updateResearchRunState({
+  state: {
+    completed_coverage_keys: ['official-policy:effective-date'],
+    material_reopen_evidence: [realizedScopeReceipt],
+  },
+  selection: firstSelection,
+  action: { ...baseAction, coverage_key: 'other-policy:effective-date' },
+  outcome: { status: 'completed', material_state_observed: true },
+});
+assert.deepEqual(mismatchedReopenSurface.consumed_reopen_transition_keys, [],
+  'a same-ID read of another surface must not consume a material reopen authorization');
+assert.deepEqual(mismatchedReopenSurface.completed_coverage_keys, ['official-policy:effective-date'],
+  'a same-ID read of another surface must not mark it covered');
 
 console.log('research replay-safe coverage authorization and action metadata validation passed');

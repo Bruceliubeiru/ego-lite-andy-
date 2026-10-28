@@ -694,6 +694,48 @@ test("browserCdp rejects a successful old-target read after a concurrent target 
   }
 });
 
+test("late old-target session failure preserves the new target session", async () => {
+  installAutoEgo({
+    tabs: [
+      { targetId: "tab-A", active: true },
+      { targetId: "tab-B", active: false },
+    ],
+  });
+  const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+  let readId;
+  let notifyRead;
+  const readStarted = new Promise((resolve) => {
+    notifyRead = resolve;
+  });
+  globalThis.ego.sendCDPMessage = (payload) => {
+    const request = JSON.parse(payload);
+    if (request.method === "DOM.getDocument") {
+      readId = request.id;
+      notifyRead();
+      return;
+    }
+    originalSend(payload);
+  };
+  try {
+    const read = browserCdp("DOM.getDocument", { depth: 1 });
+    await readStarted;
+    setPreferredTarget("tab-B");
+    const newSession = await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-B");
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: readId, error: { message: "Session not found" } }),
+    );
+    await assert.rejects(
+      read,
+      /browser target preference changed during CDP request: DOM.getDocument/,
+    );
+    assert.equal(state.sessionId, newSession, "late failure must not clear the new session");
+    assert.equal(state.sessionTargetId, "tab-B");
+  } finally {
+    cleanup();
+  }
+});
+
 test("clearing preferred target reselects the active tab without stale cache", async () => {
   installAutoEgo({
     tabs: [

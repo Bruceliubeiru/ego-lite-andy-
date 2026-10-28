@@ -527,6 +527,59 @@ test("Target.detachedFromTarget invalidates session when targetId matches", asyn
   }
 });
 
+test("late detach from an old session on the same target preserves the new session", async () => {
+  const calls = installManualEgo();
+  try {
+    state.sessionId = "sess-new";
+    state.sessionTargetId = "target-1";
+    state.sessionAt = Date.now();
+
+    const setup = browserCdp("Target.getVersion", {}, undefined, 5000);
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: calls[0].id, result: {} }),
+    );
+    await setup;
+
+    fireEvent("Page.javascriptDialogOpening", { type: "alert" }, "sess-new");
+    fireEvent("Target.detachedFromTarget", {
+      targetId: "target-1",
+      sessionId: "sess-old",
+    });
+    assert.equal(state.sessionId, "sess-new");
+    assert.equal(state.sessionTargetId, "target-1");
+    assert.ok(pendingDialog("sess-new"), "new session dialog must survive");
+
+    const read = browserCdp("Runtime.evaluate", { expression: "1" });
+    await Promise.resolve();
+    assert.equal(calls[1].sessionId, "sess-new");
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: calls[1].id, result: { value: 1 } }),
+    );
+    assert.equal((await read).result.value, 1);
+  } finally {
+    cleanup();
+  }
+});
+
+test("detach without a session ID fails closed for the selected target", async () => {
+  const calls = installManualEgo();
+  try {
+    state.sessionId = "sess-current";
+    state.sessionTargetId = "target-1";
+    state.sessionAt = Date.now();
+    const setup = browserCdp("Target.getVersion", {}, undefined, 5000);
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: calls[0].id, result: {} }),
+    );
+    await setup;
+    fireEvent("Target.detachedFromTarget", { targetId: "target-1" });
+    assert.equal(state.sessionId, null);
+    assert.equal(state.sessionTargetId, null);
+  } finally {
+    cleanup();
+  }
+});
+
 test("Target.targetDestroyed also invalidates session", async () => {
   const calls = installManualEgo();
   try {

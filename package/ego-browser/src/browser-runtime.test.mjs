@@ -769,16 +769,17 @@ for (const method of [
     async () => {
       const calls = installLostSessionEgo(method);
       try {
-        await assert.rejects(
-          () => browserCdp(method, {}),
-          /Session not found/,
-        );
+        await assert.rejects(() => browserCdp(method, {}), /Session not found/);
         assert.equal(
           calls.filter((call) => call.method === method).length,
           1,
           "effectful command must not be sent a second time",
         );
-        assert.equal(state.sessionId, null, "failed session must be invalidated");
+        assert.equal(
+          state.sessionId,
+          null,
+          "failed session must be invalidated",
+        );
       } finally {
         cleanup();
       }

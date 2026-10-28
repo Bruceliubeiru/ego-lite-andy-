@@ -10,6 +10,30 @@ const SESSION_LOST =
   /Session (?:with given id )?not found|Target closed|No session/i;
 const BROWSER_LEVEL = (method) =>
   method.startsWith("Target.") || method.startsWith("Browser.");
+// A lost session can leave command execution ambiguous. Only retry known
+// observation-only CDP methods; Runtime.evaluate, Input events, navigation,
+// and other effectful/unknown methods must not be replayed automatically.
+const SAFE_SESSION_RETRY_METHODS = new Set([
+  "Accessibility.getFullAXTree",
+  "Accessibility.getPartialAXTree",
+  "CSS.getComputedStyleForNode",
+  "CSS.getMatchedStylesForNode",
+  "DOM.describeNode",
+  "DOM.getBoxModel",
+  "DOM.getContentQuads",
+  "DOM.getDocument",
+  "DOM.getNodeForLocation",
+  "DOM.getOuterHTML",
+  "DOM.querySelector",
+  "DOM.querySelectorAll",
+  "DOM.resolveNode",
+  "DOMSnapshot.captureSnapshot",
+  "Network.getResponseBody",
+  "Page.captureScreenshot",
+  "Page.getFrameTree",
+  "Page.getNavigationHistory",
+  "Runtime.getProperties",
+]);
 type BrowserEventSubscriber = {
   method: string;
   sessionId?: string;
@@ -91,13 +115,23 @@ export async function browserCdp(
   if (!explicit && !BROWSER_LEVEL(method)) {
     effective = await ensureSession();
   }
+  const originalTargetId = state.sessionTargetId;
   try {
     return await rawCdp(method, params, effective, timeoutMs);
   } catch (error) {
     const lost = SESSION_LOST.test(error?.message || "");
     if (lost && !explicit && !BROWSER_LEVEL(method)) {
       invalidateSession();
+      // Do not duplicate a potentially effectful command after an ambiguous
+      // transport failure. A later explicit action may retry after observation.
+      if (!SAFE_SESSION_RETRY_METHODS.has(method)) throw error;
       const fresh = await ensureSession();
+      // A new active tab is not the same provenance surface as the failed read.
+      // Do not turn an automatic recovery into a successful read of another tab.
+      if (!originalTargetId || state.sessionTargetId !== originalTargetId) {
+        invalidateSession();
+        throw new Error(`CDP session target changed before safe retry: ${method}`);
+      }
       return rawCdp(method, params, fresh, timeoutMs);
     }
     throw error;

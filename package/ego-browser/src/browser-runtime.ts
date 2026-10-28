@@ -316,7 +316,24 @@ function handleMessage(message) {
       pendingDialogs.delete(sessionId);
     }
     const targetId = data.params?.targetId || data.params?.targetInfo?.targetId;
-    if (targetId && targetId === state.sessionTargetId) {
+    // A detached old session may share the target ID of a newly attached
+    // session. Its late event must not invalidate the current session.
+    // Target destruction or a detach without a session ID remains fail-closed.
+    const isCurrentSessionDetach =
+      data.method === "Target.detachedFromTarget" &&
+      sessionId &&
+      sessionId === state.sessionId;
+    const isCurrentTargetWithoutSession =
+      !sessionId && targetId && targetId === state.sessionTargetId;
+    const isCurrentTargetDestroyed =
+      data.method === "Target.targetDestroyed" &&
+      targetId &&
+      targetId === state.sessionTargetId;
+    if (
+      isCurrentSessionDetach ||
+      isCurrentTargetWithoutSession ||
+      isCurrentTargetDestroyed
+    ) {
       invalidateSession();
     }
   }

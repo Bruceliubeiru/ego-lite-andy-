@@ -130,7 +130,9 @@ export async function browserCdp(
       // Do not turn an automatic recovery into a successful read of another tab.
       if (!originalTargetId || state.sessionTargetId !== originalTargetId) {
         invalidateSession();
-        throw new Error(`CDP session target changed before safe retry: ${method}`);
+        throw new Error(
+          `CDP session target changed before safe retry: ${method}`,
+        );
       }
       return rawCdp(method, params, fresh, timeoutMs);
     }

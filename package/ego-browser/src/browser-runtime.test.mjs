@@ -1014,8 +1014,7 @@ test("target preference change during attach fails closed and permits fresh sele
 /*  SESSION_LOST retry                                                */
 /* ------------------------------------------------------------------ */
 
-// Even identifier-free reads can observe a different document after a
-// session loss on the same target. Recovery requires a new explicit observation.
+// A lost session does not establish document continuity, even on one target.
 for (const method of [
   "DOM.getDocument",
   "DOM.getNodeForLocation",
@@ -1024,81 +1023,57 @@ for (const method of [
   "Page.getFrameTree",
   "Page.getNavigationHistory",
 ]) {
-  test(
-    `browserCdp does not automatically replay document-bound ${method}`,
-    async () => {
-      const calls = installLostSessionEgo(method);
-      try {
-        await assert.rejects(() => browserCdp(method, {}), /Session not found/);
-        assert.equal(
-          calls.filter((call) => call.method === method).length,
-          1,
-          "a lost-session read must not be replayed against an unverified document",
-        );
-        assert.equal(
-          calls.filter((call) => call.method === "Target.attachToTarget").length,
-          1,
-          "no automatic reattachment for the failed read",
-        );
-        assert.equal(state.sessionId, null);
-      } finally {
-        cleanup();
-      }
-    },
-  );
-}
-
-test(
-  "same-target navigation during session loss cannot silently retry a read",
-  async () => {
-    const calls = installLostSessionEgo("DOM.getDocument", "tab-1");
-    const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
-    globalThis.ego.sendCDPMessage = (payload) => {
-      const request = JSON.parse(payload);
-      if (request.method === "DOM.getDocument") {
-        setTimeout(() => {
-          globalThis.ego.onCDPMessage(
-            JSON.stringify({
-              method: "Page.frameNavigated",
-              sessionId: request.sessionId,
-              params: {
-                frame: {
-                  id: "main",
-                  url: "https://changed.example/new-document",
-                  loaderId: "loader-new",
-                },
-              },
-            }),
-          );
-        }, 0);
-      }
-      originalSend(payload);
-    };
+  test(`lost-session read fails closed: ${method}`, async () => {
+    const calls = installLostSessionEgo(method);
     try {
-      await assert.rejects(
-        () => browserCdp("DOM.getDocument", { depth: 1 }),
-        /Session not found/,
-      );
-      assert.equal(
-        calls.filter((call) => call.method === "DOM.getDocument").length,
-        1,
-      );
-      assert.equal(
-        calls.filter((call) => call.method === "Target.attachToTarget").length,
-        1,
-      );
+      await assert.rejects(() => browserCdp(method, {}), /Session not found/);
+      const reads = calls.filter((call) => call.method === method);
+      assert.equal(reads.length, 1, "must not replay against another document");
       assert.equal(state.sessionId, null);
-      assert.ok(
-        drainBrowserEvents().some(
-          (event) => event.method === "Page.frameNavigated",
-        ),
-        "the simulated document replacement was delivered",
-      );
     } finally {
       cleanup();
     }
-  },
-);
+  });
+}
+
+test("same-tab navigation never triggers a retry", async () => {
+  const calls = installLostSessionEgo("DOM.getDocument", "tab-1");
+  const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+  globalThis.ego.sendCDPMessage = (payload) => {
+    const request = JSON.parse(payload);
+    if (request.method === "DOM.getDocument") {
+      setTimeout(() => {
+        globalThis.ego.onCDPMessage(
+          JSON.stringify({
+            method: "Page.frameNavigated",
+            sessionId: request.sessionId,
+            params: {
+              frame: {
+                id: "main",
+                url: "https://changed.example/new-document",
+                loaderId: "loader-new",
+              },
+            },
+          }),
+        );
+      }, 0);
+    }
+    originalSend(payload);
+  };
+  try {
+    await assert.rejects(
+      () => browserCdp("DOM.getDocument", { depth: 1 }),
+      /Session not found/,
+    );
+    const reads = calls.filter((c) => c.method === "DOM.getDocument");
+    assert.equal(reads.length, 1);
+    assert.equal(state.sessionId, null);
+    const eventNames = drainBrowserEvents().map((event) => event.method);
+    assert.ok(eventNames.includes("Page.frameNavigated"));
+  } finally {
+    cleanup();
+  }
+});
 
 // Observational methods are not automatically replayable when their arguments
 // refer to nodes, remote objects, requests, or frames from a lost session.

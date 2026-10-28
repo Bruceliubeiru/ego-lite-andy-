@@ -68,6 +68,41 @@ function installManualEgo(listTabsResult) {
   return calls;
 }
 
+/** Simulate a lost implicit CDP session; optionally change the active target. */
+function installLostSessionEgo(failingMethod, nextTarget = "tab-1") {
+  const calls = [];
+  let target = "tab-1";
+  let attachments = 0;
+  let failures = 0;
+  globalThis.ego = {
+    async listTabs() {
+      return { tabs: [{ targetId: target, active: true }] };
+    },
+    sendCDPMessage(payload) {
+      const parsed = JSON.parse(payload);
+      calls.push(parsed);
+      setTimeout(() => {
+        if (parsed.method === "Target.attachToTarget") {
+          attachments += 1;
+          globalThis.ego.onCDPMessage(
+            JSON.stringify({ id: parsed.id, result: { sessionId: `sess-${attachments}` } }),
+          );
+        } else if (parsed.method === failingMethod && failures++ === 0) {
+          target = nextTarget;
+          globalThis.ego.onCDPMessage(
+            JSON.stringify({ id: parsed.id, error: { message: "Session not found" } }),
+          );
+        } else {
+          globalThis.ego.onCDPMessage(
+            JSON.stringify({ id: parsed.id, result: {} }),
+          );
+        }
+      }, 0);
+    },
+  };
+  return calls;
+}
+
 /** Fire a CDP event through the handler set up by rawCdp. */
 function fireEvent(method, params = {}, sessionId) {
   const msg = { method, params };
@@ -698,6 +733,63 @@ test("ensureSession skips re-attach when targetId matches existing session", asy
 /* ------------------------------------------------------------------ */
 /*  SESSION_LOST retry                                                */
 /* ------------------------------------------------------------------ */
+
+test("browserCdp retries an observation-only CDP read on the same target", async () => {
+  const calls = installLostSessionEgo("DOM.getDocument");
+  try {
+    await browserCdp("DOM.getDocument", { depth: 1 });
+    assert.equal(
+      calls.filter((call) => call.method === "DOM.getDocument").length,
+      2,
+      "a safe read is retried once",
+    );
+    assert.equal(
+      calls.filter((call) => call.method === "Target.attachToTarget").length,
+      2,
+      "lost session reattaches to the original target",
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+for (const method of ["Runtime.evaluate", "Input.dispatchMouseEvent", "Page.navigate"]) {
+  test(`browserCdp does not replay potentially effectful ${method} after session loss`, async () => {
+    const calls = installLostSessionEgo(method);
+    try {
+      await assert.rejects(
+        () => browserCdp(method, {}),
+        /Session not found/,
+      );
+      assert.equal(
+        calls.filter((call) => call.method === method).length,
+        1,
+        "effectful command must not be sent a second time",
+      );
+      assert.equal(state.sessionId, null, "failed session must be invalidated");
+    } finally {
+      cleanup();
+    }
+  });
+}
+
+test("browserCdp refuses to retry a read on a different active target", async () => {
+  const calls = installLostSessionEgo("DOM.getDocument", "tab-2");
+  try {
+    await assert.rejects(
+      () => browserCdp("DOM.getDocument", { depth: 1 }),
+      /CDP session target changed before safe retry: DOM.getDocument/,
+    );
+    assert.equal(
+      calls.filter((call) => call.method === "DOM.getDocument").length,
+      1,
+      "a read must not silently switch to another tab",
+    );
+    assert.equal(state.sessionId, null, "changed target must not leave a trusted session");
+  } finally {
+    cleanup();
+  }
+});
 
 test("browserCdp does NOT retry SESSION_LOST for explicit sessionId", async () => {
   const calls = installManualEgo();

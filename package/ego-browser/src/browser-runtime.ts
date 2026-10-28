@@ -138,6 +138,9 @@ export async function browserCdp(
   } catch (error) {
     const lost = SESSION_LOST.test(error?.message || "");
     if (lost && !explicit && !BROWSER_LEVEL(method)) {
+      // A late failure from an abandoned target must not invalidate a newer
+      // session already acquired for the newly selected target.
+      assertSelectionUnchanged();
       invalidateSession();
       // Do not duplicate a potentially effectful command after an ambiguous
       // transport failure. A later explicit action may retry after observation.

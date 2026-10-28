@@ -287,11 +287,14 @@ export function updateResearchCoverage({ completed = [], action, outcome } = {})
 export function updateResearchRunState({ state = {}, selection, action, outcome } = {}) {
   // Only the selected, read-only action may mark a research surface covered.
   // A mismatched/stale execution receipt is not evidence of that read.
+  // Bind the semantic surface as well as the action ID: IDs can be reused
+  // across candidates or a receipt can be replayed for another surface.
   const matchedRead =
     selection?.mode === 'execute' &&
     typeof selection?.action_id === 'string' &&
     selection.action_id.trim().length > 0 &&
     selection.action_id === action?.id &&
+    canonicalCoverageKey(selection?.coverage_key) === canonicalCoverageKey(action?.coverage_key) &&
     action?.risk === 'read_only';
   const completedCoverageKeys = updateResearchCoverage({
     completed: state?.completed_coverage_keys,
@@ -387,6 +390,7 @@ export function selectNextResearchAction({ state, candidates = [] }) {
   return {
     mode: 'execute',
     action_id: selected.id,
+    coverage_key: coverageKey,
     reason: 'highest-decision-value-safe-read',
     ...(reopenAuthorization ? {
       reopen_coverage_key: reopenAuthorization.coverage_key,

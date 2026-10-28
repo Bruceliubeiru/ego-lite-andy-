@@ -133,9 +133,23 @@ export async function browserCdp(
     assertSelectionUnchanged();
   }
   const originalTargetId = state.sessionTargetId;
+  // Active-tab changes do not increment the explicit preference revision.
+  // Bind implicit responses to the session actually used for the request.
+  const assertImplicitSessionBound = (expectedSessionId) => {
+    if (explicit || BROWSER_LEVEL(method)) return;
+    if (
+      !originalTargetId ||
+      state.sessionTargetId !== originalTargetId ||
+      state.sessionId !== expectedSessionId
+    ) {
+      throw new Error(`browser CDP session changed during request: ${method}`);
+    }
+  };
+  assertImplicitSessionBound(effective);
   try {
     const result = await rawCdp(method, params, effective, timeoutMs);
     assertSelectionUnchanged();
+    assertImplicitSessionBound(effective);
     return result;
   } catch (error) {
     const lost = SESSION_LOST.test(error?.message || "");
@@ -143,6 +157,7 @@ export async function browserCdp(
       // A late failure from an abandoned target must not invalidate a newer
       // session already acquired for the newly selected target.
       assertSelectionUnchanged();
+      assertImplicitSessionBound(effective);
       invalidateSession();
       // Do not duplicate a potentially effectful command after an ambiguous
       // transport failure. A later explicit action may retry after observation.
@@ -157,8 +172,10 @@ export async function browserCdp(
           `CDP session target changed before safe retry: ${method}`,
         );
       }
+      assertImplicitSessionBound(fresh);
       const result = await rawCdp(method, params, fresh, timeoutMs);
       assertSelectionUnchanged();
+      assertImplicitSessionBound(fresh);
       return result;
     }
     throw error;

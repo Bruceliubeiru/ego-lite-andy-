@@ -740,6 +740,63 @@ test("late old-target session failure preserves the new target session", async (
   }
 });
 
+for (const outcome of ["success", "session lost"]) {
+  test(`browserCdp rejects late implicit active-tab ${outcome} without corrupting the new session`, async () => {
+    installAutoEgo({
+      tabs: [{ targetId: "tab-A", active: true }],
+    });
+    const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+    let readId;
+    let notifyRead;
+    let delayed = false;
+    const readStarted = new Promise((resolve) => {
+      notifyRead = resolve;
+    });
+    globalThis.ego.sendCDPMessage = (payload) => {
+      const request = JSON.parse(payload);
+      if (request.method === "DOM.getDocument" && !delayed) {
+        delayed = true;
+        readId = request.id;
+        notifyRead();
+        return;
+      }
+      originalSend(payload);
+    };
+    try {
+      const read = browserCdp("DOM.getDocument", { depth: 1 });
+      await readStarted;
+      // The active tab changes without setPreferredTarget(), so the explicit
+      // preference revision remains unchanged.
+      globalThis.ego.listTabs = async () => ({
+        tabs: [
+          { targetId: "tab-A", active: false },
+          { targetId: "tab-B", active: true },
+        ],
+      });
+      state.sessionAt = Date.now() - 3000;
+      const newSession = await ensureSession();
+      assert.equal(state.sessionTargetId, "tab-B");
+
+      globalThis.ego.onCDPMessage(
+        JSON.stringify(
+          outcome === "success"
+            ? { id: readId, result: { root: { nodeName: "OLD" } } }
+            : { id: readId, error: { message: "Session not found" } },
+        ),
+      );
+      await assert.rejects(
+        read,
+        /browser CDP session changed during request: DOM.getDocument/,
+        "an abandoned tab's result or error must not affect the new tab",
+      );
+      assert.equal(state.sessionId, newSession);
+      assert.equal(state.sessionTargetId, "tab-B");
+    } finally {
+      cleanup();
+    }
+  });
+}
+
 test("clearing preferred target reselects the active tab without stale cache", async () => {
   installAutoEgo({
     tabs: [

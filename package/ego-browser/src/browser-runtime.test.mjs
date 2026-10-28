@@ -1014,19 +1014,78 @@ test("target preference change during attach fails closed and permits fresh sele
 /*  SESSION_LOST retry                                                */
 /* ------------------------------------------------------------------ */
 
-test("browserCdp retries an observation-only CDP read on the same target", async () => {
-  const calls = installLostSessionEgo("DOM.getDocument");
+// Even identifier-free reads can observe a different document after a
+// session loss on the same target. Recovery requires a new explicit observation.
+for (const method of [
+  "DOM.getDocument",
+  "DOM.getNodeForLocation",
+  "DOMSnapshot.captureSnapshot",
+  "Page.captureScreenshot",
+  "Page.getFrameTree",
+  "Page.getNavigationHistory",
+]) {
+  test(`browserCdp does not automatically replay document-bound ${method}`, async () => {
+    const calls = installLostSessionEgo(method);
+    try {
+      await assert.rejects(() => browserCdp(method, {}), /Session not found/);
+      assert.equal(
+        calls.filter((call) => call.method === method).length,
+        1,
+        "a lost-session read must not be replayed against an unverified document",
+      );
+      assert.equal(
+        calls.filter((call) => call.method === "Target.attachToTarget").length,
+        1,
+        "no automatic reattachment for the failed read",
+      );
+      assert.equal(state.sessionId, null);
+    } finally {
+      cleanup();
+    }
+  });
+}
+
+test("same-target navigation during session loss cannot silently retry a read", async () => {
+  const calls = installLostSessionEgo("DOM.getDocument", "tab-1");
+  const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+  globalThis.ego.sendCDPMessage = (payload) => {
+    const request = JSON.parse(payload);
+    if (request.method === "DOM.getDocument") {
+      setTimeout(() => {
+        globalThis.ego.onCDPMessage(
+          JSON.stringify({
+            method: "Page.frameNavigated",
+            sessionId: request.sessionId,
+            params: {
+              frame: {
+                id: "main",
+                url: "https://changed.example/new-document",
+                loaderId: "loader-new",
+              },
+            },
+          }),
+        );
+      }, 0);
+    }
+    originalSend(payload);
+  };
   try {
-    await browserCdp("DOM.getDocument", { depth: 1 });
+    await assert.rejects(
+      () => browserCdp("DOM.getDocument", { depth: 1 }),
+      /Session not found/,
+    );
     assert.equal(
       calls.filter((call) => call.method === "DOM.getDocument").length,
-      2,
-      "a safe read is retried once",
+      1,
     );
     assert.equal(
       calls.filter((call) => call.method === "Target.attachToTarget").length,
-      2,
-      "lost session reattaches to the original target",
+      1,
+    );
+    assert.equal(state.sessionId, null);
+    assert.ok(
+      drainBrowserEvents().some((event) => event.method === "Page.frameNavigated"),
+      "the simulated document replacement was delivered",
     );
   } finally {
     cleanup();
@@ -1090,12 +1149,12 @@ for (const method of [
   });
 }
 
-test("browserCdp refuses to retry a read on a different active target", async () => {
+test("browserCdp does not retry a lost read after active target changes", async () => {
   const calls = installLostSessionEgo("DOM.getDocument", "tab-2");
   try {
     await assert.rejects(
       () => browserCdp("DOM.getDocument", { depth: 1 }),
-      /CDP session target changed before safe retry: DOM.getDocument/,
+      /Session not found/,
     );
     assert.equal(
       calls.filter((call) => call.method === "DOM.getDocument").length,
@@ -1103,10 +1162,10 @@ test("browserCdp refuses to retry a read on a different active target", async ()
       "a read must not silently switch to another tab",
     );
     assert.equal(
-      state.sessionId,
-      null,
-      "changed target must not leave a trusted session",
+      calls.filter((call) => call.method === "Target.attachToTarget").length,
+      1,
     );
+    assert.equal(state.sessionId, null);
   } finally {
     cleanup();
   }

@@ -113,13 +113,28 @@ export async function browserCdp(
     return state.cdpOverride(method, params, sessionId);
   }
   const explicit = sessionId !== undefined;
+  // A completed response from an old target is not trustworthy after an
+  // explicit target switch, even when the CDP request itself succeeded.
+  const selectionVersion = targetSelectionVersion;
+  const assertSelectionUnchanged = () => {
+    if (
+      !explicit &&
+      !BROWSER_LEVEL(method) &&
+      selectionVersion !== targetSelectionVersion
+    ) {
+      throw new Error(`browser target preference changed during CDP request: ${method}`);
+    }
+  };
   let effective = sessionId;
   if (!explicit && !BROWSER_LEVEL(method)) {
     effective = await ensureSession();
+    assertSelectionUnchanged();
   }
   const originalTargetId = state.sessionTargetId;
   try {
-    return await rawCdp(method, params, effective, timeoutMs);
+    const result = await rawCdp(method, params, effective, timeoutMs);
+    assertSelectionUnchanged();
+    return result;
   } catch (error) {
     const lost = SESSION_LOST.test(error?.message || "");
     if (lost && !explicit && !BROWSER_LEVEL(method)) {
@@ -128,6 +143,7 @@ export async function browserCdp(
       // transport failure. A later explicit action may retry after observation.
       if (!SAFE_SESSION_RETRY_METHODS.has(method)) throw error;
       const fresh = await ensureSession();
+      assertSelectionUnchanged();
       // A new active tab is not the same provenance surface as the failed read.
       // Do not turn an automatic recovery into a successful read of another tab.
       if (!originalTargetId || state.sessionTargetId !== originalTargetId) {
@@ -136,7 +152,9 @@ export async function browserCdp(
           `CDP session target changed before safe retry: ${method}`,
         );
       }
-      return rawCdp(method, params, fresh, timeoutMs);
+      const result = await rawCdp(method, params, fresh, timeoutMs);
+      assertSelectionUnchanged();
+      return result;
     }
     throw error;
   }

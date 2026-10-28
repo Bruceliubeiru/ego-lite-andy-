@@ -289,7 +289,9 @@ export function updateResearchRunState({ state = {}, selection, action, outcome 
   // A mismatched/stale execution receipt is not evidence of that read.
   const matchedRead =
     selection?.mode === 'execute' &&
-    selection?.action_id === action?.id &&
+    typeof selection?.action_id === 'string' &&
+    selection.action_id.trim().length > 0 &&
+    selection.action_id === action?.id &&
     action?.risk === 'read_only';
   const completedCoverageKeys = updateResearchCoverage({
     completed: state?.completed_coverage_keys,

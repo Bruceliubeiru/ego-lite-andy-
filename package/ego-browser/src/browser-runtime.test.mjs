@@ -1033,6 +1033,39 @@ test("browserCdp retries an observation-only CDP read on the same target", async
   }
 });
 
+// Observational methods are not automatically replayable when their arguments
+// refer to nodes, remote objects, requests, or frames from a lost session.
+for (const [method, params] of [
+  ["Accessibility.getPartialAXTree", { nodeId: 7 }],
+  ["Accessibility.getFullAXTree", { frameId: "old-frame" }],
+  ["CSS.getComputedStyleForNode", { nodeId: 7 }],
+  ["CSS.getMatchedStylesForNode", { nodeId: 7 }],
+  ["DOM.describeNode", { nodeId: 7 }],
+  ["DOM.getBoxModel", { nodeId: 7 }],
+  ["DOM.getContentQuads", { nodeId: 7 }],
+  ["DOM.getOuterHTML", { nodeId: 7 }],
+  ["DOM.querySelector", { nodeId: 7, selector: "main" }],
+  ["DOM.querySelectorAll", { nodeId: 7, selector: "main" }],
+  ["DOM.resolveNode", { nodeId: 7 }],
+  ["Network.getResponseBody", { requestId: "old-request" }],
+  ["Runtime.getProperties", { objectId: "old-object" }],
+]) {
+  test(`browserCdp does not replay session-bound ${method} parameters`, async () => {
+    const calls = installLostSessionEgo(method);
+    try {
+      await assert.rejects(() => browserCdp(method, params), /Session not found/);
+      assert.equal(
+        calls.filter((call) => call.method === method).length,
+        1,
+        "a stale identifier must not be sent into a new CDP session",
+      );
+      assert.equal(state.sessionId, null, "lost session must be invalidated");
+    } finally {
+      cleanup();
+    }
+  });
+}
+
 for (const method of [
   "Runtime.evaluate",
   "Input.dispatchMouseEvent",

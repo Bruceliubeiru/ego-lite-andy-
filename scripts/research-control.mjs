@@ -313,8 +313,7 @@ export function updateResearchRunState({ state = {}, selection, action, outcome 
     : null;
 
   if (
-    selection?.mode === 'execute' &&
-    selection?.action_id === action?.id &&
+    matchedRead &&
     currentAuthorization &&
     selection?.reopen_transition_key === currentAuthorization.transition_key &&
     outcome?.status === 'completed' &&

@@ -741,7 +741,7 @@ test("late old-target session failure preserves the new target session", async (
 });
 
 for (const outcome of ["success", "session lost"]) {
-  test(`browserCdp rejects late implicit active-tab ${outcome} without corrupting the new session`, async () => {
+  test(`browserCdp rejects old active-tab ${outcome}`, async () => {
     installAutoEgo({
       tabs: [{ targetId: "tab-A", active: true }],
     });

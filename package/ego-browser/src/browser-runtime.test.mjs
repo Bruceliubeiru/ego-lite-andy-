@@ -740,6 +740,45 @@ test("ensureSession selects the preferred tab when available", async () => {
   }
 });
 
+test("missing preferred target fails closed and can recover without switching tabs", async () => {
+  const calls = installAutoEgo({
+    tabs: [{ targetId: "tab-other", active: true }],
+  });
+  try {
+    setPreferredTarget("tab-requested");
+    await assert.rejects(
+      () => ensureSession(),
+      /preferred browser target is unavailable/,
+    );
+    assert.equal(
+      calls.filter((call) => call.method === "Target.attachToTarget").length,
+      0,
+      "must not attach to an unrelated active tab",
+    );
+    assert.equal(state.sessionId, null);
+    assert.equal(state.preferredTargetId, "tab-requested");
+
+    // A temporarily delayed tab listing can recover on the next explicit read.
+    globalThis.ego.listTabs = async () => ({
+      tabs: [
+        { targetId: "tab-other", active: true },
+        { targetId: "tab-requested", active: false },
+      ],
+    });
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-requested");
+    const attachments = calls.filter(
+      (call) => call.method === "Target.attachToTarget",
+    );
+    assert.deepEqual(
+      attachments.map((call) => call.params.targetId),
+      ["tab-requested"],
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("ensureSession falls back to the last tab when no active tab is found", async () => {
   const calls = installAutoEgo({
     tabs: [

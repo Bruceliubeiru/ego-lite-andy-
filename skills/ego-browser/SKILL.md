@@ -98,7 +98,7 @@ When passing a string that may create a new task space, the string should reflec
 
 Only one side — agent or user — holds control of a task space at any time. While the user holds control, any browser operation by the agent fails with a "user is controlling" message — do not retry it; follow the steps below to resume.
 
-A "user is controlling" error is a hard stop on the whole task — not an obstacle to route around. It means the user has deliberately taken the browser back, often because your current approach is going wrong. Honoring it *is* the correct outcome here; pushing the goal forward anyway is the failure. The only thing you may do is **ask the user and wait**.
+A "user is controlling" error is a hard stop for that task-space browser workflow — not an obstacle to route around. It does **not** by itself prove that the user deliberately took control: the runtime can delegate control when a browser permission prompt appears, including in a background Space. Honor the stop whether the cause is genuine user takeover or automatic delegation. Do not retry browser commands or reclaim control on your own; ask for the needed user action and wait. Independent, safe read-only research outside the paused Space may continue.
 
 An "inactive", "not assigned to an agent", or similar task-space error is also a hard stop with the same confirmation requirement. Resume only after explicit user confirmation, then start with `await claimTaskSpace(id)`.
 
@@ -106,7 +106,7 @@ An "inactive", "not assigned to an agent", or similar task-space error is also a
 
 **Regaining control**: Take control back *only* after the user explicitly confirms — through an Ask (your harness's button/option prompt, e.g. "Continue" vs "Finish task") or a "continue" message in chat. Then start a new heredoc with `await takeOverTaskSpace([nameOrId])` and resume; if the user chooses to finish, close out with `await completeTaskSpace(nameOrId, { keep })`. Never call `takeOverTaskSpace` on your own to grab control back — it has no ownership check and will seize the browser away from the user.
 
-**Unexpected takeover**: The user can take over at any time via the browser GUI — the same effect as the agent calling `handOffTaskSpace`. Do not retry the failed operation and do not auto-takeover; surface the Ask above (Continue / Finish) and resume only when the user picks Continue.
+**Unexpected control handoff**: A genuine GUI takeover and an automatic browser-permission handoff can both pause the agent. Do not infer a manual takeover from a generic stop. If the error explicitly identifies a permission prompt, tell the user to open the affected Task Space (including a background Space), inspect and handle the prompt themselves, and confirm when done; a prompt may be hidden behind the Space overview. If the runtime exposes no transition reason, report it as unknown rather than attributing it to the user. Never auto-approve permissions, retry the blocked command, create a replacement Space to evade the stop, or auto-takeover. Resume only after explicit user confirmation, then verify control and reacquire any material page context before trusting new observations.
 
 `await waitForAgentControl(nameOrId)` is a read-only blocking poll (it never takes control); use it only to wait inside the current heredoc for a handoff you initiated.
 

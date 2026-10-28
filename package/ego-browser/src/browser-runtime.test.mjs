@@ -1024,7 +1024,9 @@ for (const method of [
   "Page.getFrameTree",
   "Page.getNavigationHistory",
 ]) {
-  test(`browserCdp does not automatically replay document-bound ${method}`, async () => {
+  test(
+    `browserCdp does not automatically replay document-bound ${method}`,
+    async () => {
     const calls = installLostSessionEgo(method);
     try {
       await assert.rejects(() => browserCdp(method, {}), /Session not found/);
@@ -1042,10 +1044,13 @@ for (const method of [
     } finally {
       cleanup();
     }
-  });
+    },
+  );
 }
 
-test("same-target navigation during session loss cannot silently retry a read", async () => {
+test(
+  "same-target navigation during session loss cannot silently retry a read",
+  async () => {
   const calls = installLostSessionEgo("DOM.getDocument", "tab-1");
   const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
   globalThis.ego.sendCDPMessage = (payload) => {
@@ -1084,13 +1089,16 @@ test("same-target navigation during session loss cannot silently retry a read", 
     );
     assert.equal(state.sessionId, null);
     assert.ok(
-      drainBrowserEvents().some((event) => event.method === "Page.frameNavigated"),
+      drainBrowserEvents().some(
+        (event) => event.method === "Page.frameNavigated",
+      ),
       "the simulated document replacement was delivered",
     );
   } finally {
     cleanup();
   }
-});
+  },
+);
 
 // Observational methods are not automatically replayable when their arguments
 // refer to nodes, remote objects, requests, or frames from a lost session.

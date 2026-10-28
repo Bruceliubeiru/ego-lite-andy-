@@ -628,6 +628,51 @@ test("setPreferredTarget treats empty string as null", () => {
   assert.equal(state.preferredTargetId, null);
 });
 
+test("changing preferred target invalidates a fresh cached session", async () => {
+  const calls = installAutoEgo({
+    tabs: [
+      { targetId: "tab-A", active: true },
+      { targetId: "tab-B", active: false },
+    ],
+  });
+  try {
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-A");
+    setPreferredTarget("tab-B");
+    assert.equal(state.sessionId, null, "old target session must be discarded");
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-B");
+    assert.deepEqual(
+      calls
+        .filter((call) => call.method === "Target.attachToTarget")
+        .map((call) => call.params.targetId),
+      ["tab-A", "tab-B"],
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("clearing preferred target reselects the active tab without stale cache", async () => {
+  installAutoEgo({
+    tabs: [
+      { targetId: "tab-A", active: true },
+      { targetId: "tab-B", active: false },
+    ],
+  });
+  try {
+    setPreferredTarget("tab-B");
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-B");
+    clearPreferredTarget();
+    assert.equal(state.sessionId, null);
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-A");
+  } finally {
+    cleanup();
+  }
+});
+
 /* ------------------------------------------------------------------ */
 /*  ensureSession — session caching, TTL, tab selection               */
 /* ------------------------------------------------------------------ */
@@ -732,6 +777,52 @@ test("ensureSession skips re-attach when targetId matches existing session", asy
     const attach = calls.find((c) => c.method === "Target.attachToTarget");
     assert.equal(attach, undefined, "skips re-attach when target unchanged");
   } finally {
+    cleanup();
+  }
+});
+
+test("target preference change during attach fails closed and permits fresh selection", async () => {
+  installAutoEgo({
+    tabs: [
+      { targetId: "tab-A", active: true },
+      { targetId: "tab-B", active: false },
+    ],
+  });
+  const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+  let releaseAttach;
+  const attachGate = new Promise((resolve) => {
+    releaseAttach = resolve;
+  });
+  let notifyAttach;
+  const attachStarted = new Promise((resolve) => {
+    notifyAttach = resolve;
+  });
+  globalThis.ego.sendCDPMessage = (payload) => {
+    const parsed = JSON.parse(payload);
+    if (
+      parsed.method === "Target.attachToTarget" &&
+      parsed.params.targetId === "tab-A"
+    ) {
+      notifyAttach();
+      attachGate.then(() => originalSend(payload));
+      return;
+    }
+    originalSend(payload);
+  };
+  try {
+    const pendingSelection = ensureSession();
+    await attachStarted;
+    setPreferredTarget("tab-B");
+    releaseAttach();
+    await assert.rejects(
+      pendingSelection,
+      /browser target preference changed during session acquisition/,
+    );
+    assert.equal(state.sessionId, null, "stale attachment must be invalidated");
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-B");
+  } finally {
+    releaseAttach();
     cleanup();
   }
 });

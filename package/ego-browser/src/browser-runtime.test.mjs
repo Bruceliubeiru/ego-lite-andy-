@@ -85,12 +85,18 @@ function installLostSessionEgo(failingMethod, nextTarget = "tab-1") {
         if (parsed.method === "Target.attachToTarget") {
           attachments += 1;
           globalThis.ego.onCDPMessage(
-            JSON.stringify({ id: parsed.id, result: { sessionId: `sess-${attachments}` } }),
+            JSON.stringify({
+              id: parsed.id,
+              result: { sessionId: `sess-${attachments}` },
+            }),
           );
         } else if (parsed.method === failingMethod && failures++ === 0) {
           target = nextTarget;
           globalThis.ego.onCDPMessage(
-            JSON.stringify({ id: parsed.id, error: { message: "Session not found" } }),
+            JSON.stringify({
+              id: parsed.id,
+              error: { message: "Session not found" },
+            }),
           );
         } else {
           globalThis.ego.onCDPMessage(
@@ -753,24 +759,31 @@ test("browserCdp retries an observation-only CDP read on the same target", async
   }
 });
 
-for (const method of ["Runtime.evaluate", "Input.dispatchMouseEvent", "Page.navigate"]) {
-  test(`browserCdp does not replay potentially effectful ${method} after session loss`, async () => {
-    const calls = installLostSessionEgo(method);
-    try {
-      await assert.rejects(
-        () => browserCdp(method, {}),
-        /Session not found/,
-      );
-      assert.equal(
-        calls.filter((call) => call.method === method).length,
-        1,
-        "effectful command must not be sent a second time",
-      );
-      assert.equal(state.sessionId, null, "failed session must be invalidated");
-    } finally {
-      cleanup();
-    }
-  });
+for (const method of [
+  "Runtime.evaluate",
+  "Input.dispatchMouseEvent",
+  "Page.navigate",
+]) {
+  test(
+    `browserCdp does not replay potentially effectful ${method} after session loss`,
+    async () => {
+      const calls = installLostSessionEgo(method);
+      try {
+        await assert.rejects(
+          () => browserCdp(method, {}),
+          /Session not found/,
+        );
+        assert.equal(
+          calls.filter((call) => call.method === method).length,
+          1,
+          "effectful command must not be sent a second time",
+        );
+        assert.equal(state.sessionId, null, "failed session must be invalidated");
+      } finally {
+        cleanup();
+      }
+    },
+  );
 }
 
 test("browserCdp refuses to retry a read on a different active target", async () => {
@@ -785,7 +798,11 @@ test("browserCdp refuses to retry a read on a different active target", async ()
       1,
       "a read must not silently switch to another tab",
     );
-    assert.equal(state.sessionId, null, "changed target must not leave a trusted session");
+    assert.equal(
+      state.sessionId,
+      null,
+      "changed target must not leave a trusted session",
+    );
   } finally {
     cleanup();
   }

@@ -10,29 +10,18 @@ const SESSION_LOST =
   /Session (?:with given id )?not found|Target closed|No session/i;
 const BROWSER_LEVEL = (method) =>
   method.startsWith("Target.") || method.startsWith("Browser.");
-// A lost session can leave command execution ambiguous. Only retry known
-// observation-only CDP methods; Runtime.evaluate, Input events, navigation,
-// and other effectful/unknown methods must not be replayed automatically.
+// A lost session can leave command execution ambiguous. Retry only
+// observation-only CDP methods without session/document/request-scoped input
+// identifiers. Even an observational method must fail closed when its
+// nodeId, objectId, requestId, or frameId came from the lost session.
+// This is a transport-recovery allowlist, NOT proof of document continuity.
 const SAFE_SESSION_RETRY_METHODS = new Set([
-  "Accessibility.getFullAXTree",
-  "Accessibility.getPartialAXTree",
-  "CSS.getComputedStyleForNode",
-  "CSS.getMatchedStylesForNode",
-  "DOM.describeNode",
-  "DOM.getBoxModel",
-  "DOM.getContentQuads",
   "DOM.getDocument",
   "DOM.getNodeForLocation",
-  "DOM.getOuterHTML",
-  "DOM.querySelector",
-  "DOM.querySelectorAll",
-  "DOM.resolveNode",
   "DOMSnapshot.captureSnapshot",
-  "Network.getResponseBody",
   "Page.captureScreenshot",
   "Page.getFrameTree",
   "Page.getNavigationHistory",
-  "Runtime.getProperties",
 ]);
 type BrowserEventSubscriber = {
   method: string;

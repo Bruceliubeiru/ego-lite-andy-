@@ -46,6 +46,8 @@ const eventWaiters = [];
 const eventSubscribers = new Set<BrowserEventSubscriber>();
 const pageEnabledSessions = new Set();
 const pendingDialogs = new Map();
+// Changes in target selection invalidate cached or in-flight session choices.
+let targetSelectionVersion = 0;
 export function isBrowserRuntime() {
   return Boolean(
     globalThis.ego && typeof globalThis.ego.sendCDPMessage === "function",
@@ -147,6 +149,7 @@ export async function ensureSession() {
   if (state.sessionInflight) {
     return state.sessionInflight;
   }
+  const selectionVersion = targetSelectionVersion;
   state.sessionInflight = (async () => {
     try {
       const result = assertNoEgoError(await browserEgo().listTabs());
@@ -170,6 +173,12 @@ export async function ensureSession() {
         state.sessionTargetId = targetId;
       }
       await enablePageEvents(state.sessionId);
+      if (selectionVersion !== targetSelectionVersion) {
+        invalidateSession();
+        throw new Error(
+          "browser target preference changed during session acquisition",
+        );
+      }
       state.sessionAt = Date.now();
       return state.sessionId;
     } finally {
@@ -190,11 +199,15 @@ export function invalidateSession() {
 }
 
 export function setPreferredTarget(targetId) {
-  state.preferredTargetId = targetId || null;
+  const nextTarget = targetId || null;
+  if (state.preferredTargetId === nextTarget) return;
+  state.preferredTargetId = nextTarget;
+  targetSelectionVersion += 1;
+  invalidateSession();
 }
 
 export function clearPreferredTarget() {
-  state.preferredTargetId = null;
+  setPreferredTarget(null);
 }
 
 export function drainBrowserEvents() {

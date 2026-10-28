@@ -167,6 +167,28 @@ assert.deepEqual(
   'run-state update must not consume a transition when the executed action does not match the authorized selection',
 );
 
+// A completed-looking write-class receipt must not spend the one-shot
+// material reopen authorization; only the selected read may consume it.
+for (const [label, risk] of [['write-class', 'write'], ['missing-risk', undefined]]) {
+  const untrustedRecheck = updateResearchRunState({
+    state: {
+      decision_sensitive: true,
+      completed_coverage_keys: ['official-policy:effective-date'],
+      material_reopen_evidence: [realizedScopeReceipt],
+    },
+    selection: firstSelection,
+    action: { ...baseAction, risk, coverage_key: 'official-policy:effective-date' },
+    outcome: { status: 'completed', material_state_observed: true },
+  });
+  assert.deepEqual(untrustedRecheck.consumed_reopen_transition_keys, [],
+    `${label} must not consume a selected read's material reopen authorization`);
+  assert.equal(selectNextResearchAction({
+    state: untrustedRecheck,
+    candidates: [{ ...baseAction, coverage_key: 'official-policy:effective-date' }],
+  }).action_id, baseAction.id,
+  `${label} must leave the legitimate read available for retry`);
+}
+
 const failedRecheckState = updateResearchRunState({
   state: {
     decision_sensitive: true,

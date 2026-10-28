@@ -10,19 +10,9 @@ const SESSION_LOST =
   /Session (?:with given id )?not found|Target closed|No session/i;
 const BROWSER_LEVEL = (method) =>
   method.startsWith("Target.") || method.startsWith("Browser.");
-// A lost session can leave command execution ambiguous. Retry only
-// observation-only CDP methods without session/document/request-scoped input
-// identifiers. Even an observational method must fail closed when its
-// nodeId, objectId, requestId, or frameId came from the lost session.
-// This is a transport-recovery allowlist, NOT proof of document continuity.
-const SAFE_SESSION_RETRY_METHODS = new Set([
-  "DOM.getDocument",
-  "DOM.getNodeForLocation",
-  "DOMSnapshot.captureSnapshot",
-  "Page.captureScreenshot",
-  "Page.getFrameTree",
-  "Page.getNavigationHistory",
-]);
+// A lost session cannot establish continuity of the underlying document,
+// even if the target ID is unchanged. Fail closed rather than silently
+// replaying a read against a possibly replaced document.
 type BrowserEventSubscriber = {
   method: string;
   sessionId?: string;
@@ -148,24 +138,8 @@ export async function browserCdp(
       assertSelectionUnchanged();
       assertImplicitSessionBound(effective);
       invalidateSession();
-      // Do not duplicate a potentially effectful command after an ambiguous
-      // transport failure. A later explicit action may retry after observation.
-      if (!SAFE_SESSION_RETRY_METHODS.has(method)) throw error;
-      const fresh = await ensureSession();
-      assertSelectionUnchanged();
-      // A new active tab is not the same provenance surface as the failed read.
-      // Do not turn an automatic recovery into a successful read of another tab.
-      if (!originalTargetId || state.sessionTargetId !== originalTargetId) {
-        invalidateSession();
-        throw new Error(
-          `CDP session target changed before safe retry: ${method}`,
-        );
-      }
-      assertImplicitSessionBound(fresh);
-      const result = await rawCdp(method, params, fresh, timeoutMs);
-      assertSelectionUnchanged();
-      assertImplicitSessionBound(fresh);
-      return result;
+      // The caller must explicitly reacquire and verify the page/document.
+      throw error;
     }
     throw error;
   }

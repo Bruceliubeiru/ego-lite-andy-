@@ -1053,7 +1053,10 @@ for (const [method, params] of [
   test(`browserCdp does not replay session-bound ${method} parameters`, async () => {
     const calls = installLostSessionEgo(method);
     try {
-      await assert.rejects(() => browserCdp(method, params), /Session not found/);
+      await assert.rejects(
+        () => browserCdp(method, params),
+        /Session not found/,
+      );
       assert.equal(
         calls.filter((call) => call.method === method).length,
         1,

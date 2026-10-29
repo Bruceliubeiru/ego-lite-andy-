@@ -1,5 +1,5 @@
 {
-  "version": "1.5.11",
+  "version": "1.5.12",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
@@ -46,7 +46,8 @@
         "An exhaustive enumeration of the wrong scope is not negative evidence for the target scope; preserve the mismatch explicitly and re-plan toward one bounded exact-scope verification if available.",
         "Use an independent bounded read path, such as a task-space listing or appropriate first-party state enumeration, when it can prove the same fact without expanding sensitive permissions or taking control from another owner.",
         "Do not create, reclaim, close, or mutate Spaces merely to test whether hidden/background state exists.",
-        "If no equivalent safe path exists, keep the claim Needs verification or blocked rather than asserting a negative fact."
+        "If no equivalent safe path exists, keep the claim Needs verification or blocked rather than asserting a negative fact.",
+        "When a claim depends on observing or blocking all requests from a page and its descendants, distinguish root Page/target-scoped interception from OOPIF, worker, and other subtarget coverage. Successful interception of root requests is not exhaustive negative evidence for child requests: upstream citrolabs/ego-lite issue #586 reports a bounded Windows 0.6.1.13 reproduction in which root-session Fetch interception blocked a root request while an OOPIF child request reached the server without a root-session pause event. Treat this as scoped counterevidence, not a universal claim about every runtime or API. Require independently verified descendant-scoped coverage or keep the claim Needs verification; do not widen browser-global control or permissions merely to manufacture completeness."
       ]
     },
     {

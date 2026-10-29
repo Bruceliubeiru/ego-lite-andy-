@@ -281,7 +281,17 @@ function handleMessage(message) {
       continue;
     }
     deliveredToSubscriber = true;
-    subscriber.listener(data);
+    try {
+      subscriber.listener(data);
+    } catch (error) {
+      // One failing consumer must not suppress other subscribers or waiters.
+      // Native CDP callbacks have no caller that can recover this exception.
+      try {
+        console.error("[ego-browser] CDP event subscriber failed:", error);
+      } catch {
+        // Logging must not interrupt the native event callback either.
+      }
+    }
   }
   if (!(deliveredToSubscriber && data.method === "Page.screencastFrame")) {
     events.push(data);

@@ -12,6 +12,7 @@ import {
   ensureSession,
   browserSnapshotRefsToRefMap,
   waitForBrowserEvent,
+  subscribeBrowserEvent,
 } from "../dist/src/browser-runtime.js";
 import { state } from "../dist/src/state.js";
 
@@ -208,6 +209,51 @@ test("handleMessage ignores responses for unknown request ids", async () => {
     );
     await p;
   } finally {
+    cleanup();
+  }
+});
+
+test("a throwing CDP event subscriber cannot suppress other consumers", async () => {
+  const calls = installManualEgo();
+  let stopThrowing;
+  let stopHealthy;
+  try {
+    const init = browserCdp("Target.getVersion", {}, undefined, 5000);
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: calls[0].id, result: {} }),
+    );
+    await init;
+
+    stopThrowing = subscribeBrowserEvent(
+      "Page.loadEventFired",
+      undefined,
+      () => {
+        throw new Error("subscriber failure");
+      },
+    );
+    let healthyCalls = 0;
+    stopHealthy = subscribeBrowserEvent(
+      "Page.loadEventFired",
+      undefined,
+      () => {
+        healthyCalls += 1;
+      },
+    );
+    const awaited = waitForBrowserEvent(
+      (event) => event.method === "Page.loadEventFired",
+      1000,
+    );
+    assert.doesNotThrow(() =>
+      fireEvent("Page.loadEventFired", { timestamp: 123 }),
+    );
+    assert.equal(healthyCalls, 1);
+    assert.equal((await awaited).params.timestamp, 123);
+    const buffered = drainBrowserEvents();
+    assert.equal(buffered.length, 1);
+    assert.equal(buffered[0].method, "Page.loadEventFired");
+  } finally {
+    stopThrowing?.();
+    stopHealthy?.();
     cleanup();
   }
 });

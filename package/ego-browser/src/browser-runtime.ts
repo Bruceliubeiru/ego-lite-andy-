@@ -177,7 +177,12 @@ export async function ensureSession() {
           { targetId, flatten: true },
           undefined,
         );
-        state.sessionId = attached.result?.sessionId || attached.sessionId;
+        const attachedSessionId = attached.result?.sessionId || attached.sessionId;
+        if (typeof attachedSessionId !== "string" || !attachedSessionId) {
+          invalidateSession();
+          throw new Error("Target.attachToTarget returned no valid sessionId");
+        }
+        state.sessionId = attachedSessionId;
         state.sessionTargetId = targetId;
       }
       await enablePageEvents(state.sessionId);

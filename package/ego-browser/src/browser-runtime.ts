@@ -177,7 +177,8 @@ export async function ensureSession() {
           { targetId, flatten: true },
           undefined,
         );
-        const attachedSessionId = attached.result?.sessionId || attached.sessionId;
+        const attachedSessionId =
+          attached.result?.sessionId || attached.sessionId;
         if (typeof attachedSessionId !== "string" || !attachedSessionId) {
           invalidateSession();
           throw new Error("Target.attachToTarget returned no valid sessionId");

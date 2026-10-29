@@ -408,6 +408,66 @@ test("waitForBrowserEvent resolves future matching events", async () => {
   }
 });
 
+test("nested CDP delivery cannot remove a different pending event waiter", async () => {
+  installAutoEgo();
+  try {
+    await browserCdp("Runtime.evaluate", { expression: "1" });
+    let nested = false;
+    const outer = waitForBrowserEvent((event) => {
+      if (event.method === "Test.outer" && !nested) {
+        nested = true;
+        fireEvent("Test.inner");
+      }
+      return event.method === "Test.outer";
+    }, 1000);
+    // This waiter settles in the nested dispatch, but was also in the outer
+    // dispatch snapshot. Re-processing it used to splice(-1) the final waiter.
+    const inner = waitForBrowserEvent(
+      (event) => event.method === "Test.inner" || event.method === "Test.outer",
+      1000,
+    );
+    const future = waitForBrowserEvent(
+      (event) => event.method === "Test.future",
+      1000,
+    );
+    fireEvent("Test.outer");
+    fireEvent("Test.future");
+    const [a, b, c] = await Promise.all([outer, inner, future]);
+    assert.equal(a.method, "Test.outer");
+    assert.equal(b.method, "Test.inner");
+    assert.equal(c.method, "Test.future");
+  } finally {
+    cleanup();
+  }
+});
+
+test("nested event resolution followed by predicate throw cannot remove another waiter", async () => {
+  installAutoEgo();
+  try {
+    await browserCdp("Runtime.evaluate", { expression: "1" });
+    let nested = false;
+    const first = waitForBrowserEvent((event) => {
+      if (event.method === "Test.outer" && !nested) {
+        nested = true;
+        fireEvent("Test.inner");
+        throw new Error("outer predicate threw after nested resolution");
+      }
+      return event.method === "Test.inner";
+    }, 1000);
+    const future = waitForBrowserEvent(
+      (event) => event.method === "Test.future",
+      1000,
+    );
+    fireEvent("Test.outer");
+    fireEvent("Test.future");
+    const [a, b] = await Promise.all([first, future]);
+    assert.equal(a.method, "Test.inner");
+    assert.equal(b.method, "Test.future");
+  } finally {
+    cleanup();
+  }
+});
+
 test("waitForBrowserEvent ignores events that happened before waiting", async () => {
   installAutoEgo();
   try {

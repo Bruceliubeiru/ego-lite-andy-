@@ -1325,3 +1325,52 @@ test("browserSnapshotRefsToRefMap skips null, non-object, and missing backendNod
   assert.equal(refMap._data.size, 1, "only the valid ref is added");
   assert.ok(refMap._data.has("7"));
 });
+
+/* ------------------------------------------------------------------ */
+/*  Missing CDP session identity — never dispatch unscoped page reads  */
+/* ------------------------------------------------------------------ */
+
+test("missing attach sessionId fails closed and a later valid attach recovers", async () => {
+  const calls = [];
+  let attachCount = 0;
+  globalThis.ego = {
+    async listTabs() {
+      return { tabs: [{ targetId: "tab-1", active: true }] };
+    },
+    sendCDPMessage(payload) {
+      const request = JSON.parse(payload);
+      calls.push(request);
+      setTimeout(() => {
+        const result =
+          request.method === "Target.attachToTarget"
+            ? ++attachCount === 1
+              ? {}
+              : { sessionId: "sess-recovered" }
+            : {};
+        globalThis.ego?.onCDPMessage?.(
+          JSON.stringify({ id: request.id, result }),
+        );
+      }, 0);
+    },
+  };
+  try {
+    await assert.rejects(
+      browserCdp("Runtime.evaluate", { expression: "1" }),
+      /Target\.attachToTarget returned no valid sessionId/,
+    );
+    assert.equal(state.sessionId, null);
+    assert.equal(state.sessionTargetId, null);
+    assert.equal(
+      calls.some((call) => call.method === "Runtime.evaluate"),
+      false,
+      "must not send a page command without a verified CDP session",
+    );
+    await browserCdp("Runtime.evaluate", { expression: "1" });
+    const reads = calls.filter((call) => call.method === "Runtime.evaluate");
+    assert.equal(reads.length, 1);
+    assert.equal(reads[0].sessionId, "sess-recovered");
+    assert.equal(state.sessionTargetId, "tab-1");
+  } finally {
+    cleanup();
+  }
+});

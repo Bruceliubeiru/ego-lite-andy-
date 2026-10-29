@@ -236,6 +236,14 @@ function handleMessage(message) {
   } catch {
     return;
   }
+  // The native callback can receive malformed JSON values. Only CDP
+  // responses (id) and events (method) belong in the pending/event pipelines.
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return;
+  }
+  if (!Object.hasOwn(data, "id") && typeof data.method !== "string") {
+    return;
+  }
   if (Object.hasOwn(data, "id")) {
     const entry = pending.get(data.id);
     if (!entry) {

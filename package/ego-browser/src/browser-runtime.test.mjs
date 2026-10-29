@@ -197,6 +197,36 @@ test("handleMessage ignores unparseable JSON", async () => {
   }
 });
 
+test("handleMessage ignores malformed JSON shapes without poisoning event delivery", async () => {
+  const calls = installManualEgo();
+  try {
+    const pending = browserCdp("Target.getVersion", {}, undefined, 5000);
+    for (const payload of [
+      "null",
+      "true",
+      "42",
+      '"not a CDP message"',
+      "[]",
+      "{}",
+      '{"params":{}}',
+    ]) {
+      assert.doesNotThrow(() => globalThis.ego.onCDPMessage(payload));
+    }
+    assert.deepEqual(drainBrowserEvents(), [], "invalid shapes are not events");
+
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: calls[0].id, result: {} }),
+    );
+    await pending;
+    fireEvent("Page.loadEventFired", { timestamp: 123 });
+    const buffered = drainBrowserEvents();
+    assert.equal(buffered.length, 1, "valid events still arrive");
+    assert.equal(buffered[0].method, "Page.loadEventFired");
+  } finally {
+    cleanup();
+  }
+});
+
 test("handleMessage ignores responses for unknown request ids", async () => {
   const calls = installManualEgo();
   try {

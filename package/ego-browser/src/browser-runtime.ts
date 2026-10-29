@@ -308,18 +308,26 @@ function handleMessage(message) {
     }
   }
   for (const waiter of [...eventWaiters]) {
+    // A predicate may synchronously dispatch another CDP event. That nested
+    // delivery can already settle this waiter; never splice(-1) and remove
+    // an unrelated waiter from the live list.
+    if (!eventWaiters.includes(waiter)) continue;
     let matched = false;
     try {
       matched = waiter.predicate(data);
     } catch (error) {
+      const index = eventWaiters.indexOf(waiter);
+      if (index < 0) continue;
       clearTimeout(waiter.timer);
-      eventWaiters.splice(eventWaiters.indexOf(waiter), 1);
+      eventWaiters.splice(index, 1);
       waiter.reject(error);
       continue;
     }
     if (!matched) continue;
+    const index = eventWaiters.indexOf(waiter);
+    if (index < 0) continue;
     clearTimeout(waiter.timer);
-    eventWaiters.splice(eventWaiters.indexOf(waiter), 1);
+    eventWaiters.splice(index, 1);
     waiter.resolve(data);
   }
 }

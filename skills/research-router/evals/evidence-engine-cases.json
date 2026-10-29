@@ -1,5 +1,5 @@
 {
-  "version": "1.5.12",
+  "version": "1.5.13",
   "purpose": "Regression cases for BruceAI Evidence Engine v1. These cases consolidate existing evidence, provenance, conflict, and uncertainty rules without creating additional hard collaboration gates.",
   "cases": [
     {
@@ -19,7 +19,8 @@
         "Treat observation time and effective state time as material provenance when the claim is about current state; do not let an older summary or initial issue body silently override newer state-changing evidence.",
         "When sources describe successive states rather than the same moment, preserve both in temporal order instead of manufacturing a factual conflict.",
         "Before acting on a consequential current-state claim, consume the newest relevant state-changing evidence available within the bounded target scope and invalidate stale next actions when that evidence changes the decision.",
-        "Do not infer that a newer source is more authoritative merely because it is newer; freshness only resolves temporal state when provenance and scope are sufficient for the claim being evaluated."
+        "Do not infer that a newer source is more authoritative merely because it is newer; freshness only resolves temporal state when provenance and scope are sufficient for the claim being evaluated.",
+        "Do not equate an unchanged app/runtime version with unchanged effective behavior when remote feature flags or configuration can change after release. Upstream citrolabs/ego-lite#593 reports macOS ego lite 0.6.1.13 retaining Secure Input after focus loss, followed by the same reporter observing release after a maintainer-described feature-flag disable and normal restart; the maintainer closed the issue after that bounded confirmation. Preserve binary version, effective configuration when independently observable, restart/observation time, and exact environment as separate provenance. A closed issue or one verified rollout does not prove every installation received the configuration or that the underlying Chromium issue is universally fixed."
       ]
     },
     {

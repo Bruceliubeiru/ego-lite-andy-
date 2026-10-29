@@ -248,11 +248,9 @@ test("a throwing CDP event subscriber cannot suppress other consumers", async ()
     );
     assert.equal(healthyCalls, 1);
     assert.equal((await awaited).params.timestamp, 123);
-    assert.equal(
-      drainBrowserEvents().filter((event) => event.method === "Page.loadEventFired")
-        .length,
-      1,
-    );
+    const buffered = drainBrowserEvents();
+    assert.equal(buffered.length, 1);
+    assert.equal(buffered[0].method, "Page.loadEventFired");
   } finally {
     stopThrowing?.();
     stopHealthy?.();

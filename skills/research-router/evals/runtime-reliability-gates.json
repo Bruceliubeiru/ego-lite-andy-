@@ -1,5 +1,5 @@
 {
-  "version": "1.9.3",
+  "version": "1.9.4",
   "purpose": "Regression gates for Ego/browser runtime reliability and token-efficient recovery behavior.",
   "cases": [
     {
@@ -50,12 +50,13 @@
     },
     {
       "id": "site-learning-absence-vs-workspace-resolution-failure",
-      "scenario": "An Ego browser workflow reports that no site learning pack exists (for example learnContext() returns exists:false or a site tool cannot be found), but the installed runtime may actually contain the pack while its agent-workspace or packaged-skill path resolved incorrectly.",
+      "scenario": "An Ego browser workflow reports that no site learning pack exists (for example learnContext() returns exists:false or a site tool cannot be found), but the installed runtime may actually contain the pack while its agent-workspace or packaged-skill path resolved incorrectly. A Windows app upgrade may also leave a stale version-directory junction, making the CLI and packaged Skill disappear even though the newer application directory exists.",
       "expected": [
         "Do not interpret a clean-looking no-learning result as proof that no site pack exists when the exact installed runtime has a known or plausible workspace-resolution failure; distinguish pack absence from pack discovery failure.",
         "Before abandoning a structured site tool for generic DOM or large snapshots, verify the exact released/installed runtime's resolved learning root or another non-sensitive indicator that the intended pack is discoverable. Keep this check bounded; do not enumerate credentials, unrelated profile state, or the user's filesystem broadly.",
         "Do not hard-code a version-scoped application-bundle path, mutate a shared/global environment, or write into the installed app bundle as an automatic workaround. Prefer an upstream-supported stable workspace/configuration path when one exists; otherwise fall back to native search/fetch or scoped browser reads and mark site-learning acceleration as unavailable for that run.",
-        "If the pack is present but selectors or structured outputs appear stale, treat tool success and tool correctness separately: cross-check the exact requested fact before relying on the result, rather than assuming a structured tool is authoritative merely because it executed."
+        "If the pack is present but selectors or structured outputs appear stale, treat tool success and tool correctness separately: cross-check the exact requested fact before relying on the result, rather than assuming a structured tool is authoritative merely because it executed.",
+        "For a missing ego-browser CLI or Skill after a Windows upgrade, distinguish application-install success from the effective runtime/Skill resolution path. Upstream citrolabs/ego-lite#616 reports Windows 11 upgrades through 0.6.1.9, 0.6.1.13, and 0.6.2.5 leaving active_version_dir pointed at a removed version, breaking both CLI discovery and a chained Skill junction. This is one reporter's bounded reproduction, not proof that all Windows updates fail. When relevant and safely accessible, check only the resolved pointer target, its existence, and the executing CLI/Skill version; do not treat a missing CLI as proof that ego-browser is unsupported or no Skill is installed, and do not automatically rewrite shared junctions or privileged installation paths."
       ]
     },
     {

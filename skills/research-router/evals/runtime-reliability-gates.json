@@ -1,5 +1,5 @@
 {
-  "version": "1.9.4",
+  "version": "1.9.5",
   "purpose": "Regression gates for Ego/browser runtime reliability and token-efficient recovery behavior.",
   "cases": [
     {
@@ -19,7 +19,9 @@
         "Do not loop the same expensive timed-out observation without a material state change or a bounded retry budget.",
         "After one confirmed timeout, prefer a cheaper independent read path or a documented fallback that proves the needed fact, and record that visual verification is degraded rather than pretending the screenshot succeeded.",
         "Do not promote an unverified workaround merely because it avoids the timeout; keep the fallback scoped to the evidence it can actually prove and preserve version/runtime context.",
-        "Use retries only when there is a concrete reason to expect changed conditions, and cap them so timeout handling cannot dominate token, wall-clock, or browser-resource budgets."
+        "Use retries only when there is a concrete reason to expect changed conditions, and cap them so timeout handling cannot dominate token, wall-clock, or browser-resource budgets.",
+        "Scope screenshot reliability to the exact installed build and window lifecycle, not merely a visible/hidden label. Upstream citrolabs/ego-lite#293 was closed for macOS 0.6.2.5 minimized-window support, but #620 reports intermittent Page.captureScreenshot timeouts in one macOS 0.6.2.5 session before the app window had ever been shown. Success after first display is an observed correlation, not proof of a universal causal remedy; startup warm-up or elapsed time remain alternatives. If already exposed, check only bounded non-sensitive window state, and do not automatically foreground a user window or switch to a different browser/profile to manufacture a successful capture.",
+        "Treat screenshot timeouts as potentially resource-affecting even though capture is observational. Independent upstream citrolabs/ego-lite#482 and #620 reports describe persistent macOS 'Capturing' display-sleep assertions after failed captures, including a bounded 0.6.2.5 report; a later successful screenshot does not prove cleanup. Avoid repeated capture attempts without changed conditions; when material and available, inspect only the relevant process's non-sensitive assertion state, and do not close user-owned task spaces or change system sleep settings as an automatic workaround. If cleanup cannot be observed, keep resource state unverified."
       ]
     },
     {

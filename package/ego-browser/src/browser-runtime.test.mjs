@@ -69,6 +69,47 @@ function installManualEgo(listTabsResult) {
   return calls;
 }
 
+/** Simulate a lost implicit CDP session; optionally change the active target. */
+function installLostSessionEgo(failingMethod, nextTarget = "tab-1") {
+  const calls = [];
+  let target = "tab-1";
+  let attachments = 0;
+  let failures = 0;
+  globalThis.ego = {
+    async listTabs() {
+      return { tabs: [{ targetId: target, active: true }] };
+    },
+    sendCDPMessage(payload) {
+      const parsed = JSON.parse(payload);
+      calls.push(parsed);
+      setTimeout(() => {
+        if (parsed.method === "Target.attachToTarget") {
+          attachments += 1;
+          globalThis.ego.onCDPMessage(
+            JSON.stringify({
+              id: parsed.id,
+              result: { sessionId: `sess-${attachments}` },
+            }),
+          );
+        } else if (parsed.method === failingMethod && failures++ === 0) {
+          target = nextTarget;
+          globalThis.ego.onCDPMessage(
+            JSON.stringify({
+              id: parsed.id,
+              error: { message: "Session not found" },
+            }),
+          );
+        } else {
+          globalThis.ego.onCDPMessage(
+            JSON.stringify({ id: parsed.id, result: {} }),
+          );
+        }
+      }, 0);
+    },
+  };
+  return calls;
+}
+
 /** Fire a CDP event through the handler set up by rawCdp. */
 function fireEvent(method, params = {}, sessionId) {
   const msg = { method, params };
@@ -622,6 +663,59 @@ test("Target.detachedFromTarget invalidates session when targetId matches", asyn
   }
 });
 
+test("late detach from an old session on the same target preserves the new session", async () => {
+  const calls = installManualEgo();
+  try {
+    state.sessionId = "sess-new";
+    state.sessionTargetId = "target-1";
+    state.sessionAt = Date.now();
+
+    const setup = browserCdp("Target.getVersion", {}, undefined, 5000);
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: calls[0].id, result: {} }),
+    );
+    await setup;
+
+    fireEvent("Page.javascriptDialogOpening", { type: "alert" }, "sess-new");
+    fireEvent("Target.detachedFromTarget", {
+      targetId: "target-1",
+      sessionId: "sess-old",
+    });
+    assert.equal(state.sessionId, "sess-new");
+    assert.equal(state.sessionTargetId, "target-1");
+    assert.ok(pendingDialog("sess-new"), "new session dialog must survive");
+
+    const read = browserCdp("Runtime.evaluate", { expression: "1" });
+    await Promise.resolve();
+    assert.equal(calls[1].sessionId, "sess-new");
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: calls[1].id, result: { value: 1 } }),
+    );
+    assert.equal((await read).result.value, 1);
+  } finally {
+    cleanup();
+  }
+});
+
+test("detach without a session ID fails closed for the selected target", async () => {
+  const calls = installManualEgo();
+  try {
+    state.sessionId = "sess-current";
+    state.sessionTargetId = "target-1";
+    state.sessionAt = Date.now();
+    const setup = browserCdp("Target.getVersion", {}, undefined, 5000);
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: calls[0].id, result: {} }),
+    );
+    await setup;
+    fireEvent("Target.detachedFromTarget", { targetId: "target-1" });
+    assert.equal(state.sessionId, null);
+    assert.equal(state.sessionTargetId, null);
+  } finally {
+    cleanup();
+  }
+});
+
 test("Target.targetDestroyed also invalidates session", async () => {
   const calls = installManualEgo();
   try {
@@ -723,6 +817,195 @@ test("setPreferredTarget treats empty string as null", () => {
   assert.equal(state.preferredTargetId, null);
 });
 
+test("changing preferred target invalidates a fresh cached session", async () => {
+  const calls = installAutoEgo({
+    tabs: [
+      { targetId: "tab-A", active: true },
+      { targetId: "tab-B", active: false },
+    ],
+  });
+  try {
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-A");
+    setPreferredTarget("tab-B");
+    assert.equal(state.sessionId, null, "old target session must be discarded");
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-B");
+    assert.deepEqual(
+      calls
+        .filter((call) => call.method === "Target.attachToTarget")
+        .map((call) => call.params.targetId),
+      ["tab-A", "tab-B"],
+    );
+  } finally {
+    cleanup();
+  }
+});
+
+test("browserCdp rejects a successful old-target read after a concurrent target switch", async () => {
+  installAutoEgo({
+    tabs: [
+      { targetId: "tab-A", active: true },
+      { targetId: "tab-B", active: false },
+    ],
+  });
+  const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+  let readId;
+  let notifyRead;
+  const readStarted = new Promise((resolve) => {
+    notifyRead = resolve;
+  });
+  globalThis.ego.sendCDPMessage = (payload) => {
+    const request = JSON.parse(payload);
+    if (request.method === "DOM.getDocument") {
+      readId = request.id;
+      notifyRead();
+      return;
+    }
+    originalSend(payload);
+  };
+  try {
+    const read = browserCdp("DOM.getDocument", { depth: 1 });
+    await readStarted;
+    setPreferredTarget("tab-B");
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: readId, result: { root: { nodeName: "OLD" } } }),
+    );
+    await assert.rejects(
+      read,
+      /browser target preference changed during CDP request: DOM.getDocument/,
+      "an old-tab response cannot become evidence for the newly selected tab",
+    );
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-B");
+  } finally {
+    cleanup();
+  }
+});
+
+test("late old-target session failure preserves the new target session", async () => {
+  installAutoEgo({
+    tabs: [
+      { targetId: "tab-A", active: true },
+      { targetId: "tab-B", active: false },
+    ],
+  });
+  const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+  let readId;
+  let notifyRead;
+  const readStarted = new Promise((resolve) => {
+    notifyRead = resolve;
+  });
+  globalThis.ego.sendCDPMessage = (payload) => {
+    const request = JSON.parse(payload);
+    if (request.method === "DOM.getDocument") {
+      readId = request.id;
+      notifyRead();
+      return;
+    }
+    originalSend(payload);
+  };
+  try {
+    const read = browserCdp("DOM.getDocument", { depth: 1 });
+    await readStarted;
+    setPreferredTarget("tab-B");
+    const newSession = await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-B");
+    globalThis.ego.onCDPMessage(
+      JSON.stringify({ id: readId, error: { message: "Session not found" } }),
+    );
+    await assert.rejects(
+      read,
+      /browser target preference changed during CDP request: DOM.getDocument/,
+    );
+    assert.equal(
+      state.sessionId,
+      newSession,
+      "late failure must not clear the new session",
+    );
+    assert.equal(state.sessionTargetId, "tab-B");
+  } finally {
+    cleanup();
+  }
+});
+
+for (const outcome of ["success", "session lost"]) {
+  test(`browserCdp rejects old active-tab ${outcome}`, async () => {
+    installAutoEgo({
+      tabs: [{ targetId: "tab-A", active: true }],
+    });
+    const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+    let readId;
+    let notifyRead;
+    let delayed = false;
+    const readStarted = new Promise((resolve) => {
+      notifyRead = resolve;
+    });
+    globalThis.ego.sendCDPMessage = (payload) => {
+      const request = JSON.parse(payload);
+      if (request.method === "DOM.getDocument" && !delayed) {
+        delayed = true;
+        readId = request.id;
+        notifyRead();
+        return;
+      }
+      originalSend(payload);
+    };
+    try {
+      const read = browserCdp("DOM.getDocument", { depth: 1 });
+      await readStarted;
+      // The active tab changes without setPreferredTarget(), so the explicit
+      // preference revision remains unchanged.
+      globalThis.ego.listTabs = async () => ({
+        tabs: [
+          { targetId: "tab-A", active: false },
+          { targetId: "tab-B", active: true },
+        ],
+      });
+      state.sessionAt = Date.now() - 3000;
+      const newSession = await ensureSession();
+      assert.equal(state.sessionTargetId, "tab-B");
+
+      globalThis.ego.onCDPMessage(
+        JSON.stringify(
+          outcome === "success"
+            ? { id: readId, result: { root: { nodeName: "OLD" } } }
+            : { id: readId, error: { message: "Session not found" } },
+        ),
+      );
+      await assert.rejects(
+        read,
+        /browser CDP session changed during request: DOM.getDocument/,
+        "an abandoned tab's result or error must not affect the new tab",
+      );
+      assert.equal(state.sessionId, newSession);
+      assert.equal(state.sessionTargetId, "tab-B");
+    } finally {
+      cleanup();
+    }
+  });
+}
+
+test("clearing preferred target reselects the active tab without stale cache", async () => {
+  installAutoEgo({
+    tabs: [
+      { targetId: "tab-A", active: true },
+      { targetId: "tab-B", active: false },
+    ],
+  });
+  try {
+    setPreferredTarget("tab-B");
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-B");
+    clearPreferredTarget();
+    assert.equal(state.sessionId, null);
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-A");
+  } finally {
+    cleanup();
+  }
+});
+
 /* ------------------------------------------------------------------ */
 /*  ensureSession — session caching, TTL, tab selection               */
 /* ------------------------------------------------------------------ */
@@ -790,6 +1073,45 @@ test("ensureSession selects the preferred tab when available", async () => {
   }
 });
 
+test("missing preferred target fails closed and can recover without switching tabs", async () => {
+  const calls = installAutoEgo({
+    tabs: [{ targetId: "tab-other", active: true }],
+  });
+  try {
+    setPreferredTarget("tab-requested");
+    await assert.rejects(
+      () => ensureSession(),
+      /preferred browser target is unavailable/,
+    );
+    assert.equal(
+      calls.filter((call) => call.method === "Target.attachToTarget").length,
+      0,
+      "must not attach to an unrelated active tab",
+    );
+    assert.equal(state.sessionId, null);
+    assert.equal(state.preferredTargetId, "tab-requested");
+
+    // A temporarily delayed tab listing can recover on the next explicit read.
+    globalThis.ego.listTabs = async () => ({
+      tabs: [
+        { targetId: "tab-other", active: true },
+        { targetId: "tab-requested", active: false },
+      ],
+    });
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-requested");
+    const attachments = calls.filter(
+      (call) => call.method === "Target.attachToTarget",
+    );
+    assert.deepEqual(
+      attachments.map((call) => call.params.targetId),
+      ["tab-requested"],
+    );
+  } finally {
+    cleanup();
+  }
+});
+
 test("ensureSession falls back to the last tab when no active tab is found", async () => {
   const calls = installAutoEgo({
     tabs: [
@@ -831,9 +1153,195 @@ test("ensureSession skips re-attach when targetId matches existing session", asy
   }
 });
 
+test("target preference change during attach fails closed and permits fresh selection", async () => {
+  installAutoEgo({
+    tabs: [
+      { targetId: "tab-A", active: true },
+      { targetId: "tab-B", active: false },
+    ],
+  });
+  const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+  let releaseAttach;
+  const attachGate = new Promise((resolve) => {
+    releaseAttach = resolve;
+  });
+  let notifyAttach;
+  const attachStarted = new Promise((resolve) => {
+    notifyAttach = resolve;
+  });
+  globalThis.ego.sendCDPMessage = (payload) => {
+    const parsed = JSON.parse(payload);
+    if (
+      parsed.method === "Target.attachToTarget" &&
+      parsed.params.targetId === "tab-A"
+    ) {
+      notifyAttach();
+      attachGate.then(() => originalSend(payload));
+      return;
+    }
+    originalSend(payload);
+  };
+  try {
+    const pendingSelection = ensureSession();
+    await attachStarted;
+    setPreferredTarget("tab-B");
+    releaseAttach();
+    await assert.rejects(
+      pendingSelection,
+      /browser target preference changed during session acquisition/,
+    );
+    assert.equal(state.sessionId, null, "stale attachment must be invalidated");
+    await ensureSession();
+    assert.equal(state.sessionTargetId, "tab-B");
+  } finally {
+    releaseAttach();
+    cleanup();
+  }
+});
+
 /* ------------------------------------------------------------------ */
 /*  SESSION_LOST retry                                                */
 /* ------------------------------------------------------------------ */
+
+// A lost session does not establish document continuity, even on one target.
+for (const method of [
+  "DOM.getDocument",
+  "DOM.getNodeForLocation",
+  "DOMSnapshot.captureSnapshot",
+  "Page.captureScreenshot",
+  "Page.getFrameTree",
+  "Page.getNavigationHistory",
+]) {
+  test(`lost-session read fails closed: ${method}`, async () => {
+    const calls = installLostSessionEgo(method);
+    try {
+      await assert.rejects(() => browserCdp(method, {}), /Session not found/);
+      const reads = calls.filter((call) => call.method === method);
+      assert.equal(reads.length, 1, "must not replay against another document");
+      assert.equal(state.sessionId, null);
+    } finally {
+      cleanup();
+    }
+  });
+}
+
+test("same-tab navigation never triggers a retry", async () => {
+  const calls = installLostSessionEgo("DOM.getDocument", "tab-1");
+  const originalSend = globalThis.ego.sendCDPMessage.bind(globalThis.ego);
+  globalThis.ego.sendCDPMessage = (payload) => {
+    const request = JSON.parse(payload);
+    if (request.method === "DOM.getDocument") {
+      setTimeout(() => {
+        globalThis.ego.onCDPMessage(
+          JSON.stringify({
+            method: "Page.frameNavigated",
+            sessionId: request.sessionId,
+            params: {
+              frame: {
+                id: "main",
+                url: "https://changed.example/new-document",
+                loaderId: "loader-new",
+              },
+            },
+          }),
+        );
+      }, 0);
+    }
+    originalSend(payload);
+  };
+  try {
+    await assert.rejects(
+      () => browserCdp("DOM.getDocument", { depth: 1 }),
+      /Session not found/,
+    );
+    const reads = calls.filter((c) => c.method === "DOM.getDocument");
+    assert.equal(reads.length, 1);
+    assert.equal(state.sessionId, null);
+    const eventNames = drainBrowserEvents().map((event) => event.method);
+    assert.ok(eventNames.includes("Page.frameNavigated"));
+  } finally {
+    cleanup();
+  }
+});
+
+// Observational methods are not automatically replayable when their arguments
+// refer to nodes, remote objects, requests, or frames from a lost session.
+for (const [method, params] of [
+  ["Accessibility.getPartialAXTree", { nodeId: 7 }],
+  ["Accessibility.getFullAXTree", { frameId: "old-frame" }],
+  ["CSS.getComputedStyleForNode", { nodeId: 7 }],
+  ["CSS.getMatchedStylesForNode", { nodeId: 7 }],
+  ["DOM.describeNode", { nodeId: 7 }],
+  ["DOM.getBoxModel", { nodeId: 7 }],
+  ["DOM.getContentQuads", { nodeId: 7 }],
+  ["DOM.getOuterHTML", { nodeId: 7 }],
+  ["DOM.querySelector", { nodeId: 7, selector: "main" }],
+  ["DOM.querySelectorAll", { nodeId: 7, selector: "main" }],
+  ["DOM.resolveNode", { nodeId: 7 }],
+  ["Network.getResponseBody", { requestId: "old-request" }],
+  ["Runtime.getProperties", { objectId: "old-object" }],
+]) {
+  test(`browserCdp does not replay session-bound ${method} parameters`, async () => {
+    const calls = installLostSessionEgo(method);
+    try {
+      await assert.rejects(
+        () => browserCdp(method, params),
+        /Session not found/,
+      );
+      assert.equal(
+        calls.filter((call) => call.method === method).length,
+        1,
+        "a stale identifier must not be sent into a new CDP session",
+      );
+      assert.equal(state.sessionId, null, "lost session must be invalidated");
+    } finally {
+      cleanup();
+    }
+  });
+}
+
+for (const method of [
+  "Runtime.evaluate",
+  "Input.dispatchMouseEvent",
+  "Page.navigate",
+]) {
+  test(`browserCdp does not replay potentially effectful ${method} after session loss`, async () => {
+    const calls = installLostSessionEgo(method);
+    try {
+      await assert.rejects(() => browserCdp(method, {}), /Session not found/);
+      assert.equal(
+        calls.filter((call) => call.method === method).length,
+        1,
+        "effectful command must not be sent a second time",
+      );
+      assert.equal(state.sessionId, null, "failed session must be invalidated");
+    } finally {
+      cleanup();
+    }
+  });
+}
+
+test("browserCdp does not retry a lost read after active target changes", async () => {
+  const calls = installLostSessionEgo("DOM.getDocument", "tab-2");
+  try {
+    await assert.rejects(
+      () => browserCdp("DOM.getDocument", { depth: 1 }),
+      /Session not found/,
+    );
+    assert.equal(
+      calls.filter((call) => call.method === "DOM.getDocument").length,
+      1,
+      "a read must not silently switch to another tab",
+    );
+    assert.equal(
+      calls.filter((call) => call.method === "Target.attachToTarget").length,
+      1,
+    );
+    assert.equal(state.sessionId, null);
+  } finally {
+    cleanup();
+  }
+});
 
 test("browserCdp does NOT retry SESSION_LOST for explicit sessionId", async () => {
   const calls = installManualEgo();
@@ -952,4 +1460,53 @@ test("browserSnapshotRefsToRefMap skips null, non-object, and missing backendNod
   ]);
   assert.equal(refMap._data.size, 1, "only the valid ref is added");
   assert.ok(refMap._data.has("7"));
+});
+
+/* ------------------------------------------------------------------ */
+/*  Missing CDP session identity — never dispatch unscoped page reads  */
+/* ------------------------------------------------------------------ */
+
+test("missing attach sessionId fails closed and a later valid attach recovers", async () => {
+  const calls = [];
+  let attachCount = 0;
+  globalThis.ego = {
+    async listTabs() {
+      return { tabs: [{ targetId: "tab-1", active: true }] };
+    },
+    sendCDPMessage(payload) {
+      const request = JSON.parse(payload);
+      calls.push(request);
+      setTimeout(() => {
+        const result =
+          request.method === "Target.attachToTarget"
+            ? ++attachCount === 1
+              ? {}
+              : { sessionId: "sess-recovered" }
+            : {};
+        globalThis.ego?.onCDPMessage?.(
+          JSON.stringify({ id: request.id, result }),
+        );
+      }, 0);
+    },
+  };
+  try {
+    await assert.rejects(
+      browserCdp("Runtime.evaluate", { expression: "1" }),
+      /Target\.attachToTarget returned no valid sessionId/,
+    );
+    assert.equal(state.sessionId, null);
+    assert.equal(state.sessionTargetId, null);
+    assert.equal(
+      calls.some((call) => call.method === "Runtime.evaluate"),
+      false,
+      "must not send a page command without a verified CDP session",
+    );
+    await browserCdp("Runtime.evaluate", { expression: "1" });
+    const reads = calls.filter((call) => call.method === "Runtime.evaluate");
+    assert.equal(reads.length, 1);
+    assert.equal(reads[0].sessionId, "sess-recovered");
+    assert.equal(state.sessionTargetId, "tab-1");
+  } finally {
+    cleanup();
+  }
 });

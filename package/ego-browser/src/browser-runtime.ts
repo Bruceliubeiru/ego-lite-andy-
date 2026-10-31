@@ -10,6 +10,9 @@ const SESSION_LOST =
   /Session (?:with given id )?not found|Target closed|No session/i;
 const BROWSER_LEVEL = (method) =>
   method.startsWith("Target.") || method.startsWith("Browser.");
+// A lost session cannot establish continuity of the underlying document,
+// even if the target ID is unchanged. Fail closed rather than silently
+// replaying a read against a possibly replaced document.
 type BrowserEventSubscriber = {
   method: string;
   sessionId?: string;
@@ -22,6 +25,8 @@ const eventWaiters = [];
 const eventSubscribers = new Set<BrowserEventSubscriber>();
 const pageEnabledSessions = new Set();
 const pendingDialogs = new Map();
+// Changes in target selection invalidate cached or in-flight session choices.
+let targetSelectionVersion = 0;
 export function isBrowserRuntime() {
   return Boolean(
     globalThis.ego && typeof globalThis.ego.sendCDPMessage === "function",
@@ -87,18 +92,54 @@ export async function browserCdp(
     return state.cdpOverride(method, params, sessionId);
   }
   const explicit = sessionId !== undefined;
+  // A completed response from an old target is not trustworthy after an
+  // explicit target switch, even when the CDP request itself succeeded.
+  const selectionVersion = targetSelectionVersion;
+  const assertSelectionUnchanged = () => {
+    if (
+      !explicit &&
+      !BROWSER_LEVEL(method) &&
+      selectionVersion !== targetSelectionVersion
+    ) {
+      throw new Error(
+        `browser target preference changed during CDP request: ${method}`,
+      );
+    }
+  };
   let effective = sessionId;
   if (!explicit && !BROWSER_LEVEL(method)) {
     effective = await ensureSession();
+    assertSelectionUnchanged();
   }
+  const originalTargetId = state.sessionTargetId;
+  // Active-tab changes do not increment the explicit preference revision.
+  // Bind implicit responses to the session actually used for the request.
+  const assertImplicitSessionBound = (expectedSessionId) => {
+    if (explicit || BROWSER_LEVEL(method)) return;
+    if (
+      !originalTargetId ||
+      state.sessionTargetId !== originalTargetId ||
+      state.sessionId !== expectedSessionId
+    ) {
+      throw new Error(`browser CDP session changed during request: ${method}`);
+    }
+  };
+  assertImplicitSessionBound(effective);
   try {
-    return await rawCdp(method, params, effective, timeoutMs);
+    const result = await rawCdp(method, params, effective, timeoutMs);
+    assertSelectionUnchanged();
+    assertImplicitSessionBound(effective);
+    return result;
   } catch (error) {
     const lost = SESSION_LOST.test(error?.message || "");
     if (lost && !explicit && !BROWSER_LEVEL(method)) {
+      // A late failure from an abandoned target must not invalidate a newer
+      // session already acquired for the newly selected target.
+      assertSelectionUnchanged();
+      assertImplicitSessionBound(effective);
       invalidateSession();
-      const fresh = await ensureSession();
-      return rawCdp(method, params, fresh, timeoutMs);
+      // The caller must explicitly reacquire and verify the page/document.
+      throw error;
     }
     throw error;
   }
@@ -111,6 +152,7 @@ export async function ensureSession() {
   if (state.sessionInflight) {
     return state.sessionInflight;
   }
+  const selectionVersion = targetSelectionVersion;
   state.sessionInflight = (async () => {
     try {
       const result = assertNoEgoError(await browserEgo().listTabs());
@@ -118,6 +160,11 @@ export async function ensureSession() {
       const preferred = state.preferredTargetId
         ? tabs.find((t) => t.targetId === state.preferredTargetId)
         : null;
+      // An explicitly selected tab must not silently fall back to another
+      // active tab when the requested target disappears or is not yet listed.
+      if (state.preferredTargetId && !preferred) {
+        throw new Error("preferred browser target is unavailable");
+      }
       const active =
         preferred || tabs.find((t) => t.active) || tabs[tabs.length - 1];
       if (!active) {
@@ -130,10 +177,22 @@ export async function ensureSession() {
           { targetId, flatten: true },
           undefined,
         );
-        state.sessionId = attached.result?.sessionId || attached.sessionId;
+        const attachedSessionId =
+          attached.result?.sessionId || attached.sessionId;
+        if (typeof attachedSessionId !== "string" || !attachedSessionId) {
+          invalidateSession();
+          throw new Error("Target.attachToTarget returned no valid sessionId");
+        }
+        state.sessionId = attachedSessionId;
         state.sessionTargetId = targetId;
       }
       await enablePageEvents(state.sessionId);
+      if (selectionVersion !== targetSelectionVersion) {
+        invalidateSession();
+        throw new Error(
+          "browser target preference changed during session acquisition",
+        );
+      }
       state.sessionAt = Date.now();
       return state.sessionId;
     } finally {
@@ -154,11 +213,15 @@ export function invalidateSession() {
 }
 
 export function setPreferredTarget(targetId) {
-  state.preferredTargetId = targetId || null;
+  const nextTarget = targetId || null;
+  if (state.preferredTargetId === nextTarget) return;
+  state.preferredTargetId = nextTarget;
+  targetSelectionVersion += 1;
+  invalidateSession();
 }
 
 export function clearPreferredTarget() {
-  state.preferredTargetId = null;
+  setPreferredTarget(null);
 }
 
 export function drainBrowserEvents() {
@@ -267,7 +330,24 @@ function handleMessage(message) {
       pendingDialogs.delete(sessionId);
     }
     const targetId = data.params?.targetId || data.params?.targetInfo?.targetId;
-    if (targetId && targetId === state.sessionTargetId) {
+    // A detached old session may share the target ID of a newly attached
+    // session. Its late event must not invalidate the current session.
+    // Target destruction or a detach without a session ID remains fail-closed.
+    const isCurrentSessionDetach =
+      data.method === "Target.detachedFromTarget" &&
+      sessionId &&
+      sessionId === state.sessionId;
+    const isCurrentTargetWithoutSession =
+      !sessionId && targetId && targetId === state.sessionTargetId;
+    const isCurrentTargetDestroyed =
+      data.method === "Target.targetDestroyed" &&
+      targetId &&
+      targetId === state.sessionTargetId;
+    if (
+      isCurrentSessionDetach ||
+      isCurrentTargetWithoutSession ||
+      isCurrentTargetDestroyed
+    ) {
       invalidateSession();
     }
   }
